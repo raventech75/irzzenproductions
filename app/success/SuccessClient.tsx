@@ -3,7 +3,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui";
 
 export default function SuccessClient() {
   const searchParams = useSearchParams();
@@ -33,18 +32,20 @@ export default function SuccessClient() {
   return (
     <div className="max-w-lg mx-auto text-center py-20">
       <h1 className="text-2xl font-bold text-orange-600">
-        Merci pour votre réservation 🎉
+        Paiement validé 🎉
       </h1>
-      <p className="mt-4">Votre paiement a bien été validé.</p>
+      <p className="mt-4">Merci pour votre réservation.</p>
 
       {pdfUrl ? (
         <div className="mt-8 space-y-4">
           <div>
-            <Button asChild>
-              <a href={pdfUrl} download>
-                Télécharger le contrat (PDF)
-              </a>
-            </Button>
+            <a
+              href={pdfUrl}
+              download
+              className="inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-white shadow-sm hover:bg-orange-400 transition"
+            >
+              Télécharger le contrat (PDF)
+            </a>
           </div>
 
           <div className="text-left space-y-2">
@@ -59,7 +60,12 @@ export default function SuccessClient() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 border rounded-xl px-3 py-2"
               />
-              <Button onClick={sendMail}>Envoyer</Button>
+              <button
+                onClick={sendMail}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-white hover:bg-orange-400 transition"
+              >
+                Envoyer
+              </button>
             </div>
             <p className="text-xs text-gray-500">
               Un lien de téléchargement vers votre contrat PDF sera envoyé.
