@@ -1,15 +1,12 @@
+// app/success/page.tsx
 import { Suspense } from "react";
 import SuccessClient from "./SuccessClient";
 
-export default function SuccessPage() {
+export const dynamic = "force-dynamic";
+
+export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-lg mx-auto text-center py-20 text-gray-500">
-          Chargement de votre confirmation…
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="max-w-2xl mx-auto py-16 text-center">Chargement…</div>}>
       <SuccessClient />
     </Suspense>
   );
