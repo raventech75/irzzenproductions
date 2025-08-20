@@ -1,4 +1,3 @@
-// app/api/webhooks/stripe/route.ts
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { buildBookingPdf } from "@/lib/pdf";
@@ -18,11 +17,7 @@ export async function POST(req: Request) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
@@ -33,7 +28,14 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const md = (session.metadata || {}) as Record<string, string>;
 
-      // 1) Générer le PDF contrat (mise en page “pro”)
+      // Récupère la réservation liée à cette session Stripe
+      const { data: booking } = await supabaseAdmin
+        .from("bookings")
+        .select("id")
+        .eq("stripe_session_id", session.id)
+        .maybeSingle();
+
+      // Génère le PDF
       const pdfBytes = await buildBookingPdf({
         couple_name: md.couple_name,
         bride_first_name: md.bride_first_name,
@@ -56,23 +58,23 @@ export async function POST(req: Request) {
         extras: md.extras,
       });
 
-      // 2) Enregistrer en Storage (bucket "contracts")
       const filename = `IRZZEN-Contrat-${session.id}.pdf`;
-      const saved = await saveContractPDF({
-        pdf: Buffer.from(pdfBytes), // ✅ CORRECTION: utiliser "pdf" (pas "file")
-        filename,
-      }); // -> { path, publicUrl }
+      const saved = await saveContractPDF({ pdf: Buffer.from(pdfBytes), filename });
 
-      // 3) Enregistrer une ligne en BDD
-      await supabaseAdmin
-        .from("contracts")
-        .insert({
-          session_id: session.id,
-          email: md.email || session.customer_details?.email || null,
-          file_path: saved.path,
-        });
+      // Insert dans contracts (⚠️ bytes NOT NULL)
+      await supabaseAdmin.from("contracts").insert({
+        booking_id: booking?.id || null,
+        file_path: saved.path,
+        bytes: Number((pdfBytes as Uint8Array).byteLength ?? 0),
+      });
 
-      // Option: envoi email ici si tu veux automatique (sinon bouton sur /success)
+      // Marque la booking comme "paid"
+      if (booking?.id) {
+        await supabaseAdmin
+          .from("bookings")
+          .update({ status: "paid", updated_at: new Date().toISOString() })
+          .eq("id", booking.id);
+      }
     }
 
     return NextResponse.json({ received: true });

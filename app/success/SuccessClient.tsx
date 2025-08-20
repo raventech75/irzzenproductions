@@ -1,118 +1,154 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-type SuccessClientProps = {
-  bookingId: string;
-};
+type VerifyResponse =
+  | { ok: true; email: string | null; pdfUrl: string | null; pdfPath: string | null }
+  | { error: string };
 
-export default function SuccessClient({ bookingId }: SuccessClientProps) {
+export default function SuccessClient({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true);
-  const [contractPath, setContractPath] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>("");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
+  const attemptsRef = useRef(0);
 
-  // Récupération du contrat associé à la réservation
-  useEffect(() => {
-    async function fetchContract() {
-      try {
-        const res = await fetch(`/api/admin/contracts/by-booking`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bookingId }),
-        });
+  const hasContract = useMemo(() => Boolean(pdfUrl || pdfPath), [pdfUrl, pdfPath]);
 
-        if (!res.ok) throw new Error("Impossible de récupérer le contrat");
+  const fetchStatus = async () => {
+    setFetchError(null);
+    try {
+      const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
+        cache: "no-store",
+      });
+      const data: VerifyResponse = await res.json();
 
-        const data = await res.json();
-        setContractPath(data?.file_path || null);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if ("error" in data) {
+        setFetchError(data.error || "Erreur inconnue.");
+        return false;
+      } else {
+        setEmail(data.email || "");
+        setPdfUrl(data.pdfUrl);
+        setPdfPath(data.pdfPath);
+        return Boolean(data.pdfUrl || data.pdfPath);
       }
+    } catch (e: any) {
+      setFetchError(e?.message || "Erreur réseau.");
+      return false;
     }
+  };
 
-    if (bookingId) fetchContract();
-  }, [bookingId]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await fetchStatus();
+      if (!cancelled) {
+        setLoading(false);
+        if (!ok) setPolling(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
-  // Téléchargement
-  async function handleDownload() {
-    if (!contractPath) return;
+  useEffect(() => {
+    if (!polling || hasContract) return;
+    attemptsRef.current = 0;
+    const it = setInterval(async () => {
+      attemptsRef.current += 1;
+      const ok = await fetchStatus();
+      if (ok || attemptsRef.current >= 15) {
+        clearInterval(it);
+        setPolling(false);
+      }
+    }, 3000);
+    return () => clearInterval(it);
+  }, [polling, hasContract]);
+
+  const onSend = async () => {
+    setSendMsg(null);
+    if (!pdfPath) {
+      setSendMsg("Aucun contrat disponible pour l'envoi.");
+      return;
+    }
+    const to = prompt("À quelle adresse email envoyer le contrat ?", email || "") || "";
+    if (!to) return;
+
     try {
-      const res = await fetch(`/api/admin/contracts/download`, {
+      setSending(true);
+      const r = await fetch("/api/admin/contracts/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: contractPath }),
+        body: JSON.stringify({ path: pdfPath, to }),
       });
-      if (!res.ok) throw new Error("Erreur téléchargement");
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "contrat.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  // Envoi par mail
-  async function handleSendEmail() {
-    if (!contractPath) return;
-    setSending(true);
-    try {
-      const res = await fetch(`/api/admin/contracts/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: contractPath, bookingId }),
-      });
-      if (!res.ok) throw new Error("Erreur envoi email");
-
-      alert("Contrat envoyé avec succès ✅");
-    } catch (err: any) {
-      setError("Erreur d'envoi : " + err.message);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || "Échec d'envoi.");
+      setSendMsg("Email envoyé ✅");
+    } catch (e: any) {
+      setSendMsg(`Erreur d'envoi : ${e?.message || "inconnue"}`);
     } finally {
       setSending(false);
     }
-  }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
-      <h1 className="text-2xl font-bold">Merci pour votre réservation 🎉</h1>
-      <p className="text-gray-600">
-        Votre contrat est prêt. Vous pouvez le télécharger ou le recevoir par
-        email.
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-4xl md:text-5xl font-serif tracking-tight text-orange-600">
+        Merci pour votre réservation 🎉
+      </h1>
+
+      <p className="mt-4 text-lg text-slate-700">
+        {email ? (
+          <>Votre contrat a été généré pour <span className="font-semibold">{email}</span>.</>
+        ) : (
+          <>Votre contrat est en cours de préparation…</>
+        )}
       </p>
 
-      {loading ? (
-        <p>Chargement du contrat…</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
-      ) : (
-        <div className="flex gap-4 justify-center">
-          <Button
-            onClick={handleDownload}
-            disabled={!contractPath}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-          >
-            Télécharger le contrat
-          </Button>
+      <div className="mt-6 flex items-center gap-3 text-sm text-slate-600">
+        {loading && <span>Vérification du contrat…</span>}
+        {!loading && !hasContract && (
+          <>
+            <span>Le paiement est validé. Génération du contrat en cours…</span>
+            {polling && <span className="animate-pulse">Actualisation…</span>}
+          </>
+        )}
+        {fetchError && <span className="text-red-600">Erreur : {fetchError}</span>}
+      </div>
 
-          <Button
-            onClick={handleSendEmail}
-            disabled={!contractPath || sending}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            {sending ? "Envoi…" : "Renvoyer par email"}
-          </Button>
-        </div>
-      )}
+      <div className="mt-8 flex flex-wrap gap-4">
+        <a
+          href={pdfUrl || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-base font-medium border transition ${
+            hasContract && pdfUrl
+              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-400"
+              : "bg-orange-200/60 text-orange-900/60 border-orange-300 cursor-not-allowed"
+          }`}
+        >
+          📄 Télécharger le contrat
+        </a>
+
+        <button
+          onClick={onSend}
+          disabled={!hasContract || sending}
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-base font-medium border transition ${
+            hasContract && !sending
+              ? "text-orange-700 border-orange-300 hover:bg-orange-50"
+              : "text-orange-900/60 border-orange-200 cursor-not-allowed"
+          }`}
+        >
+          ✉️ {sending ? "Envoi..." : "Renvoyer par email"}
+        </button>
+      </div>
+
+      {sendMsg && <p className="mt-4 text-sm">{sendMsg}</p>}
     </div>
   );
 }

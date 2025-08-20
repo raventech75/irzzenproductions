@@ -32,25 +32,25 @@ declare namespace __next_route_internal_types__ {
     | `/`
     | `/admin`
     | `/api/admin/contracts`
-    | `/api/admin/contracts/by-looking`
     | `/api/admin/contracts/delete`
-    | `/api/admin/contracts/download`
+    | `/api/admin/contracts/by-looking`
     | `/api/admin/contracts/email`
     | `/api/admin/contracts/list`
+    | `/api/admin/contracts/download`
     | `/api/admin/contracts/send`
     | `/api/admin/contracts/signed-url`
     | `/api/create-checkout-session`
     | `/api/create-payment`
+    | `/api/debug-pdf`
     | `/api/send-contract`
     | `/api/verify-session`
     | `/api/webhooks/stripe`
-    | `/api/debug-pdf`
     | `/checkout`
     | `/merci`
+    | `/success`
+    | `/rib`
     | `/questionnaire`
     | `/reservation`
-    | `/rib`
-    | `/success`
   type DynamicRoutes<T extends string = string> = never
 
   type RouteImpl<T> = 
