@@ -2,17 +2,54 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+type VerifyPayload = {
+  ok: boolean;
+  paid: boolean;
+  email: string | null;
+  pdfUrl: string | null;
+  currency?: string | null;
+  amount_total?: number | null;
+  session_status?: string | null;
+  error?: string;
+};
 
 export default function SuccessClient() {
-  const searchParams = useSearchParams();
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const params = useSearchParams();
+  const sessionId = params.get("session_id");
+
+  const [loading, setLoading] = useState(true);
+  const [verify, setVerify] = useState<VerifyPayload | null>(null);
   const [email, setEmail] = useState("");
 
+  const pdfUrl = verify?.pdfUrl ?? null;
+
+  const amount = useMemo(() => {
+    if (!verify?.amount_total) return null;
+    return (verify.amount_total / 100).toLocaleString("fr-FR") + " €";
+  }, [verify?.amount_total]);
+
   useEffect(() => {
-    const url = searchParams.get("pdfUrl");
-    if (url) setPdfUrl(url);
-  }, [searchParams]);
+    const run = async () => {
+      if (!sessionId) {
+        setLoading(false);
+        setVerify({ ok: false, paid: false, email: null, pdfUrl: null, error: "Aucun session_id dans l’URL" });
+        return;
+      }
+      try {
+        const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+        const data: VerifyPayload = await res.json();
+        setVerify(data);
+        if (data?.email) setEmail(data.email);
+      } catch (e: any) {
+        setVerify({ ok: false, paid: false, email: null, pdfUrl: null, error: e?.message || "Erreur réseau" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, [sessionId]);
 
   const sendMail = async () => {
     if (!pdfUrl || !email) return;
@@ -29,18 +66,39 @@ export default function SuccessClient() {
     alert("Contrat envoyé par mail ✅");
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-lg mx-auto text-center py-20 text-gray-500">
+        Vérification du paiement en cours…
+      </div>
+    );
+  }
+
+  const isPaid = !!verify?.paid;
+  const hasPdf = !!pdfUrl;
+
   return (
     <div className="max-w-lg mx-auto text-center py-20">
-      <h1 className="text-2xl font-bold text-orange-600">
-        Paiement validé 🎉
-      </h1>
-      <p className="mt-4">Merci pour votre réservation.</p>
+      <h1 className="text-2xl font-bold text-orange-600">Merci pour votre réservation 🎉</h1>
+      <p className="mt-2">
+        {isPaid ? "Votre paiement a bien été validé." : "Paiement non confirmé."}
+      </p>
 
-      {pdfUrl ? (
+      {amount && (
+        <p className="mt-1 text-sm text-gray-600">Montant : {amount}</p>
+      )}
+
+      {!isPaid && (
+        <p className="mt-6 text-sm text-red-600">
+          Nous n’avons pas pu confirmer le paiement. Si vous avez été débité, contactez le support avec votre preuve de paiement.
+        </p>
+      )}
+
+      {isPaid && hasPdf ? (
         <div className="mt-8 space-y-4">
           <div>
             <a
-              href={pdfUrl}
+              href={pdfUrl!}
               download
               className="inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-white shadow-sm hover:bg-orange-400 transition"
             >
@@ -49,9 +107,7 @@ export default function SuccessClient() {
           </div>
 
           <div className="text-left space-y-2">
-            <label className="block text-sm font-medium">
-              Envoyer le contrat par email
-            </label>
+            <label className="block text-sm font-medium">Envoyer le contrat par email</label>
             <div className="flex gap-2">
               <input
                 type="email"
@@ -73,10 +129,15 @@ export default function SuccessClient() {
           </div>
         </div>
       ) : (
-        <p className="mt-6 text-sm text-gray-500">
-          Le lien du contrat n’a pas été trouvé dans l’URL. Si le paiement est validé,
-          contactez-nous pour recevoir votre contrat par email.
-        </p>
+        isPaid && (
+          <p className="mt-6 text-sm text-gray-500">
+            Le lien du contrat n’a pas été trouvé. Contactez-nous pour le recevoir par email.
+          </p>
+        )
+      )}
+
+      {verify?.error && (
+        <p className="mt-6 text-xs text-red-500">Erreur : {verify.error}</p>
       )}
     </div>
   );
