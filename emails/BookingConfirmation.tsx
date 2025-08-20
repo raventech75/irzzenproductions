@@ -17,7 +17,7 @@ export default function BookingConfirmation({
   return (
     <Html>
       <Head />
-      <Preview>Réservation IRZZEN Productions confirmée</Preview>
+      <Preview>Réservation Irzzenproductions confirmée</Preview>
       <Body style={{ background: "#ffffff", margin: 0, fontFamily: "ui-sans-serif, system-ui" }}>
         <Container style={{ padding: "32px 20px" }}>
           <Section>
@@ -45,7 +45,7 @@ export default function BookingConfirmation({
               • Tout solde non réglé à l’échéance convenue suspend la livraison. <br />
             </Text>
             <Text style={{ fontSize: 12, color: "#6b7280" }}>
-              IRZZEN Productions — 15+ ans d’expérience — Équipe de 12 professionnels.
+              Irzzenproductions — 15+ ans d’expérience — Équipe de 12 professionnels.
             </Text>
           </Section>
         </Container>

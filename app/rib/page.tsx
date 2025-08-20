@@ -7,7 +7,7 @@ const RIB = {
   IBAN: "FR76 3000 4000 5000 6000 7000 890",
   BIC: "BNPAFRPPXXX",
   BANK: "BNP Paribas",
-  HOLDER: "Irzzen Productions",
+  HOLDER: "Irzzenproductions",
 };
 
 export default function RIBPage() {

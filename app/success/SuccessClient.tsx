@@ -4,114 +4,132 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type VerifyResponse = {
-  paid: boolean;
-  email: string | null;
-  pdfUrl: string;
-  metadata: Record<string, string>;
-  error?: string;
-};
+type VerifyResponse =
+  | { ok: true; email: string | null; pdfUrl: string | null; pdfPath: string | null }
+  | { error: string };
 
 export default function SuccessClient() {
   const sp = useSearchParams();
   const sessionId = sp.get("session_id") || "";
-  const [data, setData] = useState<VerifyResponse | null>(null);
+
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState<string>("");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState<string | null>(null);
 
-  const clientName =
-    data?.metadata?.couple_name ||
-    [data?.metadata?.bride_first_name, data?.metadata?.bride_last_name]
-      .filter(Boolean)
-      .join(" ") ||
-    "Client";
+  const hasContract = useMemo(() => Boolean(pdfUrl || pdfPath), [pdfUrl, pdfPath]);
 
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
     async function run() {
-      setLoading(true);
+      if (!sessionId) {
+        setFetchError("Aucun identifiant de session trouvé.");
+        setLoading(false);
+        return;
+      }
       try {
         const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
           cache: "no-store",
         });
-        const json = (await res.json()) as VerifyResponse;
-        if (mounted) setData(json);
-      } catch (e) {
-        if (mounted) setData({ paid: false, email: null, pdfUrl: "", metadata: {}, error: String(e) });
+        const data: VerifyResponse = await res.json();
+        if (cancelled) return;
+
+        if ("error" in data) {
+          setFetchError(data.error || "Erreur inconnue.");
+        } else {
+          setEmail(data.email || "");
+          setPdfUrl(data.pdfUrl);
+          setPdfPath(data.pdfPath);
+        }
+      } catch (e: any) {
+        if (!cancelled) setFetchError(e?.message || "Erreur réseau.");
       } finally {
-        if (mounted) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    if (sessionId) run();
+    run();
     return () => {
-      mounted = false;
+      cancelled = true;
     };
   }, [sessionId]);
 
-  const canDownload = useMemo(() => Boolean(data?.pdfUrl), [data]);
-  const toEmail = useMemo(() => data?.email || data?.metadata?.email || "", [data]);
-
-  const handleDownload = () => {
-    if (!data?.pdfUrl) return;
-    window.open(data.pdfUrl, "_blank", "noopener,noreferrer");
-  };
-
-  const handleResend = async () => {
-    if (!toEmail || !data) {
-      setSendMsg("Email ou contrat indisponible.");
+  const onSend = async () => {
+    setSendMsg(null);
+    if (!pdfPath) {
+      setSendMsg("Aucun contrat disponible pour l'envoi.");
       return;
     }
-    setSendMsg("Envoi en cours…");
+    const to = prompt("À quelle adresse email envoyer le contrat ?", email || "") || "";
+    if (!to) return;
+
     try {
-      const res = await fetch("/api/send-contract", {
+      setSending(true);
+      const r = await fetch("/api/admin/contracts/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: toEmail,
-          pdfUrl: data.pdfUrl || null,
-          pdfPath: data.metadata?.pdfPath || null,
-        }),
+        body: JSON.stringify({ path: pdfPath, to }),
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setSendMsg(`Erreur d'envoi : ${j?.error || res.statusText}`);
-        return;
-      }
-      setSendMsg("Contrat renvoyé par mail ✅");
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || "Échec d'envoi.");
+      setSendMsg("Email envoyé ✅");
     } catch (e: any) {
-      setSendMsg(`Erreur d'envoi : ${e?.message || e}`);
+      setSendMsg(`Erreur d'envoi : ${e?.message || "inconnue"}`);
+    } finally {
+      setSending(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto text-center py-16">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-orange-600">
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-4xl md:text-5xl font-serif tracking-tight text-orange-600">
         Merci pour votre réservation 🎉
       </h1>
-      <p className="mt-3 text-gray-600 text-lg">
-        Votre contrat a été généré pour <b>{clientName}</b>.
+
+      <p className="mt-4 text-lg text-slate-700">
+        {email ? (
+          <>Votre contrat a été généré pour <span className="font-semibold">{email}</span>.</>
+        ) : (
+          <>Votre contrat a été généré pour <span className="font-semibold">Client</span>.</>
+        )}
       </p>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-4">
-        <button
-          onClick={handleDownload}
-          disabled={!canDownload || loading}
-          className="px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 disabled:opacity-50"
+      <div className="mt-8 flex flex-wrap gap-4">
+        <a
+          href={pdfUrl || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-base font-medium border transition ${
+            hasContract && pdfUrl
+              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-400"
+              : "bg-orange-200/60 text-orange-900/60 border-orange-300 cursor-not-allowed"
+          }`}
         >
-          📄 Télécharger le contrat
-        </button>
+          <span role="img" aria-label="doc">📄</span>
+          Télécharger le contrat
+        </a>
+
         <button
-          onClick={handleResend}
-          disabled={!canDownload || loading}
-          className="px-6 py-3 rounded-xl border border-orange-400 text-orange-600 font-semibold hover:bg-orange-50 disabled:opacity-50"
+          onClick={onSend}
+          disabled={!hasContract || sending}
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-base font-medium border transition ${
+            hasContract && !sending
+              ? "text-orange-700 border-orange-300 hover:bg-orange-50"
+              : "text-orange-900/60 border-orange-200 cursor-not-allowed"
+          }`}
         >
-          ✉️ Renvoyer par email
+          <span role="img" aria-label="mail">✉️</span>
+          {sending ? "Envoi..." : "Renvoyer par email"}
         </button>
       </div>
 
-      <div className="mt-6 text-sm text-gray-700">
-        {loading && <p>Vérification du paiement…</p>}
-        {!loading && !canDownload && <p>Aucun contrat généré.</p>}
+      <div className="mt-8 text-sm text-slate-600">
+        {loading && <p>Vérification du contrat en cours…</p>}
+        {!loading && !hasContract && !fetchError && <p>Aucun contrat généré.</p>}
+        {fetchError && <p className="text-red-600">Erreur : {fetchError}</p>}
         {sendMsg && <p className="mt-2">{sendMsg}</p>}
       </div>
     </div>

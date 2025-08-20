@@ -1,9 +1,8 @@
 // lib/pdf.ts
-// Contrat PDF "pro" avec pdf-lib : 2 pages (récap + CGV), bandeau, sections, tableau, footer & pagination
+// Contrat PDF "pro" avec pdf-lib : 2 pages, gabarit, tableau, sauts de page automatiques
 import { PDFDocument, StandardFonts, rgb, type RGB } from "pdf-lib";
 
 export interface BuildPdfArgs {
-  // Identité / contrat
   couple_name?: string;
   bride_first_name?: string;
   bride_last_name?: string;
@@ -11,7 +10,6 @@ export interface BuildPdfArgs {
   groom_last_name?: string;
   email?: string;
 
-  // Évènement
   wedding_date?: string;
   ceremony_address?: string;
   ceremony_time?: string;
@@ -19,52 +17,147 @@ export interface BuildPdfArgs {
   reception_time?: string;
   notes?: string;
 
-  // Offre & prix
-  formula?: string;                // ex: "Prestige"
-  formula_description?: string;    // ex: "Tournage mairie, séance couple, montage complet…"
+  formula?: string;                // "Essentielle", "Prestige"…
+  formula_description?: string;    // phrase descriptive courte
   total_eur?: string;              // "2800"
   deposit_eur?: string;            // "420"
   remaining_eur?: string;          // "2380"
-  selected_options?: string;       // "Drone, Album luxe (40x30)"
+  selected_options?: string;       // "Drone, Album..."
   extras?: string;                 // "Heure sup.:150|Projection jour J:300"
 }
 
-const C_BG: RGB = rgb(1, 0.976, 0.96);          // fond très léger pêche
-const C_ACCENT: RGB = rgb(0.95, 0.45, 0.2);     // orange pastel
+// Palette pastel orange
+const C_BG: RGB = rgb(1, 0.976, 0.96);
+const C_ACCENT: RGB = rgb(0.95, 0.45, 0.2);
 const C_TEXT: RGB = rgb(0.12, 0.12, 0.12);
 const C_MUTED: RGB = rgb(0.45, 0.45, 0.46);
 const C_BORDER: RGB = rgb(0.92, 0.84, 0.78);
 
+const PAGE_W = 595; // A4 portrait
+const PAGE_H = 842;
+const MARGIN = 40;
+const HEADER_H = 120;
+const FOOTER_H = 42;
+
 function clean(v: any) {
-  return String(v ?? "")
-    .replace(/\u202F/g, " ")
-    .replace(/\u00A0/g, " ")
-    .trim();
+  return String(v ?? "").replace(/\u202F/g, " ").replace(/\u00A0/g, " ").trim();
+}
+function euros(n: string | number | undefined | null) {
+  if (n == null || n === "") return "—";
+  const num = typeof n === "string" ? Number(n) : n;
+  if (Number.isNaN(num)) return String(n);
+  return `${num.toLocaleString("fr-FR")} €`;
 }
 
-type DrawTextOpts = {
+type DrawWrapOpts = {
   x: number;
-  y: number;
+  y?: number;            // ← y devient optionnel (utilise ctx.y par défaut)
   size: number;
+  color?: RGB;
+  font: any;
   maxWidth?: number;
   lineHeight?: number;
-  color?: RGB;
-  font?: any;
 };
 
-function drawParagraph(
-  page: any,
+type LayoutCtx = {
+  pdf: PDFDocument;
+  page: any;
+  f: any;
+  fb: any;
+  y: number;
+  pageIndex: number;
+  totalPages: number; // on écrit "Page X / Y" après coup
+};
+
+// ==== Gabarit (header/footer) ====
+
+function drawHeader(ctx: LayoutCtx) {
+  const p = ctx.page;
+  p.drawRectangle({ x: 0, y: PAGE_H - HEADER_H, width: PAGE_W, height: HEADER_H, color: C_BG });
+  p.drawText("I R Z Z E N   P R O D U C T I O N S", {
+    x: MARGIN,
+    y: PAGE_H - 48,
+    size: 10,
+    font: ctx.fb,
+    color: C_ACCENT,
+  });
+}
+
+function drawFooter(ctx: LayoutCtx) {
+  const p = ctx.page;
+  const y = FOOTER_H - 14;
+  // trait
+  p.drawLine({
+    start: { x: MARGIN, y: FOOTER_H },
+    end: { x: PAGE_W - MARGIN, y: FOOTER_H },
+    thickness: 1,
+    color: C_BORDER,
+  });
+  p.drawText("Irzzen Productions — contact@irzzenproductions.fr — www.irzzenproductions.fr", {
+    x: MARGIN,
+    y,
+    size: 9,
+    font: ctx.f,
+    color: C_MUTED,
+  });
+  // pagination (on écrira la vraie valeur à la fin)
+  const label = `Page ${ctx.pageIndex} / ${ctx.totalPages || " "}`;
+  const width = ctx.f.widthOfTextAtSize(label, 9);
+  p.drawText(label, { x: PAGE_W - MARGIN - width, y, size: 9, font: ctx.f, color: C_MUTED });
+}
+
+function newPage(ctx: LayoutCtx) {
+  ctx.page = ctx.pdf.addPage([PAGE_W, PAGE_H]);
+  ctx.pageIndex += 1;
+  drawHeader(ctx);
+  drawFooter(ctx);
+  ctx.y = PAGE_H - HEADER_H - 24; // zone de contenu
+}
+
+function ensureSpace(ctx: LayoutCtx, needed: number) {
+  if (ctx.y - needed < FOOTER_H + 16) {
+    newPage(ctx);
+  }
+}
+
+function drawTitle(ctx: LayoutCtx, text: string, size = 18) {
+  ensureSpace(ctx, size + 8);
+  ctx.page.drawText(text, { x: MARGIN, y: ctx.y, size, font: ctx.fb, color: C_ACCENT });
+  ctx.y -= size + 8;
+}
+
+function hr(ctx: LayoutCtx) {
+  ensureSpace(ctx, 12);
+  ctx.page.drawLine({
+    start: { x: MARGIN, y: ctx.y },
+    end: { x: PAGE_W - MARGIN, y: ctx.y },
+    thickness: 1,
+    color: C_BORDER,
+  });
+  ctx.y -= 12;
+}
+
+function drawParagraphWrapped(
+  ctx: LayoutCtx,
   text: string,
-  { x, y, size, maxWidth = 495, lineHeight = 1.3, color = C_TEXT, font }: DrawTextOpts
+  opts: Omit<DrawWrapOpts, "font"> & { font?: any } = { x: MARGIN, size: 11 }
 ) {
+  const font = opts.font || ctx.f;
+  const maxWidth = opts.maxWidth ?? (PAGE_W - MARGIN * 2);
+  const lineHeight = opts.lineHeight ?? 1.32;
+  const color = opts.color ?? C_TEXT;
+
+  // si y non fourni, on utilise ctx.y
+  let y = opts.y ?? ctx.y;
+
+  // word wrap + saut de page auto
   const words = text.split(/\s+/);
   let line = "";
   const lines: string[] = [];
-
   for (const w of words) {
     const testLine = line ? `${line} ${w}` : w;
-    const testWidth = font.widthOfTextAtSize(testLine, size);
-    if (testWidth > maxWidth && line) {
+    const wpt = font.widthOfTextAtSize(testLine, opts.size);
+    if (wpt > maxWidth && line) {
       lines.push(line);
       line = w;
     } else {
@@ -73,119 +166,101 @@ function drawParagraph(
   }
   if (line) lines.push(line);
 
-  let cursorY = y;
   for (const ln of lines) {
-    page.drawText(ln, { x, y: cursorY, size, font, color });
-    cursorY -= size * lineHeight;
+    ensureSpace(ctx, opts.size * lineHeight + 2);
+    ctx.page.drawText(ln, {
+      x: opts.x ?? MARGIN,
+      y,
+      size: opts.size,
+      font,
+      color,
+    });
+    y -= opts.size * lineHeight;
   }
-  return cursorY;
+
+  // synchronise le curseur global
+  ctx.y = y;
 }
 
-function hr(page: any, x1: number, x2: number, y: number, color = C_BORDER) {
-  page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: 1, color });
-}
-
-function euros(n: string | number | undefined | null) {
-  if (n == null || n === "") return "—";
-  const num = typeof n === "string" ? Number(n) : n;
-  if (Number.isNaN(num)) return String(n);
-  return `${num.toLocaleString("fr-FR")} €`;
-}
-
-function drawHeader(page: any, width: number, fb: any) {
-  const { height } = page.getSize();
-  page.drawRectangle({ x: 0, y: height - 120, width, height: 120, color: C_BG });
-  page.drawText("I R Z Z E N   P R O D U C T I O N S", {
-    x: 40,
-    y: height - 48,
-    size: 10,
-    font: fb,
-    color: C_ACCENT,
-  });
-}
-
-function drawFooter(page: any, width: number, f: any, pageIndex: number, total: number) {
-  const footerY = 28;
-  hr(page, 40, width - 40, footerY + 10, C_BORDER);
-  page.drawText("Irzzen Productions — contact@irzzenproductions.fr — www.irzzenproductions.fr", {
-    x: 40,
-    y: footerY,
-    size: 9,
-    font: f,
-    color: C_MUTED,
-  });
-  page.drawText(`Page ${pageIndex} / ${total}`, {
-    x: width - 90,
-    y: footerY,
-    size: 9,
-    font: f,
-    color: C_MUTED,
-  });
-}
+// ==== Construction du document ====
 
 export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const f = await pdf.embedFont(StandardFonts.Helvetica);
   const fb = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  // =========================
-  // Page 1 — Récapitulatif
-  // =========================
-  let page1 = pdf.addPage([595, 842]); // A4 portrait
-  let { width: w1, height: h1 } = page1.getSize();
-  drawHeader(page1, w1, fb);
+  const ctx: LayoutCtx = {
+    pdf,
+    page: null as any,
+    f,
+    fb,
+    y: 0,
+    pageIndex: 0,
+    totalPages: 0,
+  };
 
-  page1.drawText("Contrat & Confirmation de Réservation", {
-    x: 40,
-    y: h1 - 80,
-    size: 18,
-    font: fb,
-    color: C_ACCENT,
-  });
+  // Page 1
+  newPage(ctx);
+  drawTitle(ctx, "Contrat & Confirmation de Réservation", 18);
 
-  let y = h1 - 140;
-
-  // Informations client & évènement (2 colonnes)
-  const col1x = 40;
-  const col2x = 320;
-  const colW = 235;
-
+  // Bloc "Client" + "Évènement" (2 colonnes)
   const couple =
     clean(args.couple_name) ||
     [clean(args.bride_first_name), clean(args.bride_last_name), "&", clean(args.groom_first_name), clean(args.groom_last_name)]
       .filter(Boolean)
       .join(" ");
 
-  // Colonne 1
-  page1.drawText("Client", { x: col1x, y, size: 12, font: fb, color: C_ACCENT });
-  y -= 14;
-  y = drawParagraph(page1, `Couple : ${couple || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW }) - 2;
-  y = drawParagraph(page1, `Email : ${clean(args.email) || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW }) - 2;
-  y = drawParagraph(page1, `Date du mariage : ${clean(args.wedding_date) || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW });
+  // Sous-titre
+  ensureSpace(ctx, 14);
+  ctx.page.drawText("Informations Clients", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+  ctx.y -= 16;
 
-  // Colonne 2
-  let y2 = h1 - 154;
-  page1.drawText("Lieux & Horaires", { x: col2x, y: h1 - 140, size: 12, font: fb, color: C_ACCENT });
-  y2 = drawParagraph(page1, `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`, { x: col2x, y: y2, size: 11, font: f, maxWidth: colW }) - 2;
-  y2 = drawParagraph(page1, `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`, { x: col2x, y: y2, size: 11, font: f, maxWidth: colW });
+  // Deux colonnes
+  const colTop = ctx.y;
+  let col1Y = colTop;
 
-  const afterHeaderY = Math.min(y, y2) - 12;
-  hr(page1, 40, w1 - 40, afterHeaderY);
+  const col1X = MARGIN;
+  const colW = (PAGE_W - MARGIN * 2 - 20) / 2; // 20 = gouttière
+  const col2X = col1X + colW + 20;
+
+  // Col 1
+  {
+    const ySave = ctx.y;
+    ctx.y = col1Y;
+    drawParagraphWrapped(ctx, `Couple : ${couple || "—"}`, { x: col1X, size: 11, maxWidth: colW });
+    drawParagraphWrapped(ctx, `Email : ${clean(args.email) || "—"}`, { x: col1X, size: 11, maxWidth: colW });
+    drawParagraphWrapped(ctx, `Date du mariage : ${clean(args.wedding_date) || "—"}`, { x: col1X, size: 11, maxWidth: colW });
+    col1Y = ctx.y;
+    ctx.y = ySave;
+  }
+
+  // Col 2
+  let col2Y = colTop;
+  {
+    const ySave = ctx.y;
+    ctx.y = col2Y;
+    drawParagraphWrapped(ctx, `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`, { x: col2X, size: 11, maxWidth: colW });
+    drawParagraphWrapped(ctx, `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`, { x: col2X, size: 11, maxWidth: colW });
+    col2Y = ctx.y;
+    ctx.y = Math.min(col1Y, col2Y) - 8;
+  }
+
+  hr(ctx);
 
   // Formule & options
-  y = afterHeaderY - 24;
-  page1.drawText("Formule & Options", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
-  y -= 16;
+  ensureSpace(ctx, 16);
+  ctx.page.drawText("Formule & Options", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+  ctx.y -= 16;
 
-  y = drawParagraph(page1, `Formule : ${clean(args.formula) || "—"}`, { x: 40, y, size: 11, font: f, maxWidth: w1 - 80 }) - 6;
-  if (args.formula_description) {
-    y = drawParagraph(page1, clean(args.formula_description), { x: 40, y, size: 10.5, font: f, maxWidth: w1 - 80, color: C_MUTED }) - 8;
+  drawParagraphWrapped(ctx, `Formule : ${clean(args.formula) || "—"}`, { x: MARGIN, size: 11 });
+  if (clean(args.formula_description)) {
+    drawParagraphWrapped(ctx, clean(args.formula_description), { x: MARGIN, size: 10.5, color: C_MUTED });
   }
 
   const opts = clean(args.selected_options)
     ? clean(args.selected_options).split(",").map(s => s.trim()).filter(Boolean)
     : [];
-  y = drawParagraph(page1, `Options : ${opts.length ? opts.join(", ") : "—"}`, { x: 40, y, size: 11, font: f, maxWidth: w1 - 80 }) - 6;
+  drawParagraphWrapped(ctx, `Options : ${opts.length ? opts.join(", ") : "—"}`, { x: MARGIN, size: 11 });
 
   const extrasHuman = (() => {
     const raw = clean(args.extras);
@@ -196,86 +271,85 @@ export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
     });
     return items.length ? items.join(", ") : "—";
   })();
-  y = drawParagraph(page1, `Extras : ${extrasHuman}`, { x: 40, y, size: 11, font: f, maxWidth: w1 - 80 });
+  drawParagraphWrapped(ctx, `Extras : ${extrasHuman}`, { x: MARGIN, size: 11 });
 
-  // Tableau des prix
-  y -= 14;
-  page1.drawText("Récapitulatif financier", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
-  y -= 8;
+  // Tableau financier
+  ctx.y -= 6;
+  ensureSpace(ctx, 20);
+  ctx.page.drawText("Récapitulatif financier", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+  ctx.y -= 12;
 
-  const tableX = 40;
-  const tableW = w1 - 80;
+  const tableX = MARGIN;
+  const tableW = PAGE_W - MARGIN * 2;
   const colDescW = tableW * 0.65;
   const rowH = 22;
 
-  // Header
-  y -= rowH;
-  page1.drawRectangle({ x: tableX, y: y, width: tableW, height: rowH, color: C_BG });
-  page1.drawText("Description", { x: tableX + 10, y: y + 6, size: 10.5, font: fb, color: C_ACCENT });
-  page1.drawText("Montant", { x: tableX + colDescW + 10, y: y + 6, size: 10.5, font: fb, color: C_ACCENT });
+  function tableHeader() {
+    ensureSpace(ctx, rowH);
+    ctx.page.drawRectangle({ x: tableX, y: ctx.y - rowH + 2, width: tableW, height: rowH, color: C_BG });
+    ctx.page.drawText("Description", { x: tableX + 10, y: ctx.y - rowH + 8, size: 10.5, font: fb, color: C_ACCENT });
+    ctx.page.drawText("Montant", { x: tableX + colDescW + 10, y: ctx.y - rowH + 8, size: 10.5, font: fb, color: C_ACCENT });
+    ctx.y -= rowH + 2;
+  }
+  function tableRow(desc: string, amount: string) {
+    ensureSpace(ctx, rowH);
+    ctx.page.drawRectangle({ x: tableX, y: ctx.y - rowH + 2, width: tableW, height: rowH, color: rgb(1, 1, 1) });
+    ctx.page.drawRectangle({ x: tableX, y: ctx.y + 2, width: tableW, height: 0.8, color: C_BORDER });
+    // description tronquée si trop longue
+    const maxDescW = colDescW - 16;
+    let d = desc;
+    const ell = "…";
+    while (ctx.f.widthOfTextAtSize(d, 10.5) > maxDescW && d.length > 0) {
+      d = d.slice(0, -1);
+    }
+    if (d !== desc) d = d.slice(0, Math.max(0, d.length - 1)) + ell;
 
-  function row(desc: string, amount: string) {
-    y -= rowH;
-    page1.drawRectangle({ x: tableX, y, width: tableW, height: rowH, color: rgb(1, 1, 1) });
-    page1.drawRectangle({ x: tableX, y, width: tableW, height: 0.8, color: C_BORDER });
-    page1.drawText(desc, { x: tableX + 10, y: y + 6, size: 10.5, font: f, color: C_TEXT });
-    page1.drawText(amount, { x: tableX + colDescW + 10, y: y + 6, size: 10.5, font: f, color: C_TEXT });
+    ctx.page.drawText(d, { x: tableX + 10, y: ctx.y - rowH + 8, size: 10.5, font: f, color: C_TEXT });
+    ctx.page.drawText(amount, { x: tableX + colDescW + 10, y: ctx.y - rowH + 8, size: 10.5, font: f, color: C_TEXT });
+    ctx.y -= rowH;
   }
 
-  row(`Formule « ${clean(args.formula) || "—"} »`, euros(args.total_eur || "0"));
-
-  if (opts.length) row("Options", "—");
-  for (const o of opts) row(`• ${o}`, "—");
-
+  tableHeader();
+  tableRow(`Formule « ${clean(args.formula) || "—"} »`, euros(args.total_eur || "0"));
+  if (opts.length) {
+    tableRow("Options", "—");
+    for (const o of opts) tableRow(`• ${o}`, "—");
+  }
   if (extrasHuman !== "—") {
-    row("Extras", "—");
-    for (const e of extrasHuman.split(",").map(s => s.trim())) row(`• ${e}`, "—");
+    tableRow("Extras", "—");
+    for (const e of extrasHuman.split(",").map(s => s.trim())) tableRow(`• ${e}`, "—");
   }
 
-  // Totaux dédiés
-  y -= 6;
-  page1.drawText("Acompte conseillé (15% arrondi)", { x: tableX, y, size: 10.5, font: fb, color: C_TEXT });
-  page1.drawText(euros(args.deposit_eur), { x: tableX + colDescW + 10, y, size: 10.5, font: fb, color: C_TEXT });
+  // Totaux
+  ensureSpace(ctx, 40);
+  ctx.page.drawText("Acompte conseillé (15% arrondi)", { x: tableX, y: ctx.y, size: 10.5, font: fb, color: C_TEXT });
+  ctx.page.drawText(euros(args.deposit_eur), { x: tableX + colDescW + 10, y: ctx.y, size: 10.5, font: fb, color: C_TEXT });
+  ctx.y -= 18;
+  ctx.page.drawText("Reste à payer le jour J", { x: tableX, y: ctx.y, size: 11.5, font: fb, color: C_ACCENT });
+  ctx.page.drawText(euros(args.remaining_eur), { x: tableX + colDescW + 10, y: ctx.y, size: 11.5, font: fb, color: C_ACCENT });
+  ctx.y -= 18;
 
-  y -= 18;
-  page1.drawText("Reste à payer le jour J", { x: tableX, y, size: 11.5, font: fb, color: C_ACCENT });
-  page1.drawText(euros(args.remaining_eur), { x: tableX + colDescW + 10, y, size: 11.5, font: fb, color: C_ACCENT });
-
-  // Notes éventuelles
+  // Notes
   if (clean(args.notes)) {
-    y -= 24;
-    page1.drawText("Notes / souhaits", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
-    y -= 14;
-    y = drawParagraph(page1, clean(args.notes), { x: 40, y, size: 10.5, font: f, maxWidth: w1 - 80, color: C_TEXT });
+    ensureSpace(ctx, 30);
+    ctx.page.drawText("Notes / souhaits", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+    ctx.y -= 14;
+    drawParagraphWrapped(ctx, clean(args.notes), { x: MARGIN, size: 10.5, color: C_TEXT });
   }
 
-  // Signature
-  y -= 24;
-  page1.drawText("Signatures", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
-  y -= 14;
-  page1.drawText("Le Client :", { x: 40, y, size: 11, font: f, color: C_TEXT });
-  page1.drawLine({ start: { x: 110, y: y - 2 }, end: { x: 280, y: y - 2 }, thickness: 0.8, color: C_BORDER });
-  page1.drawText("Le Prestataire :", { x: 320, y, size: 11, font: f, color: C_TEXT });
-  page1.drawLine({ start: { x: 420, y: y - 2 }, end: { x: 560, y: y - 2 }, thickness: 0.8, color: C_BORDER });
+  // Signatures
+  ensureSpace(ctx, 40);
+  ctx.page.drawText("Signatures", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+  ctx.y -= 16;
+  ctx.page.drawText("Le Client :", { x: MARGIN, y: ctx.y, size: 11, font: f, color: C_TEXT });
+  ctx.page.drawLine({ start: { x: MARGIN + 70, y: ctx.y - 2 }, end: { x: MARGIN + 240, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
+  ctx.page.drawText("Le Prestataire :", { x: MARGIN + 280, y: ctx.y, size: 11, font: f, color: C_TEXT });
+  ctx.page.drawLine({ start: { x: MARGIN + 380, y: ctx.y - 2 }, end: { x: PAGE_W - MARGIN, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
+  ctx.y -= 14;
 
-  drawFooter(page1, w1, f, 1, 2);
-
-  // =========================
-  // Page 2 — CGV complètes
-  // =========================
-  const page2 = pdf.addPage([595, 842]);
-  const { width: w2, height: h2 } = page2.getSize();
-  drawHeader(page2, w2, fb);
-
-  page2.drawText("Conditions Générales de Vente", {
-    x: 40,
-    y: h2 - 80,
-    size: 16,
-    font: fb,
-    color: C_ACCENT,
-  });
-
-  let yCGV = h2 - 110;
+  // Page 2 – CGV
+  newPage(ctx);
+  drawTitle(ctx, "Conditions Générales de Vente", 16);
 
   const sections: Array<{ title: string; body: string[] }> = [
     {
@@ -359,40 +433,47 @@ export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
   ];
 
   for (const sec of sections) {
-    // Titre section
-    page2.drawText(sec.title, { x: 40, y: yCGV, size: 12, font: fb, color: C_ACCENT });
-    yCGV -= 14;
-
+    ensureSpace(ctx, 28);
+    ctx.page.drawText(sec.title, { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
+    ctx.y -= 14;
     for (const p of sec.body) {
-      yCGV = drawParagraph(page2, p, {
-        x: 40,
-        y: yCGV,
-        size: 10.5,
-        font: f,
-        maxWidth: w2 - 80,
-        color: C_TEXT,
-        lineHeight: 1.35,
-      }) - 6;
-
-      // saut de page si nécessaire (ici on a 2 pages fixes, mais on garde une marge)
-      if (yCGV < 60) break;
+      drawParagraphWrapped(ctx, p, { x: MARGIN, size: 10.5, color: C_TEXT, lineHeight: 1.35 });
+      ctx.y -= 6;
     }
-    yCGV -= 4;
-    if (yCGV < 60) break;
   }
 
   // Zone "Fait à / le" + signature
-  yCGV -= 8;
-  page2.drawText("Fait à :", { x: 40, y: yCGV, size: 10.5, font: f, color: C_TEXT });
-  page2.drawLine({ start: { x: 80, y: yCGV - 2 }, end: { x: 220, y: yCGV - 2 }, thickness: 0.8, color: C_BORDER });
-  page2.drawText("Le :", { x: 250, y: yCGV, size: 10.5, font: f, color: C_TEXT });
-  page2.drawLine({ start: { x: 280, y: yCGV - 2 }, end: { x: 420, y: yCGV - 2 }, thickness: 0.8, color: C_BORDER });
+  ensureSpace(ctx, 40);
+  ctx.page.drawText("Fait à :", { x: MARGIN, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
+  ctx.page.drawLine({ start: { x: MARGIN + 42, y: ctx.y - 2 }, end: { x: MARGIN + 180, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
+  ctx.page.drawText("Le :", { x: MARGIN + 210, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
+  ctx.page.drawLine({ start: { x: MARGIN + 240, y: ctx.y - 2 }, end: { x: MARGIN + 380, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
+  ctx.y -= 20;
+  ctx.page.drawText("Signature du Client :", { x: MARGIN, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
+  ctx.page.drawLine({ start: { x: MARGIN + 140, y: ctx.y - 2 }, end: { x: MARGIN + 420, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
 
-  yCGV -= 20;
-  page2.drawText("Signature du Client :", { x: 40, y: yCGV, size: 10.5, font: f, color: C_TEXT });
-  page2.drawLine({ start: { x: 160, y: yCGV - 2 }, end: { x: 420, y: yCGV - 2 }, thickness: 0.8, color: C_BORDER });
-
-  drawFooter(page2, w2, f, 2, 2);
+  // — Finalisation : pagination correcte "Page X / Y"
+  ctx.totalPages = ctx.pdf.getPageCount();
+  for (let i = 0; i < ctx.totalPages; i++) {
+    const p = ctx.pdf.getPage(i);
+    const label = `Page ${i + 1} / ${ctx.totalPages}`;
+    const width = f.widthOfTextAtSize(label, 9);
+    // petite passe blanche pour garantir la lisibilité si re-draw
+    p.drawRectangle({
+      x: PAGE_W - MARGIN - width - 2,
+      y: FOOTER_H - 18,
+      width: width + 2,
+      height: 12,
+      color: rgb(1, 1, 1),
+    });
+    p.drawText(label, {
+      x: PAGE_W - MARGIN - width,
+      y: FOOTER_H - 14,
+      size: 9,
+      font: f,
+      color: C_MUTED,
+    });
+  }
 
   return await pdf.save();
 }

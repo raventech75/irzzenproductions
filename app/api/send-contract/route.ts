@@ -46,12 +46,12 @@ export async function POST(req: Request) {
     const send = await resend.emails.send({
       from: MAIL_FROM,
       to,
-      subject: "Votre contrat — Irzzen Productions",
+      subject: "Votre contrat — Irzzenproductions",
       html: `
         <p>Bonjour,</p>
         <p>Veuillez trouver ci-joint votre contrat de réservation.</p>
         ${pdfUrl ? `<p>Téléchargement direct : <a href="${pdfUrl}">${filename}</a></p>` : ""}
-        <p>Bien cordialement,<br/>Irzzen Productions</p>
+        <p>Bien cordialement,<br/>Irzzenproductions</p>
       `,
       attachments: [{ filename, content: base64 }],
     });
