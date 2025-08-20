@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { createClient } from "@supabase/supabase-js";
-
 import { computePricing } from "@/lib/pricing";
 import { FORMULAS_DETAILED } from "@/lib/modules";
+import { cleanPdfText, eur, drawText } from "@/lib/pdfHelpers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as any,
@@ -18,10 +18,7 @@ const supabase = createClient(
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-/**
- * Génère un PDF très simple (pastel orange) avec les infos de config.
- * Retourne un Buffer Node.
- */
+// Génération PDF (A4, pastel orange, textes nettoyés WinAnsi)
 async function generateContractPdf({
   coupleName,
   weddingDate,
@@ -40,77 +37,66 @@ async function generateContractPdf({
   totals: { total: number; depositSuggested: number; remainingDayJ: number };
 }) {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([595.28, 841.89]); // A4 portrait
+  const page = doc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
-
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  // fond bandeau haut pastel orange
+  // Bandeau orange pastel
   page.drawRectangle({
     x: 0,
     y: height - 130,
     width,
     height: 130,
-    color: rgb(1, 0.73, 0.47), // orange doux
+    color: rgb(1, 0.73, 0.47),
     opacity: 0.25,
   });
 
-  const drawText = (text: string, x: number, y: number, bold = false, size = 12) => {
-    page.drawText(text, {
-      x,
-      y,
-      size,
-      font: bold ? fontBold : fontRegular,
-      color: rgb(0.12, 0.12, 0.12),
-    });
-  };
-
   let y = height - 60;
-  drawText("IRZZEN PRODUCTIONS — Contrat / Récapitulatif", 40, y, true, 16);
+  drawText(page, "IRZZEN PRODUCTIONS — Contrat / Récapitulatif", 40, y, fontRegular, fontBold, { bold: true, size: 16 });
   y -= 28;
-  drawText(`Couple : ${coupleName || "—"}`, 40, y);
+  drawText(page, `Couple : ${cleanPdfText(coupleName)}`, 40, y, fontRegular, fontBold);
   y -= 18;
-  drawText(`Date du mariage : ${weddingDate || "—"}`, 40, y);
+  drawText(page, `Date du mariage : ${cleanPdfText(weddingDate)}`, 40, y, fontRegular, fontBold);
   y -= 18;
-  drawText(`Formule : ${formulaLabel}`, 40, y);
+  drawText(page, `Formule : ${cleanPdfText(formulaLabel)}`, 40, y, fontRegular, fontBold);
   y -= 28;
 
-  drawText("Détails de l’offre", 40, y, true, 14);
+  drawText(page, "Détails de l’offre", 40, y, fontRegular, fontBold, { bold: true, size: 14 });
   y -= 18;
-  drawText(`Base : ${basePrice.toLocaleString("fr-FR")} €`, 60, y);
+  drawText(page, `Base : ${eur(basePrice)}`, 60, y, fontRegular, fontBold);
   y -= 18;
 
-  if (options.length) {
-    drawText("Options sélectionnées :", 60, y, true);
+  if (options?.length) {
+    drawText(page, "Options sélectionnées :", 60, y, fontRegular, fontBold, { bold: true });
     y -= 16;
     for (const o of options) {
-      drawText(`• ${o.label} — ${o.price.toLocaleString("fr-FR")} €`, 70, y);
+      drawText(page, `• ${cleanPdfText(o.label)} — ${eur(o.price)}`, 70, y, fontRegular, fontBold);
       y -= 16;
     }
   }
 
-  if (extras.length) {
+  if (extras?.length) {
     y -= 10;
-    drawText("Extras personnalisés :", 60, y, true);
+    drawText(page, "Extras personnalisés :", 60, y, fontRegular, fontBold, { bold: true });
     y -= 16;
     for (const e of extras) {
-      drawText(`• ${e.label} — ${e.price.toLocaleString("fr-FR")} €`, 70, y);
+      drawText(page, `• ${cleanPdfText(e.label)} — ${eur(e.price)}`, 70, y, fontRegular, fontBold);
       y -= 16;
     }
   }
 
   y -= 18;
-  drawText("Récapitulatif", 40, y, true, 14);
+  drawText(page, "Récapitulatif", 40, y, fontRegular, fontBold, { bold: true, size: 14 });
   y -= 18;
-  drawText(`Total : ${totals.total.toLocaleString("fr-FR")} €`, 60, y, true);
+  drawText(page, `Total : ${eur(totals.total)}`, 60, y, fontRegular, fontBold, { bold: true });
   y -= 18;
-  drawText(`Acompte (15% arrondi centaine sup — facultatif) : ${totals.depositSuggested.toLocaleString("fr-FR")} €`, 60, y);
+  drawText(page, `Acompte (15% arrondi centaine sup — facultatif) : ${eur(totals.depositSuggested)}`, 60, y, fontRegular, fontBold);
   y -= 18;
-  drawText(`Reste à payer le jour J : ${totals.remainingDayJ.toLocaleString("fr-FR")} €`, 60, y);
+  drawText(page, `Reste à payer le jour J : ${eur(totals.remainingDayJ)}`, 60, y, fontRegular, fontBold);
 
   y -= 28;
-  drawText("Conditions :", 40, y, true, 14);
+  drawText(page, "Conditions :", 40, y, fontRegular, fontBold, { bold: true, size: 14 });
   y -= 16;
   const clauses = [
     "Aucune annulation pour quelconque raison n'est recevable.",
@@ -118,7 +104,7 @@ async function generateContractPdf({
     "La livraison des fichiers digitaux a lieu au maximum dans 6 mois.",
   ];
   for (const c of clauses) {
-    drawText(`• ${c}`, 60, y);
+    drawText(page, `• ${c}`, 60, y, fontRegular, fontBold);
     y -= 16;
   }
 
@@ -126,10 +112,7 @@ async function generateContractPdf({
   return Buffer.from(pdfBytes);
 }
 
-/**
- * Upload le PDF dans Supabase Storage (bucket 'contracts') et retourne
- * { path, bytes, publicUrl }.
- */
+// Upload PDF → Supabase Storage (bucket "contracts")
 async function saveContractPDF({
   bookingId,
   buffer,
@@ -142,32 +125,27 @@ async function saveContractPDF({
   const path = `contracts/${bookingId}/${filename}`;
   const { data: uploadData, error: uploadErr } = await supabase.storage
     .from("contracts")
-    .upload(path, buffer, {
-      contentType: "application/pdf",
-      upsert: true,
-    });
+    .upload(path, buffer, { contentType: "application/pdf", upsert: true });
 
-  if (uploadErr) {
-    throw new Error(`Upload PDF failed: ${uploadErr.message}`);
-  }
+  if (uploadErr) throw new Error(`Upload PDF failed: ${uploadErr.message}`);
 
-  // URL publique (assure-toi que le bucket 'contracts' a une politique public read)
-  const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${uploadData!.path}`;
+  // URL publique propre via helper
+  const { data: pub } = supabase.storage.from("contracts").getPublicUrl(uploadData!.path);
+  const publicUrl = pub.publicUrl;
 
   return { path: uploadData!.path, bytes: buffer.byteLength, publicUrl };
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
     /**
-     * Body attendu (côté client lors de la création de session) :
+     * Body attendu côté client (ex. via /reservation → /api/create-payment) :
      * {
-     *   customer: { email, firstName, lastName, coupleName, weddingDate },
+     *   customer: { email, firstName?, lastName?, coupleName?, weddingDate? },
      *   config: { formulaId, options: string[], extras: {label, price}[] }
      * }
      */
-    const { customer, config } = body as {
+    const { customer, config } = (await req.json()) as {
       customer: {
         email: string;
         firstName?: string;
@@ -191,16 +169,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unknown formula" }, { status: 400 });
     }
 
-    // Prix serveur
-    // On s’appuie sur computePricing côté serveur avec la même logique que le client.
-    // Ici, pour simplifier, on passe seulement le total options/extras. Si tu as un fichier
-    // OPTIONS côté serveur, plug-le ici pour recalculer précisément.
-    const optionsForPdf = (config.extras || []).map((e) => ({ label: e.label, price: e.price }));
-    const optionPrices = optionsForPdf.map((e) => e.price);
+    // Calcul serveur (ici on ne tarife que les extras passés)
+    const optionPrices = (config.extras || []).map((e) => e.price);
     const totals = computePricing(formula.price, optionPrices);
 
-    // (Optionnel) Crée un booking minimal en base — adapte selon ton schéma
-    // On génère un id détaché (utilisé pour le path du PDF aussi)
+    // Crée un booking minimal (adapte à ton schéma si différent)
     const bookingId = crypto.randomUUID();
     await supabase.from("bookings").insert({
       id: bookingId,
@@ -212,23 +185,20 @@ export async function POST(req: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Génère le PDF + upload + insère `contracts`
+    // Génère PDF
     const pdfBuffer = await generateContractPdf({
       coupleName: customer.coupleName || "",
       weddingDate: customer.weddingDate || "",
       formulaLabel: formula.label,
       basePrice: formula.price,
-      options: [], // si tu gères des options tarifées distinctes côté serveur, mappe-les ici
+      options: [], // si tu ajoutes des options tarifées server-side, mappe-les ici
       extras: config.extras || [],
       totals,
     });
 
+    // Upload + DB contracts
     const filename = `IRZZEN-Contrat-${new Date().toISOString().slice(0, 10)}.pdf`;
-    const saved = await saveContractPDF({
-      bookingId,
-      buffer: pdfBuffer,
-      filename,
-    });
+    const saved = await saveContractPDF({ bookingId, buffer: pdfBuffer, filename });
 
     await supabase.from("contracts").insert({
       booking_id: bookingId,
@@ -237,7 +207,7 @@ export async function POST(req: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Crée la session Stripe
+    // Session Stripe — paiement du total (tu peux passer à l’acompte si besoin)
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
