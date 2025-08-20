@@ -1,0 +1,3 @@
+1cc3345ead403e72439746aee6b40645893c322b 163626 fsevents.node
+621fcf09734e8daf7290cff15b0f9150e1c6cde9 114947112 next-swc.darwin-arm64.node
+fe1fde14d8fe654ea123a01f8f73a2d95669de3b 1768880 resolver.darwin-arm64.node

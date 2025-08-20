@@ -4,12 +4,14 @@ import { supabaseServer } from "@/lib/supabase-server";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import { resend, MAIL_FROM } from "@/lib/email";
 import { buildBookingPdf } from "@/lib/pdf";
+import { saveContractPDF } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature")!;
   const body = await req.text();
+
   try {
     const event = await stripe.webhooks.constructEventAsync(
       body,
@@ -40,16 +42,28 @@ export async function POST(req: NextRequest) {
           .eq("booking_id", booking.id)
           .single();
 
-        // Enregistre le paiement
+        // Enregistrer le paiement
         await supabase.from("payments").insert({
           booking_id: booking.id,
           stripe_payment_intent: session.payment_intent,
           amount: session.amount_total ? Math.round(session.amount_total / 100) : booking.deposit_suggested,
-          status: "succeeded"
+          status: "succeeded",
         });
 
-        const pdf = buildBookingPdf({ booking, items: items || [], questionnaire: q?.answers || {} });
+        // Générer + sauvegarder le PDF
+        const pdf = buildBookingPdf({
+          booking,
+          items: items || [],
+          questionnaire: q?.answers || {},
+        });
 
+        const filename = `IRZZEN-Recapitulatif-${new Date().toISOString().slice(0, 10)}.pdf`;
+        const saved = await saveContractPDF({ bookingId: booking.id, pdf, filename });
+        await supabase
+          .from("contracts")
+          .insert({ booking_id: booking.id, file_path: saved.path, bytes: saved.bytes });
+
+        // Envoyer l'email avec PJ
         await resend.emails.send({
           from: MAIL_FROM,
           to: email,
@@ -58,11 +72,9 @@ export async function POST(req: NextRequest) {
             couple: booking.couple_name,
             total: booking.total_amount,
             deposit: booking.deposit_suggested,
-            remaining: booking.remaining_dayj
+            remaining: booking.remaining_dayj,
           }),
-          attachments: [
-            { filename: "IRZZEN-Recapitulatif.pdf", content: pdf.toString("base64") }
-          ]
+          attachments: [{ filename, content: pdf.toString("base64") }],
         });
       }
     }
