@@ -1,117 +1,117 @@
-import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabaseAdmin } from "@/lib/supabase-admin";
-import { buildBookingPdf } from "@/lib/pdf";
-import { saveContractPDF } from "@/lib/storage";
+import { headers } from "next/headers";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { createClient } from "@supabase/supabase-js";
+
+// ⚡ Config Stripe + Supabase
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // ⚠️ Pas l’ANON KEY ici
+);
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" });
-
-/**
- * IMPORTANT :
- * - Vercel (ou ton hébergeur) doit avoir STRIPE_WEBHOOK_SECRET (whsec_...)
- * - Stripe Dashboard → Developers → Webhooks : endpoint -> https://<ton-domaine>/api/webhooks/stripe
- * - Events : "checkout.session.completed"
- */
 export async function POST(req: Request) {
-  // Stripe attend le "raw body"
-  const rawBody = await req.text();
-  const signature = req.headers.get("stripe-signature") || "";
+  const sig = headers().get("stripe-signature");
+  if (!sig) return new Response("Missing signature", { status: 400 });
 
+  const rawBody = await req.text();
   let event: Stripe.Event;
+
   try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
   } catch (err: any) {
-    console.error("[stripe webhook] Signature invalide:", err?.message);
-    return new NextResponse(`Webhook signature error: ${err?.message}`, { status: 400 });
+    console.error("[stripe webhook] Signature invalide:", err.message);
+    return new Response("Invalid signature", { status: 400 });
   }
 
-  try {
-    console.log("[stripe webhook] event type:", event.type);
+  console.log("[stripe webhook] Event reçu:", event.type);
 
+  try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const md = (session.metadata || {}) as Record<string, string>;
-      console.log("[stripe webhook] session.id:", session.id);
+      console.log("✅ Checkout session completed:", session.id);
 
-      // 1) Retrouver la booking (créée quand on a ouvert la session)
-      const { data: booking, error: bookingErr } = await supabaseAdmin
-        .from("bookings")
-        .select("id, stripe_session_id")
-        .eq("stripe_session_id", session.id)
-        .maybeSingle();
+      // 1. Récupération des métadonnées
+      const bride = session.metadata?.bride_first_name || "Mariée";
+      const groom = session.metadata?.groom_first_name || "Marié";
+      const weddingDate = session.metadata?.wedding_date || "Date inconnue";
+      const email = session.customer_email || "contact inconnu";
 
-      if (bookingErr) {
-        console.error("[stripe webhook] erreur fetch booking:", bookingErr);
-      }
-      if (!booking?.id) {
-        console.warn("[stripe webhook] booking introuvable pour cette session. On continue sans booking_id.");
-      } else {
-        console.log("[stripe webhook] booking.id:", booking.id);
-      }
-
-      // 2) Générer le PDF (métadonnées posées lors de create-payment)
-      const pdfBytes: Uint8Array = await buildBookingPdf({
-        couple_name: md.couple_name,
-        bride_first_name: md.bride_first_name,
-        bride_last_name: md.bride_last_name,
-        groom_first_name: md.groom_first_name,
-        groom_last_name: md.groom_last_name,
-        email: md.email || session.customer_details?.email || "",
-        wedding_date: md.wedding_date,
-        ceremony_address: md.ceremony_address,
-        ceremony_time: md.ceremony_time,
-        reception_address: md.reception_address,
-        reception_time: md.reception_time,
-        notes: md.notes,
-        formula: md.formula,
-        formula_description: md.formula_description,
-        total_eur: md.total_eur,
-        deposit_eur: md.deposit_eur,
-        remaining_eur: md.remaining_eur,
-        selected_options: md.selected_options,
-        extras: md.extras,
+      // 2. Générer un PDF simple avec pdf-lib
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([600, 400]);
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      page.drawText("Contrat de Prestation Photo/Vidéo", {
+        x: 50,
+        y: 350,
+        size: 20,
+        font,
+        color: rgb(0, 0, 0),
       });
-      console.log("[stripe webhook] PDF généré. Taille (octets):", pdfBytes?.byteLength ?? -1);
-
-      // 3) Upload dans Supabase Storage (bucket "contracts")
-      const filename = `IRZZEN-Contrat-${session.id}.pdf`;
-      const saved = await saveContractPDF({
-        pdf: Buffer.from(pdfBytes),
-        filename,
-      }); // => { path, publicUrl }
-      console.log("[stripe webhook] PDF uploadé. path:", saved.path);
-
-      // 4) Insert dans contracts (⚠️ bytes NOT NULL dans ton schéma)
-      const bytes = Number((pdfBytes as Uint8Array).byteLength ?? 0);
-      const { error: insertErr } = await supabaseAdmin.from("contracts").insert({
-        booking_id: booking?.id || null, // peut être null si booking non retrouvée (on garde une trace)
-        file_path: saved.path,
-        bytes,
+      page.drawText(`Mariée: ${bride}`, { x: 50, y: 300, size: 14, font });
+      page.drawText(`Marié: ${groom}`, { x: 50, y: 280, size: 14, font });
+      page.drawText(`Date du mariage: ${weddingDate}`, {
+        x: 50,
+        y: 260,
+        size: 14,
+        font,
       });
-      if (insertErr) {
-        console.error("[stripe webhook] insert contracts ERROR:", insertErr);
-        // On ne retourne pas d'erreur HTTP : Stripe réessayerait et pourrait dupliquer.
-      } else {
-        console.log("[stripe webhook] Ligne contracts insérée avec succès.");
+      page.drawText(`Email: ${email}`, { x: 50, y: 240, size: 14, font });
+
+      const pdfBytes = await pdfDoc.save();
+
+      // 3. Upload dans Supabase Storage
+      const fileName = `contrats/${session.id}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from("contrats") // ⚠️ Ton bucket Supabase doit s’appeler "contrats"
+        .upload(fileName, pdfBytes, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("❌ Erreur upload Supabase:", uploadError.message);
+        return new Response("Upload failed", { status: 500 });
       }
 
-      // 5) Marquer la booking "paid" si on l'a
-      if (booking?.id) {
-        const { error: updErr } = await supabaseAdmin
-          .from("bookings")
-          .update({ status: "paid", updated_at: new Date().toISOString() })
-          .eq("id", booking.id);
-        if (updErr) console.error("[stripe webhook] update booking ERROR:", updErr);
-        else console.log("[stripe webhook] booking marquée paid.");
-      }
+      // 4. Rendre le fichier public
+      const { data: publicUrlData } = supabase.storage
+        .from("contrats")
+        .getPublicUrl(fileName);
+
+      console.log("📂 PDF accessible ici:", publicUrlData.publicUrl);
+
+      // 👉 Ici tu peux aussi sauver en DB l’URL
+      // await supabase.from("bookings").insert({
+      //   stripe_session: session.id,
+      //   contrat_url: publicUrlData.publicUrl,
+      // });
+
+      return new Response(
+        JSON.stringify({
+          received: true,
+          pdfUrl: publicUrlData.publicUrl,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    return NextResponse.json({ received: true });
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err: any) {
-    console.error("[stripe webhook] handler error:", err);
-    return NextResponse.json({ error: err?.message || "server error" }, { status: 500 });
+    console.error("[stripe webhook] Handler error:", err.message);
+    return new Response("Server error", { status: 500 });
   }
 }
