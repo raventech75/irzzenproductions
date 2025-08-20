@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { buildBookingPdf } from "@/lib/pdf";
 import { FORMULAS_DETAILED } from "@/lib/modules";
+import { OPTIONS } from "@/lib/products"; // 🎯 Import des vraies options
 import { computePricing } from "@/lib/pricing";
-import { saveContractPDF } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -27,9 +26,9 @@ function clean(v: any) {
     .replace(/\u00A0/g, " ")
     .trim();
 }
+
 const ci = (s: string) => clean(s).toLowerCase();
 const formulaName = (f: any) => clean(f?.label) || clean(f?.title) || clean(f?.name) || "Formule";
-const allOptions = () => FORMULAS_DETAILED.flatMap((f: any) => f.options || []);
 
 function resolveFormulaLoose(body: any) {
   const id = clean(body?.formulaId);
@@ -52,53 +51,101 @@ function resolveFormulaLoose(body: any) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log("📥 Données reçues par create-payment:", JSON.stringify(body, null, 2));
 
     const payWith: "card" | "bank" = body?.payWith || "card";
-    const customerEmail = clean(body?.customerEmail);
+    
+    // 🎯 Extraction des données du customer depuis /checkout
+    const customer = body?.customer || {};
+    const customerEmail = clean(customer?.email);
+    const firstName = clean(customer?.firstName);
+    const lastName = clean(customer?.lastName);
+    const coupleName = clean(customer?.coupleName);
+    const weddingDate = clean(customer?.weddingDate);
 
-    const q = body?.questionnaire || {};
-    const questionnaire = {
-      couple_name: clean(q?.couple_name),
-      bride_first_name: clean(q?.bride_first_name),
-      bride_last_name: clean(q?.bride_last_name),
-      groom_first_name: clean(q?.groom_first_name),
-      groom_last_name: clean(q?.groom_last_name),
-      wedding_date: clean(q?.wedding_date),
-      ceremony_address: clean(q?.ceremony_address),
-      ceremony_time: clean(q?.ceremony_time),
-      reception_address: clean(q?.reception_address),
-      reception_time: clean(q?.reception_time),
-      notes: clean(q?.notes),
-    };
+    // 🎯 Extraction des données du questionnaire détaillé depuis /reservation
+    const questionnaire = body?.questionnaire || {};
+    
+    // 🎯 Extraction de la config (formule + options)
+    const config = body?.config || {};
+    const formula: any = resolveFormulaLoose(config);
+    const selectedOptions: string[] = Array.isArray(config?.options) ? config.options : [];
+    const extras: Array<{ label: string; price: number }> = Array.isArray(config?.extras) ? config.extras : [];
 
-    const formula: any = resolveFormulaLoose(body);
-    const selectedOptions: string[] = Array.isArray(body?.options) ? body.options : [];
-    const extras: Array<{ label: string; price: number }> = Array.isArray(body?.extras) ? body.extras : [];
-
+    // Calcul des prix avec debug - UTILISATION DES VRAIES OPTIONS
     const base = Number(formula?.price || 0);
-    const opts = allOptions();
-    const optionPrices = selectedOptions.map((id) => Number(opts.find((o) => o.id === id)?.price || 0));
+    const optionPrices = selectedOptions.map((id) => {
+      const option = OPTIONS.find((o) => o.id === id); // 🎯 Utilise OPTIONS depuis products.ts
+      const price = Number(option?.price || 0);
+      console.log(`📋 Option ${id}: ${option?.label || 'inconnue'} = ${price}€`);
+      return price;
+    });
     const extraPrices = extras.map((e) => Number(e?.price || 0));
+    
+    console.log("💰 Prix de base (formule):", base);
+    console.log("💸 Prix des options:", optionPrices);
+    console.log("🎁 Prix des extras:", extraPrices);
+    
     const totals = computePricing(base, [...optionPrices, ...extraPrices]);
+    
+    console.log("🧮 Totals recalculés dans l'API:", totals);
+    console.log("💳 Acompte qui va être facturé sur Stripe:", totals.depositSuggested);
 
+    // 🎯 Métadonnées COMPLÈTES pour Stripe (toutes les infos du questionnaire)
     const meta = {
+      // Informations de base
       email: customerEmail,
-      ...questionnaire,
+      couple_name: coupleName,
+      bride_first_name: clean(questionnaire?.brideFirstName) || coupleName.split('&')[0]?.trim() || firstName,
+      bride_last_name: clean(questionnaire?.brideLastName) || lastName,
+      groom_first_name: clean(questionnaire?.groomFirstName) || coupleName.split('&')[1]?.trim() || "",
+      groom_last_name: clean(questionnaire?.groomLastName) || "",
+      
+      // Contact
+      phone: clean(questionnaire?.phone),
+      address: clean(questionnaire?.address),
+      postalCode: clean(questionnaire?.postalCode),
+      city: clean(questionnaire?.city),
+      country: clean(questionnaire?.country),
+      
+      // Mariage
+      wedding_date: weddingDate,
+      guests: clean(questionnaire?.guests),
+      
+      // Lieux et horaires
+      prepLocation: clean(questionnaire?.prepLocation),
+      prepTime: clean(questionnaire?.prepTime),
+      mairieLocation: clean(questionnaire?.mairieLocation),
+      mairieTime: clean(questionnaire?.mairieTime),
+      ceremonyLocation: clean(questionnaire?.ceremonyLocation),
+      ceremonyTime: clean(questionnaire?.ceremonyTime),
+      receptionLocation: clean(questionnaire?.receptionLocation),
+      receptionTime: clean(questionnaire?.receptionTime),
+      
+      // Infos supplémentaires
+      schedule: clean(questionnaire?.schedule),
+      specialRequests: clean(questionnaire?.specialRequests),
+      notes: clean(questionnaire?.specialRequests), // Alias pour les notes
+      
+      // Prestation
       formula: formulaName(formula),
       formula_description: Array.isArray(formula?.features) ? formula.features.join(", ") : "",
       total_eur: String(totals.total),
       deposit_eur: String(totals.depositSuggested),
       remaining_eur: String(totals.remainingDayJ),
       selected_options: selectedOptions
-        .map((id) => clean(opts.find((o) => o.id === id)?.label || opts.find((o) => o.id === id)?.title || ""))
+        .map((id) => clean(OPTIONS.find((o) => o.id === id)?.label || "")) // 🎯 Utilise OPTIONS
         .filter(Boolean)
         .join(", "),
       extras: extras.map((e) => `${clean(e.label)}:${Number(e.price || 0)}`).join("|"),
     };
 
+    console.log("📋 Métadonnées COMPLÈTES construites pour Stripe:", meta);
+
     // Paiement CB (Stripe Checkout)
     if (payWith === "card") {
-      const amountCents = Math.round(Number(totals.total) * 100);
+      // 🎯 UTILISER L'ACOMPTE (15% arrondi à la centaine supérieure) au lieu du total
+      const amountCents = Math.round(Number(totals.depositSuggested) * 100);
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         payment_method_types: ["card"],
@@ -107,7 +154,10 @@ export async function POST(req: Request) {
           {
             price_data: {
               currency: "eur",
-              product_data: { name: `Réservation — ${formulaName(formula)}` },
+              product_data: { 
+                name: `Acompte — ${formulaName(formula)}`,
+                description: `Acompte de ${totals.depositSuggested}€ sur un total de ${totals.total}€`
+              },
               unit_amount: amountCents,
             },
             quantity: 1,
@@ -115,55 +165,34 @@ export async function POST(req: Request) {
         ],
         success_url: SUCCESS_URL,
         cancel_url: CANCEL_URL,
-        metadata: meta,
+        metadata: meta, // 🎯 Métadonnées cohérentes
       });
 
-      // ⚠️ Enregistre la réservation avec stripe_session_id pour que /success la retrouve
-      await supabaseAdmin.from("bookings").insert({
-        stripe_session_id: session.id,
-        email: meta.email || null,
-        couple_name: meta.couple_name || null,
-        wedding_date: meta.wedding_date || null,
-        total_eur: meta.total_eur || null,
-        formula: meta.formula || null,
-        created_at: new Date().toISOString(),
-        status: "pending",
-      });
+      // Enregistrement en base (optionnel)
+      try {
+        await supabaseAdmin.from("bookings").insert({
+          stripe_session_id: session.id,
+          email: meta.email || null,
+          couple_name: meta.couple_name || null,
+          wedding_date: meta.wedding_date || null,
+          total_eur: meta.total_eur || null,
+          formula: meta.formula || null,
+          created_at: new Date().toISOString(),
+          status: "pending",
+        });
+      } catch (dbError) {
+        console.warn("⚠️ Erreur DB (non bloquante):", dbError);
+      }
 
       return NextResponse.json({ url: session.url }, { status: 200 });
     }
 
-    // Paiement par virement/RIB → on génère le PDF immédiatement
-    const pdfBytes = await buildBookingPdf({ ...meta });
-    const filename = `IRZZEN-Contrat-${Date.now()}.pdf`;
-    const saved = await saveContractPDF({ pdf: Buffer.from(pdfBytes), filename });
-
-    // On crée aussi une "booking" locale (sans session_id) pour rester homogène
-    const { data: bookingRow } = await supabaseAdmin
-      .from("bookings")
-      .insert({
-        stripe_session_id: null,
-        email: meta.email || null,
-        couple_name: meta.couple_name || null,
-        wedding_date: meta.wedding_date || null,
-        total_eur: meta.total_eur || null,
-        formula: meta.formula || null,
-        created_at: new Date().toISOString(),
-        status: "awaiting_bank_transfer",
-      })
-      .select("id")
-      .single();
-
-    await supabaseAdmin.from("contracts").insert({
-      booking_id: bookingRow?.id || null,
-      file_path: saved.path,
-      bytes: Number((pdfBytes as Uint8Array).byteLength ?? 0),
-    });
-
+    // Paiement par virement (si implémenté)
     return NextResponse.json(
-      { ok: true, pdfUrl: saved.publicUrl, pdfPath: saved.path },
-      { status: 200 }
+      { error: "Paiement par virement non implémenté dans cette version" },
+      { status: 400 }
     );
+
   } catch (e: any) {
     console.error("create-payment error:", e);
     return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });

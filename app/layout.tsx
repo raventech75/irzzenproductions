@@ -21,16 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="pointer-events-none fixed inset-x-0 -top-24 h-56 bg-[radial-gradient(60%_60%_at_50%_0%,#f7caa455,transparent_60%),radial-gradient(50%_50%_at_20%_0%,#98c9ae55,transparent_60%)] blur-2xl" />
 
         <header className="max-w-6xl mx-auto px-6 pt-10 pb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center">
             <a href="/" className="font-serif text-3xl md:text-4xl tracking-tight">
-              IRZZEN <span className="opacity-60">Productions</span>
+              Irzzenproductions
             </a>
-            <nav className="hidden md:flex items-center gap-7 text-sm opacity-80">
-              <a href="/reservation" className="hover:opacity-100">Réserver</a>
-              <a href="#formules" className="hover:opacity-100">Formules</a>
-              <a href="/rib.pdf" target="_blank" className="hover:opacity-100">RIB</a>
-            </nav>
-            <a href="/reservation" className="btn shadow-soft rounded-2xl px-5 py-2">Commencer</a>
           </div>
         </header>
 
