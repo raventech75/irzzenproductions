@@ -17,24 +17,73 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 function cleanSpaces(v: string | undefined | null) {
   return (v ?? "").replace(/\u202F/g, " ").replace(/\u00A0/g, " ").trim();
 }
-
-// Extraction robuste du nom d'une formule (label/title/name)
-function formulaName(f: any): string {
+function ci(v: string) {
+  return cleanSpaces(v).toLowerCase();
+}
+function formulaNameLoose(f: any): string {
   return cleanSpaces(f?.label) || cleanSpaces(f?.title) || cleanSpaces(f?.name) || "Formule";
+}
+
+/** Trouve la formule de manière tolérante à partir de plusieurs clés possibles */
+function resolveFormulaLoose(body: any) {
+  const id = cleanSpaces(body?.formulaId);
+  const key = cleanSpaces(body?.formulaKey);
+  const lbl = cleanSpaces(body?.formulaLabel);
+  const nm = cleanSpaces(body?.formulaName);
+
+  // 1) par id exact
+  let f = FORMULAS_DETAILED.find((x: any) => x.id === id);
+  if (f) return f;
+
+  // 2) par clé éventuelle (si tu as introduit un autre champ côté client)
+  if (key) {
+    f = FORMULAS_DETAILED.find((x: any) => x.id === key || ci(x.label || x.title || x.name) === ci(key));
+    if (f) return f;
+  }
+
+  // 3) par label/title/name (case-insensitive)
+  const target = ci(lbl || nm || "");
+  if (target) {
+    f = FORMULAS_DETAILED.find((x: any) => ci(x.label || x.title || x.name) === target);
+    if (f) return f;
+  }
+
+  // 4) fallback : première formule (et on log)
+  console.warn("[create-payment] Aucune formule trouvée avec", { id, key, lbl, nm });
+  return FORMULAS_DETAILED[0];
+}
+
+/** Récupère toutes les options connues (pour matcher les IDs envoyés par le front) */
+function getAllOptions() {
+  return FORMULAS_DETAILED.flatMap((f: any) => f.options || []);
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Payload attendu depuis /reservation
+    // --- payload depuis /reservation ---
     const payWith: "card" | "bank" = body?.payWith || "card";
     const customerEmail: string = cleanSpaces(body?.customerEmail);
 
-    const formulaId: string = body?.formulaId;
-    const selectedOptions: string[] = Array.isArray(body?.options) ? body.options : [];
-    const extras: Array<{ label: string; price: number }> = Array.isArray(body?.extras) ? body.extras : [];
+    // Formule — robust matching
+    const formula: any = resolveFormulaLoose(body);
+    const formulaLabel = formulaNameLoose(formula);
+    const base: number = Number(formula?.price || 0);
 
+    // Options
+    const selectedOptions: string[] = Array.isArray(body?.options) ? body.options : [];
+    const allOptions: Array<{ id: string; label?: string; title?: string; name?: string; price: number }> = getAllOptions();
+    const optionPrices = selectedOptions.map((id) => {
+      const found = allOptions.find((o) => o.id === id);
+      return found ? Number(found.price || 0) : 0;
+    });
+
+    // Extras libres
+    const extras: Array<{ label: string; price: number }> = Array.isArray(body?.extras) ? body.extras : [];
+    const extraPrices = extras.map((e) => Number(e?.price || 0));
+
+    // Questionnaire
     const q = body?.questionnaire || {};
     const questionnaire = {
       couple_name: cleanSpaces(q?.couple_name),
@@ -50,32 +99,10 @@ export async function POST(req: Request) {
       notes: cleanSpaces(q?.notes),
     };
 
-    const formula: any = FORMULAS_DETAILED.find((f: any) => f.id === formulaId);
-    if (!formula) {
-      return NextResponse.json({ error: "Formule inconnue" }, { status: 400 });
-    }
-    const formulaLabel = formulaName(formula);
-
-    // Prix base
-    const base: number = Number(formula?.price || 0);
-
-    // Toutes les options connues (pour retrouver l'ID → le prix/libellé)
-    const allOptions: Array<{ id: string; label?: string; title?: string; name?: string; price: number }> =
-      FORMULAS_DETAILED.flatMap((f: any) => f.options || []);
-
-    // Prix options sélectionnées
-    const optionPrices = selectedOptions.map((id) => {
-      const found = allOptions.find((o) => o.id === id);
-      return found ? Number(found.price || 0) : 0;
-    });
-
-    // Prix extras libres
-    const extraPrices = extras.map((e) => Number(e?.price || 0));
-
-    // Totaux (avec arrondi acompte à la centaine sup, etc.)
+    // Totaux (15% arrondi centaine sup. via computePricing)
     const totals = computePricing(base, [...optionPrices, ...extraPrices]);
 
-    // Métadonnées communes (serviront au webhook ou au PDF direct)
+    // Métadonnées (pour Stripe + PDF)
     const metadata = {
       email: customerEmail,
       couple_name: questionnaire.couple_name,
@@ -90,11 +117,12 @@ export async function POST(req: Request) {
       reception_time: questionnaire.reception_time,
       notes: questionnaire.notes,
 
-      formula: formulaLabel, // ← robuste
+      formula: formulaLabel,
       formula_description: Array.isArray(formula?.features) ? formula.features.join(", ") : "",
       total_eur: String(totals.total),
       deposit_eur: String(totals.depositSuggested),
       remaining_eur: String(totals.remainingDayJ),
+
       selected_options: selectedOptions
         .map((id) => {
           const opt = allOptions.find((o) => o.id === id);
@@ -103,12 +131,13 @@ export async function POST(req: Request) {
         })
         .filter(Boolean)
         .join(", "),
+
       extras: extras
         .map((e) => `${cleanSpaces(e.label)}:${Number(e.price || 0)}`)
         .join("|"),
     };
 
-    // ============= Mode CB via Stripe =============
+    // === Paiement CB (Stripe Checkout) ===
     if (payWith === "card") {
       const amountCents = Math.round(Number(totals.total) * 100);
 
@@ -120,7 +149,7 @@ export async function POST(req: Request) {
           {
             price_data: {
               currency: "eur",
-              product_data: { name: `Réservation — ${formulaLabel}` }, // ← robuste
+              product_data: { name: `Réservation — ${formulaLabel}` },
               unit_amount: amountCents,
             },
             quantity: 1,
@@ -128,26 +157,19 @@ export async function POST(req: Request) {
         ],
         success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/reservation?canceled=1`,
-        metadata, // le webhook utilisera ces métadonnées pour générer + uploader le PDF
+        metadata,
       });
 
       return NextResponse.json({ url: session.url }, { status: 200 });
     }
 
-    // ============= Mode Virement/RIB =============
-    // On génère le PDF maintenant et on l'upload; on insère une ligne en BDD pour retrouver le document
-    const pdfBytes = await buildBookingPdf({
-      ...metadata,
-    });
-
+    // === Paiement par virement / RIB ===
+    const pdfBytes = await buildBookingPdf({ ...metadata });
     const filename = `IRZZEN-Contrat-${Date.now()}.pdf`;
-    const saved = await saveContractPDF({
-      pdf: Buffer.from(pdfBytes),
-      filename,
-    }); // -> { path, publicUrl }
+    const saved = await saveContractPDF({ pdf: Buffer.from(pdfBytes), filename });
 
     await supabaseAdmin.from("contracts").insert({
-      session_id: null, // pas de session Stripe ici
+      session_id: null,
       email: metadata.email || null,
       file_path: saved.path,
     });
@@ -155,7 +177,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: true,
-        pdfUrl: saved.publicUrl, // si bucket public ; sinon /success utilisera /api/verify-session pour signer
+        pdfUrl: saved.publicUrl, // si bucket public ; sinon /success signera l’URL
         pdfPath: saved.path,
       },
       { status: 200 }
