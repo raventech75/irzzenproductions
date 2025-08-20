@@ -376,7 +376,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const options = metadata.selected_options.split(', ').filter(Boolean);
-    options.forEach(option => {
+    options.forEach((option: string) => {
       page.drawText(`• ${option}`, {
         x: leftMargin + 15,
         y: yPos,
@@ -399,7 +399,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const extras = metadata.extras.split('|').filter(Boolean);
-    extras.forEach(extra => {
+    extras.forEach((extra: string) => {
       const [label, price] = extra.split(':');
       page.drawText(`• ${label} : ${price}€`, {
         x: leftMargin + 15,
