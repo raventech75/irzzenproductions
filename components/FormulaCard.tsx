@@ -44,11 +44,9 @@ export default function FormulaCard({ formula, selected, onSelect }: Props) {
         <Money value={formula.price} />
       </div>
 
-      {/* Liste des features */}
       <ul className="mt-2 space-y-1.5 text-sm opacity-90">
         {formula.features.map((f, i) => (
           <li key={i} className="flex items-start gap-2">
-            {/* pastille minimaliste */}
             <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-orange-500" />
             <span>{f}</span>
           </li>

@@ -3,28 +3,24 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { FORMULAS_DETAILED } from "@/lib/modules"; // << formules interactives (features)
-import { OPTIONS, euros } from "@/lib/products";   // << tes options existantes
-import { computePricing } from "@/lib/pricing";     // << arrondi acompte + restant jour J
-
+import { FORMULAS_DETAILED } from "@/lib/modules";
+import { OPTIONS, euros } from "@/lib/products";
+import { computePricing } from "@/lib/pricing";
 import { Button, Card, Money, SecondaryButton, Stepper } from "@/components/ui";
-import FormulaCard from "@/components/FormulaCard"; // << composant carte interactive (sans image)
+import FormulaCard from "@/components/FormulaCard"; // <- default export
 
 export default function Reservation() {
   const router = useRouter();
   const [step] = useState<1>(1);
 
-  // Formule sélectionnée
   const [formulaId, setFormulaId] = useState<string>(FORMULAS_DETAILED[0].id);
   const currentFormula = FORMULAS_DETAILED.find((f) => f.id === formulaId)!;
 
-  // Options & extras
   const [selected, setSelected] = useState<string[]>([]);
   const [extras, setExtras] = useState<{ label: string; price: number }[]>([]);
   const [extraLabel, setExtraLabel] = useState("");
   const [extraPrice, setExtraPrice] = useState<number | "">("");
 
-  // Pricing
   const base = useMemo(() => currentFormula.price, [formulaId]);
   const optionPrices = useMemo(
     () => [
@@ -35,7 +31,6 @@ export default function Reservation() {
   );
   const totals = computePricing(base, optionPrices);
 
-  // Handlers
   const toggleOption = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
@@ -55,14 +50,12 @@ export default function Reservation() {
 
   return (
     <div className="grid lg:grid-cols-[1fr_380px] gap-8">
-      {/* Colonne gauche */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-4xl">Votre configuration</h1>
           <Stepper step={step} />
         </div>
 
-        {/* --- Formules (sans images, interactives) --- */}
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-5">Sélectionnez une formule</h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -77,7 +70,6 @@ export default function Reservation() {
           </div>
         </Card>
 
-        {/* --- Options --- */}
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-5">Options</h2>
           <div className="grid md:grid-cols-2 gap-3">
@@ -104,7 +96,6 @@ export default function Reservation() {
             ))}
           </div>
 
-          {/* --- Extras personnalisés --- */}
           <div className="mt-6 space-y-2">
             <div className="font-medium">Ajouter un extra personnalisé</div>
             <div className="grid md:grid-cols-[1fr_160px_140px] gap-2">
@@ -137,7 +128,6 @@ export default function Reservation() {
         </Card>
       </div>
 
-      {/* Colonne droite — Récap */}
       <div className="lg:sticky lg:top-20 h-max">
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-3">Récapitulatif</h3>
@@ -164,9 +154,9 @@ export default function Reservation() {
           <p className="text-xs opacity-70 mt-3">
             L’acompte (15% arrondi à la centaine sup.) n’est pas obligatoire.
           </p>
-          <Button onClick={next} className="w-full mt-5">
+          <button onClick={next} className="w-full mt-5 rounded-xl bg-orange-500 px-4 py-2 text-white hover:bg-orange-400 transition">
             Continuer
-          </Button>
+          </button>
         </Card>
       </div>
     </div>
