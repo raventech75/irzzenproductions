@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 interface SessionData {
   id: string;
   customer_email: string;
+  payment_status: string;
   metadata: Record<string, string>;
   pdfUrl?: string;
 }
@@ -108,20 +109,42 @@ export default function SuccessPage() {
             <p><span className="font-medium">Date du mariage :</span> {sessionData.metadata?.wedding_date || 'N/A'}</p>
           </div>
 
-          {sessionData.pdfUrl && (
+          {sessionData.pdfUrl ? (
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">📄 Votre contrat</h3>
               <p className="text-sm text-blue-600 mb-3">
                 Votre contrat PDF a été généré automatiquement.
               </p>
-              <a
-                href={sessionData.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              <div className="flex gap-3">
+                <a
+                  href={sessionData.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  👁️ Voir le contrat
+                </a>
+                <a
+                  href={sessionData.pdfUrl}
+                  download={`contrat-${sessionData.id}.pdf`}
+                  className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  📥 Télécharger le PDF
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
+              <h3 className="font-semibold text-yellow-800 mb-2">⏳ Génération en cours</h3>
+              <p className="text-sm text-yellow-600">
+                Votre contrat PDF est en cours de génération. Rafraîchissez la page dans quelques instants.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 inline-block bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
               >
-                📥 Télécharger le contrat
-              </a>
+                🔄 Rafraîchir
+              </button>
             </div>
           )}
         </div>

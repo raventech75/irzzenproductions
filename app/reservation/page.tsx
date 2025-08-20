@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { FORMULAS_DETAILED, type FormulaDetailed } from "@/lib/modules";
 import { OPTIONS, euros } from "@/lib/products";
 import { computePricing } from "@/lib/pricing";
-import { Button, Card, Money, SecondaryButton, Stepper } from "@/components/ui";
+import { Button, Card, Money, SecondaryButton } from "@/components/ui";
 import FormulaCard from "@/components/FormulaCard";
 
 /** Questionnaire : tout FACULTATIF */
@@ -79,9 +79,8 @@ const initialQ: Questionnaire = {
 
 export default function Reservation() {
   const router = useRouter();
-  const [step] = useState<1>(1);
 
-  // —————————— Sélection formule / options ——————————
+  // ——————————— Sélection formule / options ———————————
   const [formulaId, setFormulaId] = useState<string>(FORMULAS_DETAILED[0].id);
   const currentFormula: FormulaDetailed = FORMULAS_DETAILED.find((f) => f.id === formulaId)!;
 
@@ -111,36 +110,81 @@ export default function Reservation() {
     setExtraPrice("");
   };
 
-  // —————————— Questionnaire (facultatif) ——————————
+  // ——————————— Questionnaire (facultatif) ———————————
   const [q, setQ] = useState<Questionnaire>(initialQ);
   const onQ = (k: keyof Questionnaire, v: string) => setQ((prev) => ({ ...prev, [k]: v }));
 
-  // —————————— Aller au paiement ——————————
-  const goCheckout = () => {
-    const payload = {
-      formulaId,
-      options: selected,
-      extras,
-      pricing: totals,
-      questionnaire: q,
-      // pour éventuel affichage/stockage
-      formulaName: currentFormula.name,
-      formulaDescription: currentFormula.description,
-    };
-    sessionStorage.setItem("bookingConfig", JSON.stringify(payload));
-    router.push("/checkout");
+  // ——————————— Aller au paiement DIRECT ———————————
+  const [loading, setLoading] = useState(false);
+
+  const goCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      // 🔍 Debug complet : voir tous les calculs
+      console.log("💰 Prix de base (formule):", base);
+      console.log("💸 Prix des options:", optionPrices);
+      console.log("🧮 Totals calculés:", totals);
+      console.log("💳 Acompte qui sera facturé:", totals.depositSuggested);
+      console.log("📋 Options sélectionnées (IDs):", selected);
+      console.log("🎯 Extras ajoutés:", extras);
+
+      // 🔍 Debug : voir exactement ce qui est envoyé
+      console.log("💾 Données du questionnaire:", q);
+      console.log("📋 Formule sélectionnée:", currentFormula);
+
+      // 🎯 Appel direct à l'API pour créer la session Stripe
+      const response = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // Customer info (minimal pour Stripe)
+          customer: {
+            email: q.email || "",
+            firstName: q.brideFirstName || "",
+            lastName: q.brideLastName || "",
+            coupleName: `${q.brideFirstName} & ${q.groomFirstName}`.trim(),
+            weddingDate: q.weddingDate || "",
+          },
+          // Toutes les données du questionnaire détaillé
+          questionnaire: q,
+          // Configuration de la prestation
+          config: {
+            formulaId,
+            options: selected,
+            extras,
+          },
+          // Force le paiement par carte
+          payWith: "card"
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || `Erreur ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.url) {
+        throw new Error("URL de paiement Stripe non reçue");
+      }
+
+      // 🚀 Redirection directe vers Stripe
+      console.log("🎉 Redirection vers Stripe:", data.url);
+      window.location.href = data.url;
+
+    } catch (error: any) {
+      console.error("❌ Erreur lors de la création du paiement:", error);
+      alert(`Erreur: ${error.message}`);
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      {/* Barre d’actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="px-2 py-1 rounded-md bg-orange-100 text-orange-700">
-            Étape 1 — Configuration
-          </span>
-        </div>
-
+      {/* Barre d'actions */}
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-3">
           <a
             href="/rib"
@@ -148,21 +192,19 @@ export default function Reservation() {
           >
             RIB / Virement
           </a>
-          <Button onClick={goCheckout}>Aller au paiement CB</Button>
         </div>
       </div>
 
-      {/* Titre + Stepper */}
-      <div className="flex items-center justify-between">
+      {/* Titre */}
+      <div className="flex items-center justify-center">
         <h1 className="font-serif text-4xl">Votre configuration</h1>
-        <Stepper step={step} />
       </div>
 
       {/* ——— Questionnaire (facultatif) ——— */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold">Informations du mariage (facultatif)</h2>
-          <span className="text-xs text-gray-500">Aucun champ n’est obligatoire</span>
+          <span className="text-xs text-gray-500">Aucun champ n'est obligatoire</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -251,7 +293,7 @@ export default function Reservation() {
             className="border rounded-xl px-3 py-2"
             type="number"
             min={0}
-            placeholder="Nombre d’invités"
+            placeholder="Nombre d'invités"
             value={q.guests}
             onChange={(e) => onQ("guests", e.target.value)}
           />
@@ -438,12 +480,16 @@ export default function Reservation() {
             </div>
           </div>
           <p className="text-xs opacity-70 mt-3">
-            L’acompte (15% arrondi à la centaine sup.) n’est pas obligatoire.
+            L'acompte (15% arrondi à la centaine sup.) n'est pas obligatoire.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button onClick={goCheckout} className="flex-1 min-w-[220px]">
-              Aller au paiement CB
+            <Button 
+              onClick={goCheckout} 
+              className="flex-1 min-w-[220px]"
+              disabled={loading}
+            >
+              {loading ? "Redirection vers Stripe..." : "Aller au paiement CB"}
             </Button>
             <a
               href="/rib"
