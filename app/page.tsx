@@ -1,16 +1,23 @@
 import Image from "next/image";
-import { Button, Card } from "@/components/ui";
+import { Button, Card, Section } from "@/components/ui";
 
 export default function Home() {
   return (
-    <div className="space-y-12">
+    <div className="space-y-16">
+      {/* HERO */}
       <section className="grid md:grid-cols-[1.2fr_.8fr] gap-8 items-center">
-        <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-semibold leading-tight">Mariages capturés <span className="text-[hsl(var(--p))]">avec grâce</span> et douceur</h1>
-          <p className="text-lg opacity-80">Un accompagnement d’atelier : discret, attentif, et toujours à la recherche de lumière naturelle. Réservez en ligne en quelques minutes.</p>
+        <div className="space-y-6">
+          <p className="uppercase tracking-[.2em] text-xs opacity-70">Photographie & Vidéo de mariage</p>
+          <h1 className="font-serif text-5xl md:text-6xl leading-[1.05]">
+            Des souvenirs capturés avec <span className="text-[hsl(var(--p))]">élégance</span> & douceur
+          </h1>
+          <p className="text-lg opacity-80 max-w-xl">
+            15+ ans d’expérience, 12 professionnels dédiés. Réservez en ligne en quelques minutes : formule,
+            options, questionnaire, acompte ou virement.
+          </p>
           <div className="flex gap-3">
             <Button as="a" href="/reservation">Choisir une formule</Button>
-            <Button as="a" href="#formules" className="bg-ink/90">Voir nos offres</Button>
+            <Button as="a" href="#formules" className="bg-ink/90">Voir les offres</Button>
           </div>
         </div>
         <Card className="overflow-hidden">
@@ -18,6 +25,7 @@ export default function Home() {
         </Card>
       </section>
 
+      <Section title="Nos formules" subtitle="Des collections pastel et intemporelles" />
       <section id="formules" className="grid md:grid-cols-2 gap-6">
         <Card className="overflow-hidden"><Image src="/formules-1.jpg" alt="Formules 1" width={1200} height={1700} /></Card>
         <Card className="overflow-hidden"><Image src="/formules-2.jpg" alt="Formules 2" width={1200} height={1700} /></Card>

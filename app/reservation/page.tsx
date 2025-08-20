@@ -1,4 +1,5 @@
 "use client";
+
 import { useMemo, useState } from "react";
 import { FORMULAS, OPTIONS, euros } from "@/lib/products";
 import { computePricing } from "@/lib/pricing";
@@ -9,7 +10,7 @@ export default function Reservation() {
   const router = useRouter();
   const [step] = useState<1>(1);
 
-  const [formulaId, setFormulaId] = useState(FORMULAS[0].id);
+  const [formulaId, setFormulaId] = useState(FORMULAS[1]?.id ?? FORMULAS[0].id);
   const [selected, setSelected] = useState<string[]>([]);
   const [extras, setExtras] = useState<{ label: string; price: number }[]>([]);
   const [extraLabel, setExtraLabel] = useState("");
@@ -38,38 +39,36 @@ export default function Reservation() {
   };
 
   return (
-    <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+    <div className="grid lg:grid-cols-[1fr_380px] gap-8">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-semibold">Votre configuration</h1>
+          <h1 className="font-serif text-4xl">Votre configuration</h1>
           <Stepper step={step} />
         </div>
 
-        {/* Formules */}
-        <Card className="p-5">
-          <h2 className="text-xl font-semibold mb-4">Sélectionnez une formule</h2>
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-5">Sélectionnez une formule</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {FORMULAS.map(f => (
-              <label key={f.id} className={`rounded-2xl border px-4 py-3 cursor-pointer transition ${formulaId===f.id?"border-[hsl(var(--p))] bg-soft":"hover:bg-soft"}`}>
-                <div className="flex items-center justify-between">
+              <label key={f.id} className={`rounded-2xl border px-5 py-4 cursor-pointer transition ${formulaId===f.id?"border-[hsl(var(--p))] bg-white":"hover:bg-white"}`}>
+                <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="font-semibold">{f.label}</div>
                     <div className="opacity-70"><Money value={f.price} /></div>
+                    <p className="text-sm opacity-70 mt-1">Couverture journée, montage complet, remise numérique.</p>
                   </div>
-                  <input type="radio" name="formula" checked={formulaId===f.id} onChange={()=>setFormulaId(f.id)} className="w-5 h-5"/>
+                  <input type="radio" name="formula" checked={formulaId===f.id} onChange={()=>setFormulaId(f.id)} className="mt-1 w-5 h-5"/>
                 </div>
-                <p className="text-sm opacity-70 mt-2">Couverture journée, montage complet, remise numérique.</p>
               </label>
             ))}
           </div>
         </Card>
 
-        {/* Options */}
-        <Card className="p-5">
-          <h2 className="text-xl font-semibold mb-4">Options</h2>
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-5">Options</h2>
           <div className="grid md:grid-cols-2 gap-3">
             {OPTIONS.map(o => (
-              <label key={o.id} className={`rounded-2xl border px-4 py-3 flex items-center justify-between cursor-pointer transition ${selected.includes(o.id)?"border-[hsl(var(--p))] bg-soft":"hover:bg-soft"}`}>
+              <label key={o.id} className={`rounded-2xl border px-5 py-4 flex items-center justify-between cursor-pointer transition ${selected.includes(o.id)?"border-[hsl(var(--p))] bg-white":"hover:bg-white"}`}>
                 <div>
                   <div className="font-medium">{o.label}</div>
                   <div className="text-sm opacity-70"><Money value={o.price} /></div>
@@ -79,12 +78,11 @@ export default function Reservation() {
             ))}
           </div>
 
-          {/* Extra perso */}
-          <div className="mt-5 space-y-2">
+          <div className="mt-6 space-y-2">
             <div className="font-medium">Ajouter un extra personnalisé</div>
-            <div className="grid md:grid-cols-[1fr_160px_120px] gap-2">
-              <input className="border rounded-xl px-3 py-2" placeholder="Intitulé (ex. heure sup., déplacement…)" value={extraLabel} onChange={e=>setExtraLabel(e.target.value)} />
-              <input className="border rounded-xl px-3 py-2" type="number" min={1} placeholder="Prix (€)" value={extraPrice} onChange={e=>setExtraPrice(e.target.value===""?"":Number(e.target.value))} />
+            <div className="grid md:grid-cols-[1fr_160px_140px] gap-2">
+              <input className="border rounded-2xl px-3 py-2" placeholder="Intitulé (ex. heure sup., déplacement…)" value={extraLabel} onChange={e=>setExtraLabel(e.target.value)} />
+              <input className="border rounded-2xl px-3 py-2" type="number" min={1} placeholder="Prix (€)" value={extraPrice} onChange={e=>setExtraPrice(e.target.value===""?"":Number(e.target.value))} />
               <SecondaryButton onClick={addExtra}>Ajouter</SecondaryButton>
             </div>
             {extras.length>0 && (
@@ -96,17 +94,16 @@ export default function Reservation() {
         </Card>
       </div>
 
-      {/* Résumé sticky */}
       <div className="lg:sticky lg:top-20 h-max">
-        <Card className="p-5">
-          <h3 className="text-lg font-semibold mb-3">Résumé</h3>
-          <div className="space-y-1">
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-3">Récapitulatif</h3>
+          <div className="space-y-2 text-[15px]">
             <div className="flex justify-between"><span>Total estimé</span><b><Money value={totals.total} /></b></div>
             <div className="flex justify-between"><span>Acompte conseillé</span><b><Money value={totals.depositSuggested} /></b></div>
             <div className="flex justify-between"><span>Reste à payer le jour J</span><b><Money value={totals.remainingDayJ} /></b></div>
           </div>
-          <p className="text-xs opacity-70 mt-2">L’acompte (15% arrondi à la centaine sup.) n’est pas obligatoire.</p>
-          <Button onClick={next} className="w-full mt-4">Continuer</Button>
+          <p className="text-xs opacity-70 mt-3">L’acompte (15% arrondi à la centaine sup.) n’est pas obligatoire.</p>
+          <Button onClick={next} className="w-full mt-5">Continuer</Button>
         </Card>
       </div>
     </div>

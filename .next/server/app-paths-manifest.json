@@ -7,8 +7,8 @@
   "/api/admin/contracts/send/route": "app/api/admin/contracts/send/route.js",
   "/merci/page": "app/merci/page.js",
   "/page": "app/page.js",
-  "/questionnaire/page": "app/questionnaire/page.js",
   "/reservation/page": "app/reservation/page.js",
+  "/questionnaire/page": "app/questionnaire/page.js",
   "/api/webhooks/stripe/route": "app/api/webhooks/stripe/route.js",
   "/api/create-payment/route": "app/api/create-payment/route.js"
 }
