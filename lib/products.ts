@@ -1,22 +1,18 @@
-// Catalogue minimal (tu peux ajuster les intitulés/prix à volonté)
-export type Item = { id: string; label: string; price: number };
-export type Formula = Item & { kind: "formula" };
-export type OptionItem = Item & { kind: "option" };
+// lib/products.ts
 
-export const FORMULAS: Formula[] = [
-  { id: "essentielle", label: "Formule 1 : Essentielle", price: 1800, kind: "formula" },
-  { id: "prestige",    label: "Formule 2 : Prestige",    price: 2800, kind: "formula" },
-  { id: "excellence",  label: "Formule 3 : Excellence",  price: 3800, kind: "formula" },
-  { id: "luxe",        label: "Formule 4 : Luxe",        price: 4800, kind: "formula" }
-];
+export type OptionItem = {
+  id: string;
+  label: string;
+  price: number;
+};
 
 export const OPTIONS: OptionItem[] = [
-  { id: "preparatifs",    label: "Shooting des préparatifs", price: 200, kind: "option" },
-  { id: "drone",          label: "Drone (vues aériennes)",   price: 400, kind: "option" },
-  { id: "usb_plus",       label: "Clé USB supplémentaire",   price: 50,  kind: "option" },
-  { id: "projection_jj",  label: "Projection le jour J",     price: 300, kind: "option" },
-  { id: "kina_henne",     label: "Kina / Henné (Lun-Jeu)",   price: 1500,kind: "option" }
+  { id: "shooting_preparatifs", label: "Shooting des préparatifs", price: 200 },
+  { id: "drone", label: "Drone", price: 400 },
+  { id: "clef_usb_sup", label: "Clef USB supplémentaire", price: 50 },
+  { id: "projection_jour_j", label: "Projection jour J", price: 300 },
+  { id: "kina_henne", label: "Kina / Henne (Lundi au Jeudi)", price: 1500 },
 ];
 
-// Petit helper d’affichage
-export const euros = (n: number) => `${n.toLocaleString("fr-FR")} €`;
+export const euros = (n: number) =>
+  `${n.toLocaleString("fr-FR").replace(/\u202F/g, " ").replace(/\u00A0/g, " ")} €`;
