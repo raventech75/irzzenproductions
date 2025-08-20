@@ -5,14 +5,14 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { FORMULAS_DETAILED, FormulaDetailed } from "@/lib/modules";
 import { computePricing } from "@/lib/pricing";
+import { uploadContractPDF } from "@/lib/storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16", // ✅ version typée et stable
+  apiVersion: "2023-10-16",
 });
 
-// Petit utilitaire pour éviter les espaces insécables (\u202F) dans le PDF
-function clean(txt: string | number | null | undefined): string {
-  return String(txt ?? "")
+function clean(v: any) {
+  return String(v ?? "")
     .replace(/\u202F/g, " ")
     .replace(/\u00A0/g, " ")
     .trim();
@@ -21,13 +21,16 @@ function clean(txt: string | number | null | undefined): string {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    // Format attendu depuis /checkout/page.tsx
-    // { customer, config }
     const customer = body?.customer || {};
     const config = body?.config || {};
 
-    const { email, firstName, lastName, coupleName, weddingDate } = customer as {
+    const {
+      email,
+      firstName,
+      lastName,
+      coupleName,
+      weddingDate,
+    } = customer as {
       email?: string;
       firstName?: string;
       lastName?: string;
@@ -47,24 +50,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Formule inconnue" }, { status: 400 });
     }
 
-    // Prix des options sélectionnées — sécurisé contre undefined
+    // Options & extras
     const allOptions = FORMULAS_DETAILED.flatMap((f) => f.options ?? []);
     const optionPrices: number[] = (config.options ?? []).map((id: string) => {
       const opt = allOptions.find((o) => o.id === id);
       return opt ? opt.price : 0;
     });
+    const extrasArr = (config.extras ?? []) as { label: string; price: number }[];
+    const extraPrices = extrasArr.map((e) => Number(e?.price || 0));
 
-    // Extras personnalisés
-    const extraPrices: number[] = (config.extras ?? []).map(
-      (e: { price: number }) => Number(e?.price || 0)
-    );
-
-    // Totaux
     const totals = computePricing(formula.price, [...optionPrices, ...extraPrices]);
 
-    // ———————————————
-    // Génération du PDF (pdf-lib)
-    // ———————————————
+    // ——— Génération PDF
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4
     const { height } = page.getSize();
@@ -75,7 +72,6 @@ export async function POST(req: Request) {
       page.drawText(clean(text), { x: 50, y, size, font, color: rgb(0, 0, 0) });
       y -= size + 8;
     };
-
     const title = (text: string) => {
       page.drawText(clean(text), { x: 50, y, size: 16, font, color: rgb(0.95, 0.45, 0.2) });
       y -= 24;
@@ -90,14 +86,15 @@ export async function POST(req: Request) {
     title("Formule et options");
     line(`Formule choisie : ${clean(formula.name || formula.id)}`);
     line(`Description : ${clean(formula.description)}`);
-    const selectedOpts = (config.options ?? [])
+    const selectedOptNames = (config.options ?? [])
       .map((id: string) => allOptions.find((o) => o.id === id)?.name)
       .filter(Boolean) as string[];
-    line(`Options : ${selectedOpts.length ? selectedOpts.join(", ") : "Aucune"}`);
-    const extras = (config.extras ?? []) as { label: string; price: number }[];
+    line(`Options : ${selectedOptNames.length ? selectedOptNames.join(", ") : "Aucune"}`);
     line(
       `Extras : ${
-        extras.length ? extras.map((e) => `${clean(e.label)} (${Number(e.price)} €)`).join(", ") : "Aucun"
+        extrasArr.length
+          ? extrasArr.map((e) => `${clean(e.label)} (${Number(e.price)} €)`).join(", ")
+          : "Aucun"
       }`
     );
     y -= 6;
@@ -119,31 +116,12 @@ export async function POST(req: Request) {
 
     const pdfBytes = await pdfDoc.save();
 
-    // ———————————————
-    // Upload PDF dans Supabase Storage (bucket 'contracts')
-    // ———————————————
+    // ——— Upload Storage (bucket `contracts`)
     const safeLast = clean(lastName) || "client";
-    const fileName = `contracts/IRZZEN_${Date.now()}_${safeLast}.pdf`;
+    const filePath = `IRZZEN_${Date.now()}_${safeLast}.pdf`; // <- pas de "contracts/" ici
+    const { publicUrl } = await uploadContractPDF(filePath, pdfBytes);
 
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("contracts")
-      .upload(fileName, pdfBytes, {
-        contentType: "application/pdf",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("Erreur upload Supabase:", uploadError);
-      return NextResponse.json({ error: "Upload PDF failed" }, { status: 500 });
-    }
-
-    // URL publique (si bucket public) — sinon crée une signée plus bas
-    const { data: publicUrlData } = supabaseAdmin.storage.from("contracts").getPublicUrl(fileName);
-    const publicUrl = publicUrlData?.publicUrl || "";
-
-    // ———————————————
-    // Création de la session Stripe Checkout
-    // ———————————————
+    // ——— Session Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -158,11 +136,12 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      // Redirection avec session_id pour vérification côté serveur
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/reservation`,
       metadata: {
-        pdfUrl: publicUrl, // lu par /api/verify-session
+        // récupération côté /api/verify-session puis /success
+        pdfUrl: publicUrl || "",
+        pdfPath: filePath, // <- IMPORTANT pour renvoi email même si pas d’URL publique
         formula: clean(formula.name || formula.id),
         wedding_date: clean(weddingDate),
         bride_first_name: clean(firstName),
@@ -171,8 +150,8 @@ export async function POST(req: Request) {
         total_eur: String(totals.total),
         deposit_eur: String(totals.depositSuggested),
         remaining_eur: String(totals.remainingDayJ),
-        selected_options: selectedOpts.join(", "),
-        extras: extras.map((e) => `${clean(e.label)}:${Number(e.price)}`).join("|"),
+        selected_options: selectedOptNames.join(", "),
+        extras: extrasArr.map((e) => `${clean(e.label)}:${Number(e.price)}`).join("|"),
       },
     });
 

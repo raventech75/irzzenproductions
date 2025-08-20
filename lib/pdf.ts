@@ -1,99 +1,282 @@
-import { jsPDF } from "jspdf";
+// lib/pdf.ts
+// Génération du contrat PDF avec pdf-lib (compatible Next.js / Vercel)
+import { PDFDocument, StandardFonts, rgb, type RGB } from "pdf-lib";
 
-type BuildPdfArgs = {
-  booking: {
-    couple_name: string;
-    wedding_date?: string;
-    city?: string;
-    venue_ceremony?: string;
-    venue_reception?: string;
-    total_amount: number;
-    deposit_suggested: number;
-    remaining_dayj: number;
-  };
-  items: { label: string; amount: number; is_formula?: boolean }[];
-  questionnaire: Record<string, any>;
+export interface BuildPdfArgs {
+  bride_first_name?: string;
+  bride_last_name?: string;
+  groom_first_name?: string;
+  groom_last_name?: string;
+  couple_name?: string;
+  wedding_date?: string;
+  formula?: string;
+  total_eur?: string;      // texte déjà formaté (ex: "1 500") ou nombre en string
+  deposit_eur?: string;
+  remaining_eur?: string;
+  selected_options?: string; // ex: "Drone, Album"
+  extras?: string;           // ex: "Heure sup.:150|Déplacement:80"
+  email?: string;
+
+  // Champs additionnels (facultatifs)
+  ceremony_address?: string;
+  ceremony_time?: string;
+  reception_address?: string;
+  reception_time?: string;
+  notes?: string;
+}
+
+const ORANGE: RGB = rgb(0.95, 0.45, 0.2);
+const BLACK: RGB = rgb(0, 0, 0);
+const GRAY: RGB = rgb(0.35, 0.35, 0.35);
+
+function clean(v: any) {
+  return String(v ?? "")
+    .replace(/\u202F/g, " ")
+    .replace(/\u00A0/g, " ")
+    .trim();
+}
+
+type DrawTextOpts = {
+  x: number;
+  y: number;
+  size: number;
+  maxWidth?: number;
+  lineHeight?: number;
+  color?: RGB;
 };
 
-const brand = {
-  sage: "#98c9ae",   // vert sauge pastel (aligné à ta charte)
-  apricot: "#f7caa4",
-  ink: "#1f2937"
-};
+/**
+ * Dessine un paragraphe (word-wrap simple) et retourne la nouvelle position Y
+ */
+function drawParagraph(
+  page: any,
+  font: any,
+  text: string,
+  { x, y, size, maxWidth = 495, lineHeight = 1.25, color = BLACK }: DrawTextOpts
+) {
+  const words = text.split(/\s+/);
+  let line = "";
+  const lines: string[] = [];
 
-export function buildBookingPdf({ booking, items, questionnaire }: BuildPdfArgs) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const margin = 48;
-  let y = margin;
+  for (const w of words) {
+    const testLine = line ? `${line} ${w}` : w;
+    const testWidth = font.widthOfTextAtSize(testLine, size);
+    if (testWidth > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) lines.push(line);
 
-  doc.setTextColor(brand.ink);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("IRZZEN PRODUCTIONS — Récapitulatif de réservation", margin, y);
-  y += 18;
+  let cursorY = y;
+  for (const ln of lines) {
+    page.drawText(ln, { x, y: cursorY, size, font, color });
+    cursorY -= size * lineHeight;
+  }
+  return cursorY;
+}
 
-  doc.setDrawColor(brand.sage);
-  doc.setLineWidth(2);
-  doc.line(margin, y, 595 - margin, y);
-  y += 18;
+/**
+ * Construit un PDF de contrat et retourne un Uint8Array
+ */
+export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]); // A4 (pt)
+  const { height } = page.getSize();
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text(`Couple : ${booking.couple_name}`, margin, y); y += 16;
-  if (booking.wedding_date) { doc.text(`Date du mariage : ${booking.wedding_date}`, margin, y); y += 16; }
-  if (booking.city) { doc.text(`Ville : ${booking.city}`, margin, y); y += 16; }
-  if (booking.venue_ceremony) { doc.text(`Lieu cérémonie : ${booking.venue_ceremony}`, margin, y); y += 16; }
-  if (booking.venue_reception) { doc.text(`Lieu réception : ${booking.venue_reception}`, margin, y); y += 24; }
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(brand.sage);
-  doc.text("Détails choisis", margin, y); y += 14;
-  doc.setTextColor(brand.ink);
-  doc.setFont("helvetica", "normal");
+  let y = height - 60;
 
-  items.forEach((it) => {
-    if (y > 770) { doc.addPage(); y = margin; }
-    doc.text(`• ${it.label}`, margin, y);
-    doc.text(`${(it.amount).toLocaleString("fr-FR")} €`, 595 - margin - 80, y, { align: "right" });
-    y += 16;
+  // ——— Titre
+  page.drawText("Contrat & Confirmation de Réservation", {
+    x: 50,
+    y,
+    size: 18,
+    font: fontBold,
+    color: ORANGE,
   });
+  y -= 30;
 
-  y += 10;
-  doc.setDrawColor(brand.apricot);
-  doc.setLineWidth(1);
-  doc.line(margin, y, 595 - margin, y);
-  y += 18;
+  // ——— Informations clients
+  y = drawParagraph(page, fontBold, "Informations Clients", {
+    x: 50,
+    y,
+    size: 13,
+    color: ORANGE,
+  }) - 6;
 
-  doc.setFont("helvetica", "bold");
-  doc.text(`Total TTC : ${booking.total_amount.toLocaleString("fr-FR")} €`, margin, y); y += 16;
-  doc.text(`Acompte conseillé (15% arrondi) : ${booking.deposit_suggested.toLocaleString("fr-FR")} €`, margin, y); y += 16;
-  doc.text(`Reste à payer le jour J : ${booking.remaining_dayj.toLocaleString("fr-FR")} €`, margin, y); y += 24;
+  const couple =
+    clean(args.couple_name) ||
+    [clean(args.bride_first_name), clean(args.bride_last_name), "&", clean(args.groom_first_name), clean(args.groom_last_name)]
+      .filter(Boolean)
+      .join(" ");
 
-  doc.setTextColor(brand.sage);
-  doc.text("Questionnaire", margin, y); y += 14;
-  doc.setTextColor(brand.ink);
-  doc.setFont("helvetica", "normal");
+  y = drawParagraph(page, font, `Couple : ${couple || "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 4;
 
-  const toPairs = Object.entries(questionnaire || {});
-  toPairs.forEach(([k, v]) => {
-    const line = `${k} : ${typeof v === "string" ? v : JSON.stringify(v)}`;
-    const splitted = doc.splitTextToSize(line, 595 - margin * 2);
-    if (y + splitted.length * 14 > 820) { doc.addPage(); y = margin; }
-    doc.text(splitted, margin, y);
-    y += splitted.length * 14 + 6;
-  });
+  y = drawParagraph(page, font, `Email : ${clean(args.email) || "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 4;
 
-  y += 6;
-  doc.setTextColor("#6b7280");
-  const conditions = [
-    "Conditions : aucune annulation recevable ; l’acompte n’est pas remboursable ;",
-    "la livraison des fichiers digitaux intervient au plus tard dans les 6 mois ;",
-    "tout solde non réglé à l’échéance suspend la livraison."
-  ].join(" ");
-  const cSplit = doc.splitTextToSize(conditions, 595 - margin * 2);
-  if (y + cSplit.length * 14 > 820) { doc.addPage(); y = margin; }
-  doc.text(cSplit, margin, y);
+  y = drawParagraph(page, font, `Date du mariage : ${clean(args.wedding_date) || "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 10;
 
-  const arrayBuffer = doc.output("arraybuffer");
-  return Buffer.from(arrayBuffer);
+  // ——— Lieux & Horaires
+  y = drawParagraph(page, fontBold, "Lieux & Horaires", {
+    x: 50,
+    y,
+    size: 13,
+    color: ORANGE,
+  }) - 6;
+
+  const locs: string[] = [];
+  if (args.ceremony_address || args.ceremony_time) {
+    locs.push(
+      `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`
+    );
+  }
+  if (args.reception_address || args.reception_time) {
+    locs.push(
+      `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`
+    );
+  }
+  if (locs.length === 0) locs.push("—");
+  for (const l of locs) {
+    y = drawParagraph(page, font, l, { x: 50, y, size: 11, color: BLACK }) - 3;
+  }
+  y -= 8;
+
+  // ——— Formule & Options
+  y = drawParagraph(page, fontBold, "Formule & Options", {
+    x: 50,
+    y,
+    size: 13,
+    color: ORANGE,
+  }) - 6;
+
+  y = drawParagraph(page, font, `Formule : ${clean(args.formula) || "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 4;
+
+  y = drawParagraph(page, font, `Options : ${clean(args.selected_options) || "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 4;
+
+  // ——— Extras (ex: "Heure sup.:150|Déplacement:80")
+  const extrasText = clean(args.extras);
+  let extrasHuman = "—";
+  if (extrasText) {
+    const items = extrasText
+      .split("|")
+      .filter(Boolean)
+      .map((p) => {
+        const [label, amount] = p.split(":");
+        return `${clean(label)}${amount ? ` (${clean(amount)} €)` : ""}`;
+      });
+    extrasHuman = items.length ? items.join(", ") : "—";
+  }
+  y = drawParagraph(page, font, `Extras : ${extrasHuman}`, {
+    x: 50,
+    y,
+    size: 11,
+    color: BLACK,
+  }) - 10;
+
+  // ——— Récapitulatif financier
+  y = drawParagraph(page, fontBold, "Récapitulatif Financier", {
+    x: 50,
+    y,
+    size: 13,
+    color: ORANGE,
+  }) - 6;
+
+  const total = clean(args.total_eur);
+  const deposit = clean(args.deposit_eur);
+  const rest = clean(args.remaining_eur);
+
+  y = drawParagraph(page, font, `Total : ${total ? `${total} €` : "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+  }) - 3;
+
+  y = drawParagraph(
+    page,
+    font,
+    `Acompte conseillé (15% arrondi) : ${deposit ? `${deposit} €` : "—"}`,
+    { x: 50, y, size: 11 }
+  ) - 3;
+
+  y = drawParagraph(page, font, `Reste à payer le jour J : ${rest ? `${rest} €` : "—"}`, {
+    x: 50,
+    y,
+    size: 11,
+  }) - 10;
+
+  // ——— Mentions & Conditions
+  y = drawParagraph(page, fontBold, "Mentions & Conditions", {
+    x: 50,
+    y,
+    size: 13,
+    color: ORANGE,
+  }) - 6;
+
+  const clauses = [
+    "Acompte : 15 % recommandé. L’acompte n’est pas remboursable en cas d’annulation.",
+    "Annulation : aucune annulation n’est recevable après réservation ; le solde reste dû selon les termes convenus.",
+    "Droits d’auteur : Irzzen Productions conserve les droits d’auteur ; usage privé accordé au client. Toute diffusion publique nécessite autorisation.",
+    "Force majeure : en cas d’imprévu majeur (maladie, accident, grève, etc.), un remplaçant ou un remboursement au prorata sera proposé.",
+    "Responsabilité : la meilleure diligence est apportée à la prestation ; aucune garantie de résultat artistique spécifique.",
+    "Données personnelles : traitées uniquement pour l’exécution du contrat et la relation commerciale, selon le RGPD.",
+    "Livraison : les fichiers numériques sont livrés au plus tard sous 6 mois.",
+  ];
+
+  for (const c of clauses) {
+    y = drawParagraph(page, font, `• ${c}`, {
+      x: 50,
+      y,
+      size: 10.5,
+      color: GRAY,
+      lineHeight: 1.35,
+    }) - 2;
+  }
+
+  // ——— Signatures (visuel)
+  y -= 16;
+  y = drawParagraph(page, fontBold, "Signatures", {
+    x: 50,
+    y,
+    size: 12,
+    color: ORANGE,
+  }) - 10;
+
+  page.drawText("Le Client :", { x: 50, y, size: 11, font, color: BLACK });
+  page.drawLine({ start: { x: 120, y: y - 2 }, end: { x: 320, y: y - 2 }, thickness: 0.5, color: GRAY });
+  page.drawText("Le Prestataire :", { x: 330, y, size: 11, font, color: BLACK });
+  page.drawLine({ start: { x: 430, y: y - 2 }, end: { x: 560, y: y - 2 }, thickness: 0.5, color: GRAY });
+
+  // ——— Sauvegarde
+  const pdfBytes = await pdfDoc.save();
+  return pdfBytes;
 }
