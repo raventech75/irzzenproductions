@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palette pastel sobre (site + PDF) */
+:root{
+  --p: 155 34% 60%;     /* vert sauge pastel */
+  --a: 26 80% 80%;      /* abricot doux */
+  --ink: 210 10% 20%;   /* texte principal */
+  --soft: 210 16% 93%;  /* gris très léger */
+  --paper: 0 0% 100%;   /* fond */
+}
+
+html, body {
+  background: hsl(var(--paper));
+  color: hsl(var(--ink));
+}
+
+.card {
+  @apply rounded-2xl shadow-soft bg-white border border-soft/50;
+}
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium transition;
+  background: hsl(var(--p));
+  color: white;
+}
+.btn-secondary {
+  background: hsl(var(--a));
+  color: hsl(var(--ink));
+}
