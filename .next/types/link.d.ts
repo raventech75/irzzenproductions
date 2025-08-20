@@ -36,8 +36,10 @@ declare namespace __next_route_internal_types__ {
     | `/api/admin/contracts/send`
     | `/merci`
     | `/`
+    | `/formules/comparer`
     | `/reservation`
     | `/questionnaire`
+    | `/formules`
     | `/api/webhooks/stripe`
     | `/api/create-payment`
   type DynamicRoutes<T extends string = string> = never
