@@ -2,23 +2,18 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { createClient } from "@supabase/supabase-js";
 import { computePricing } from "@/lib/pricing";
 import { FORMULAS_DETAILED } from "@/lib/modules";
 import { cleanPdfText, eur, drawText } from "@/lib/pdfHelpers";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as any,
 });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-// Génération PDF (A4, pastel orange, textes nettoyés WinAnsi)
+// Génère le PDF (A4, bandeau orange pastel, textes nettoyés WinAnsi)
 async function generateContractPdf({
   coupleName,
   weddingDate,
@@ -37,12 +32,11 @@ async function generateContractPdf({
   totals: { total: number; depositSuggested: number; remainingDayJ: number };
 }) {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([595.28, 841.89]); // A4
+  const page = doc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  // Bandeau orange pastel
   page.drawRectangle({
     x: 0,
     y: height - 130,
@@ -112,7 +106,7 @@ async function generateContractPdf({
   return Buffer.from(pdfBytes);
 }
 
-// Upload PDF → Supabase Storage (bucket "contracts")
+// Upload PDF avec la clé service (bypass RLS). Retourne publicUrl + signedUrl (fallback).
 async function saveContractPDF({
   bookingId,
   buffer,
@@ -123,28 +117,28 @@ async function saveContractPDF({
   filename: string;
 }) {
   const path = `contracts/${bookingId}/${filename}`;
-  const { data: uploadData, error: uploadErr } = await supabase.storage
+  const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
     .from("contracts")
     .upload(path, buffer, { contentType: "application/pdf", upsert: true });
 
   if (uploadErr) throw new Error(`Upload PDF failed: ${uploadErr.message}`);
 
-  // URL publique propre via helper
-  const { data: pub } = supabase.storage.from("contracts").getPublicUrl(uploadData!.path);
-  const publicUrl = pub.publicUrl;
+  const { data: pub } = supabaseAdmin.storage.from("contracts").getPublicUrl(uploadData!.path);
+  let fileUrl = pub.publicUrl;
 
-  return { path: uploadData!.path, bytes: buffer.byteLength, publicUrl };
+  // Si le bucket n'est pas public, on génère une URL signée (1 an)
+  if (!fileUrl || fileUrl.includes("signed")) {
+    const { data: signed, error: signErr } = await supabaseAdmin.storage
+      .from("contracts")
+      .createSignedUrl(uploadData!.path, 60 * 60 * 24 * 365);
+    if (!signErr && signed?.signedUrl) fileUrl = signed.signedUrl;
+  }
+
+  return { path: uploadData!.path, bytes: buffer.byteLength, url: fileUrl };
 }
 
 export async function POST(req: Request) {
   try {
-    /**
-     * Body attendu côté client (ex. via /reservation → /api/create-payment) :
-     * {
-     *   customer: { email, firstName?, lastName?, coupleName?, weddingDate? },
-     *   config: { formulaId, options: string[], extras: {label, price}[] }
-     * }
-     */
     const { customer, config } = (await req.json()) as {
       customer: {
         email: string;
@@ -155,7 +149,7 @@ export async function POST(req: Request) {
       };
       config: {
         formulaId: string;
-        options: string[];
+        options: string[]; // (non tarifées côté serveur dans cet exemple)
         extras: Array<{ label: string; price: number }>;
       };
     };
@@ -169,13 +163,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unknown formula" }, { status: 400 });
     }
 
-    // Calcul serveur (ici on ne tarife que les extras passés)
+    // Calcul serveur (prix base + extras)
     const optionPrices = (config.extras || []).map((e) => e.price);
     const totals = computePricing(formula.price, optionPrices);
 
-    // Crée un booking minimal (adapte à ton schéma si différent)
+    // ID booking (sert aussi de dossier pour le PDF)
     const bookingId = crypto.randomUUID();
-    await supabase.from("bookings").insert({
+
+    // INSERT en base avec service role (bypass RLS)
+    await supabaseAdmin.from("bookings").insert({
       id: bookingId,
       couple_name: customer.coupleName ?? null,
       wedding_date: customer.weddingDate ?? null,
@@ -185,29 +181,28 @@ export async function POST(req: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Génère PDF
+    // Génération & upload PDF
     const pdfBuffer = await generateContractPdf({
       coupleName: customer.coupleName || "",
       weddingDate: customer.weddingDate || "",
       formulaLabel: formula.label,
       basePrice: formula.price,
-      options: [], // si tu ajoutes des options tarifées server-side, mappe-les ici
+      options: [], // si tu tarifies des options server-side, mappe-les ici
       extras: config.extras || [],
       totals,
     });
 
-    // Upload + DB contracts
     const filename = `IRZZEN-Contrat-${new Date().toISOString().slice(0, 10)}.pdf`;
     const saved = await saveContractPDF({ bookingId, buffer: pdfBuffer, filename });
 
-    await supabase.from("contracts").insert({
+    await supabaseAdmin.from("contracts").insert({
       booking_id: bookingId,
       file_path: saved.path,
       bytes: saved.bytes,
       created_at: new Date().toISOString(),
     });
 
-    // Session Stripe — paiement du total (tu peux passer à l’acompte si besoin)
+    // Session Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -227,19 +222,19 @@ export async function POST(req: Request) {
         },
       ],
       success_url: `${SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}&pdfUrl=${encodeURIComponent(
-        saved.publicUrl
+        saved.url
       )}`,
       cancel_url: `${SITE_URL}/reservation?canceled=1`,
       metadata: {
         booking_id: bookingId,
         pdf_path: saved.path,
-        pdf_url: saved.publicUrl,
+        pdf_url: saved.url,
         formula_id: formula.id,
         email: customer.email,
       },
     });
 
-    return NextResponse.json({ url: session.url, pdfUrl: saved.publicUrl });
+    return NextResponse.json({ url: session.url, pdfUrl: saved.url });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ error: err?.message || "Server error" }, { status: 500 });
