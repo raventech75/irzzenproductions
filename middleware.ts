@@ -1,21 +1,29 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const USER = process.env.ADMIN_USERNAME || "";
+const PASS = process.env.ADMIN_PASSWORD || "";
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) return NextResponse.next();
 
-  const auth = req.headers.get("authorization");
-  if (!auth?.startsWith("Basic ")) {
-    return new NextResponse("Auth required", {
-      status: 401,
-      headers: { "WWW-Authenticate": 'Basic realm="IRZZEN Admin"' }
-    });
+  // Protéger toutes les routes /admin et leurs APIs
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    const auth = req.headers.get("authorization");
+    if (!auth?.startsWith("Basic ")) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: { "WWW-Authenticate": 'Basic realm="Admin Zone"' },
+      });
+    }
+    const [u, p] = Buffer.from(auth.split(" ")[1], "base64").toString().split(":");
+    if (u !== USER || p !== PASS) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
   }
-  const [user, pass] = Buffer.from(auth.replace("Basic ", ""), "base64").toString().split(":");
-  if (user === process.env.ADMIN_USERNAME && pass === process.env.ADMIN_PASSWORD) return NextResponse.next();
-  return new NextResponse("Forbidden", { status: 403 });
+  return NextResponse.next();
 }
 
-export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
-
+export const config = {
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
+};

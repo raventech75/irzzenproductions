@@ -1,81 +1,96 @@
 // lib/modules.ts
 
-/** Version détaillée pour l’UI + PDF */
-export interface FormulaDetailed {
+export type FormulaOption = {
   id: string;
-  label: string;
+  name: string;
   price: number;
-  features: string[];
-}
+};
+
+export type FormulaDetailed = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  /** Liste de points clés à afficher dans la carte */
+  features?: string[];
+  /** Options proposées pour cette formule */
+  options?: FormulaOption[];
+};
 
 export const FORMULAS_DETAILED: FormulaDetailed[] = [
   {
     id: "essentielle",
-    label: "Formule 1 : Essentielle",
-    price: 1800,
+    name: "Formule Essentielle",
+    description:
+      "Couverture photo/vidéo de la cérémonie et des moments clés, remise numérique.",
+    price: 800,
     features: [
-      "Prises de vue à la mairie",
-      "Séance photo de couple",
-      "Vidéo des moments clés",
-      "1 caméraman",
-      "Montage vidéo complet",
-      "Album photo numérique",
-      "Clef USB",
+      "Cérémonie + moments clés",
+      "Galerie numérique HD",
+      "Montage vidéo court (si vidéo)",
+    ],
+    options: [
+      { id: "extra-photo", name: "Séance photo avant mariage", price: 200 },
+      { id: "drone", name: "Captation drone", price: 300 },
+      { id: "retouches", name: "Pack retouches avancées", price: 150 },
+    ],
+  },
+  {
+    id: "classique",
+    name: "Formule Classique",
+    description:
+      "Reportage depuis les préparatifs jusqu’au début de soirée.",
+    price: 1200,
+    features: [
+      "Préparatifs ➜ début de soirée",
+      "Tri/retouche des meilleures photos",
+      "Clip vidéo des moments forts",
+    ],
+    options: [
+      { id: "album", name: "Album photo haut de gamme", price: 250 },
+      { id: "second-shooter", name: "Deuxième photographe", price: 400 },
+      { id: "drone", name: "Captation drone", price: 300 },
+    ],
+  },
+  {
+    id: "premium",
+    name: "Formule Premium",
+    description:
+      "Couverture complète photo + vidéo (préparatifs, cérémonie, cocktail, soirée).",
+    price: 2000,
+    features: [
+      "Photo + Vidéo toute la journée",
+      "Teaser réseaux sociaux",
+      "Film souvenir 8–12 min",
+    ],
+    options: [
+      { id: "video-longue", name: "Vidéo longue (30 min)", price: 400 },
+      { id: "teaser", name: "Teaser 2 min pour réseaux sociaux", price: 200 },
+      { id: "album", name: "Album photo luxe", price: 350 },
     ],
   },
   {
     id: "prestige",
-    label: "Formule 2 : Prestige",
-    price: 2800,
+    name: "Formule Prestige",
+    description:
+      "Expérience ultime : photo + vidéo + drone + teaser + album luxe.",
+    price: 3000,
     features: [
-      "Prises de vue à la mairie",
-      "Séance photo de couple",
-      "Vidéo des moments clés",
-      "1 caméraman",
-      "Montage vidéo complet",
-      "Album photo numérique et imprimé (30x30)",
-      "Prestations drone pour vues aériennes",
-      "Clef USB",
+      "Équipe renforcée (photo + vidéo)",
+      "Drone inclus (si autorisé)",
+      "Album luxe & coffret USB",
     ],
-  },
-  {
-    id: "excellence",
-    label: "Formule 3 : Excellence",
-    price: 3800,
-    features: [
-      "Shooting préparatifs",
-      "Prises de vue à la mairie",
-      "Séance photo de couple",
-      "Vidéo des moments clés",
-      "2 caméramans",
-      "Montage vidéo complet",
-      "Album photo numérique et imprimé de luxe (40x30)",
-      "Prestations drone pour vues aériennes",
-      "Projection vidéos sur écran durant la soirée",
-      "Clef USB",
-    ],
-  },
-  {
-    id: "luxe",
-    label: "Formule 4 : Luxe",
-    price: 4800,
-    features: [
-      "Shooting préparatifs",
-      "Prises de vue à la mairie",
-      "Séance photo de couple",
-      "Vidéo des moments clés",
-      "2 caméramans",
-      "Montage vidéo complet",
-      "Album photo numérique et imprimé de luxe (40x30 + 15x21(x2))",
-      "Prestations drone pour vues aériennes",
-      "Diffusion en direct sur YouTube",
-      "Projection des photos et vidéos sur écran durant la soirée",
-      "Projection des meilleurs moments le jour J",
-      "Clef USB",
+    options: [
+      { id: "second-shooter", name: "Deuxième photographe", price: 400 },
+      { id: "afterday", name: "Séance After Day", price: 500 },
     ],
   },
 ];
 
-/** Accès par id si besoin côté serveur */
-export const FORMULAS_DETAILED_BY_ID: Record<string, FormulaDetailed> =
-  Object.fromEntries(FORMULAS_DETAILED.map((f) => [f.id, f]));
+// Formatage €
+export const eur = (value: number) =>
+  new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 0,
+  }).format(value);
