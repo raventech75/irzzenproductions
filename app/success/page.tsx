@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface SessionData {
@@ -11,7 +11,7 @@ interface SessionData {
   pdfUrl?: string;
 }
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get('session_id');
   
@@ -57,7 +57,7 @@ export default function SuccessPage() {
     return () => {
       isMounted = false;
     };
-  }, [sessionId]); // 🎯 Une seule dépendance
+  }, [sessionId]);
 
   if (!sessionId) {
     return (
@@ -162,5 +162,18 @@ export default function SuccessPage() {
         </a>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-2xl mx-auto py-16 text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p>Chargement...</p>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }
