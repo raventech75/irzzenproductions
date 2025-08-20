@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // ⚠️ Pas l’ANON KEY ici
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // ⚠️ Service role key
 );
 
 export const runtime = "nodejs";
@@ -47,10 +47,13 @@ export async function POST(req: Request) {
       const weddingDate = session.metadata?.wedding_date || "Date inconnue";
       const email = session.customer_email || "contact inconnu";
 
+      console.log("📋 Métadonnées récupérées:", { bride, groom, weddingDate, email });
+
       // 2. Générer un PDF simple avec pdf-lib
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      
       page.drawText("Contrat de Prestation Photo/Vidéo", {
         x: 50,
         y: 350,
@@ -69,33 +72,46 @@ export async function POST(req: Request) {
       page.drawText(`Email: ${email}`, { x: 50, y: 240, size: 14, font });
 
       const pdfBytes = await pdfDoc.save();
+      console.log("📄 PDF généré, taille:", pdfBytes.length, "bytes");
 
-      // 3. Upload dans Supabase Storage
-      const fileName = `contrats/${session.id}.pdf`;
-      const { error: uploadError } = await supabase.storage
-        .from("contrats") // ⚠️ Ton bucket Supabase doit s’appeler "contrats"
+      // 3. Vérifier si le bucket existe
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      if (bucketsError) {
+        console.error("❌ Erreur listBuckets:", bucketsError);
+        return new Response("Bucket check failed", { status: 500 });
+      }
+      
+      const contractsBucket = buckets?.find(b => b.name === 'contrats');
+      if (!contractsBucket) {
+        console.error("❌ Bucket 'contrats' introuvable. Buckets disponibles:", 
+          buckets?.map(b => b.name));
+        return new Response("Bucket not found", { status: 500 });
+      }
+
+      console.log("✅ Bucket 'contrats' trouvé");
+
+      // 4. Upload dans Supabase Storage
+      const fileName = `${session.id}.pdf`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("contrats")
         .upload(fileName, pdfBytes, {
           contentType: "application/pdf",
           upsert: true,
         });
 
       if (uploadError) {
-        console.error("❌ Erreur upload Supabase:", uploadError.message);
-        return new Response("Upload failed", { status: 500 });
+        console.error("❌ Erreur upload Supabase:", uploadError);
+        return new Response(`Upload failed: ${uploadError.message}`, { status: 500 });
       }
 
-      // 4. Rendre le fichier public
+      console.log("✅ Upload réussi:", uploadData?.path);
+
+      // 5. Récupérer l'URL publique
       const { data: publicUrlData } = supabase.storage
         .from("contrats")
         .getPublicUrl(fileName);
 
       console.log("📂 PDF accessible ici:", publicUrlData.publicUrl);
-
-      // 👉 Ici tu peux aussi sauver en DB l’URL
-      // await supabase.from("bookings").insert({
-      //   stripe_session: session.id,
-      //   contrat_url: publicUrlData.publicUrl,
-      // });
 
       return new Response(
         JSON.stringify({
@@ -111,7 +127,7 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("[stripe webhook] Handler error:", err.message);
-    return new Response("Server error", { status: 500 });
+    console.error("[stripe webhook] Handler error:", err);
+    return new Response(`Server error: ${err.message}`, { status: 500 });
   }
 }
