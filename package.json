@@ -1,0 +1,37 @@
+{
+  "name": "irzzenproductions",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.15",
+    "@supabase/supabase-js": "^2.45.0",
+    "autoprefixer": "^10.4.20",
+    "clsx": "^2.1.1",
+    "jspdf": "^2.5.2",
+    "next": "14.2.5",
+    "postcss": "^8.4.41",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "resend": "^3.3.0",
+    "stripe": "^14.24.0",
+    "tailwindcss": "^3.4.10",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^9.8.0",
+    "eslint-config-next": "14.2.5",
+    "typescript": "5.9.2"
+  }
+}
