@@ -1,33 +1,44 @@
 // lib/pdf.ts
-// Génération du contrat PDF avec pdf-lib (compatible Next.js / Vercel)
-import { PDFDocument, StandardFonts, rgb, type RGB } from "pdf-lib";
+// Contrat PDF "pro" avec pdf-lib : bandeau, sections, tableau, footer & pagination
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type RGB,
+} from "pdf-lib";
 
 export interface BuildPdfArgs {
+  // Identité / contrat
+  couple_name?: string;
   bride_first_name?: string;
   bride_last_name?: string;
   groom_first_name?: string;
   groom_last_name?: string;
-  couple_name?: string;
-  wedding_date?: string;
-  formula?: string;
-  total_eur?: string;      // texte déjà formaté (ex: "1 500") ou nombre en string
-  deposit_eur?: string;
-  remaining_eur?: string;
-  selected_options?: string; // ex: "Drone, Album"
-  extras?: string;           // ex: "Heure sup.:150|Déplacement:80"
   email?: string;
 
-  // Champs additionnels (facultatifs)
+  // Évènement
+  wedding_date?: string;
   ceremony_address?: string;
   ceremony_time?: string;
   reception_address?: string;
   reception_time?: string;
   notes?: string;
+
+  // Offre & prix
+  formula?: string;                // ex: "Prestige"
+  formula_description?: string;    // ex: "Tournage mairie, séance couple, montage complet…"
+  total_eur?: string;              // "2800"
+  deposit_eur?: string;            // "420"
+  remaining_eur?: string;          // "2380"
+  selected_options?: string;       // "Drone, Album luxe (40x30)"
+  extras?: string;                 // "Heure sup.:150|Projection jour J:300"
 }
 
-const ORANGE: RGB = rgb(0.95, 0.45, 0.2);
-const BLACK: RGB = rgb(0, 0, 0);
-const GRAY: RGB = rgb(0.35, 0.35, 0.35);
+const C_BG: RGB = rgb(1, 0.976, 0.96);   // fond très léger pêche
+const C_ACCENT: RGB = rgb(0.95, 0.45, 0.2); // orange pastel
+const C_TEXT: RGB = rgb(0.12, 0.12, 0.12);
+const C_MUTED: RGB = rgb(0.45, 0.45, 0.46);
+const C_BORDER: RGB = rgb(0.92, 0.84, 0.78);
 
 function clean(v: any) {
   return String(v ?? "")
@@ -43,16 +54,13 @@ type DrawTextOpts = {
   maxWidth?: number;
   lineHeight?: number;
   color?: RGB;
+  font?: any;
 };
 
-/**
- * Dessine un paragraphe (word-wrap simple) et retourne la nouvelle position Y
- */
 function drawParagraph(
   page: any,
-  font: any,
   text: string,
-  { x, y, size, maxWidth = 495, lineHeight = 1.25, color = BLACK }: DrawTextOpts
+  { x, y, size, maxWidth = 495, lineHeight = 1.3, color = C_TEXT, font }: DrawTextOpts
 ) {
   const words = text.split(/\s+/);
   let line = "";
@@ -78,36 +86,40 @@ function drawParagraph(
   return cursorY;
 }
 
-/**
- * Construit un PDF de contrat et retourne un Uint8Array
- */
+function hr(page: any, x1: number, x2: number, y: number, color = C_BORDER) {
+  page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: 1, color });
+}
+
+function euros(n: string | number | undefined | null) {
+  if (n == null || n === "") return "—";
+  const num = typeof n === "string" ? Number(n) : n;
+  if (Number.isNaN(num)) return String(n);
+  return `${num.toLocaleString("fr-FR")} €`;
+}
+
 export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595, 842]); // A4 (pt)
-  const { height } = page.getSize();
+  const pdf = await PDFDocument.create();
+  const page = pdf.addPage([595, 842]); // A4 portrait
+  const { width, height } = page.getSize();
 
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const f = await pdf.embedFont(StandardFonts.Helvetica);
+  const fb = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  let y = height - 60;
-
-  // ——— Titre
-  page.drawText("Contrat & Confirmation de Réservation", {
-    x: 50,
-    y,
-    size: 18,
-    font: fontBold,
-    color: ORANGE,
+  // Bandeau
+  page.drawRectangle({ x: 0, y: height - 120, width, height: 120, color: C_BG });
+  page.drawText("I R Z Z E N   P R O D U C T I O N S", {
+    x: 40, y: height - 48, size: 10, font: fb, color: C_ACCENT,
   });
-  y -= 30;
+  page.drawText("Contrat & Confirmation de Réservation", {
+    x: 40, y: height - 80, size: 18, font: fb, color: C_ACCENT,
+  });
 
-  // ——— Informations clients
-  y = drawParagraph(page, fontBold, "Informations Clients", {
-    x: 50,
-    y,
-    size: 13,
-    color: ORANGE,
-  }) - 6;
+  let y = height - 140;
+
+  // Informations client & évènement (2 colonnes)
+  const col1x = 40;
+  const col2x = 320;
+  const colW = 235;
 
   const couple =
     clean(args.couple_name) ||
@@ -115,132 +127,104 @@ export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
       .filter(Boolean)
       .join(" ");
 
-  y = drawParagraph(page, font, `Couple : ${couple || "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 4;
+  // Colonne 1
+  page.drawText("Client", { x: col1x, y, size: 12, font: fb, color: C_ACCENT });
+  y -= 14;
+  y = drawParagraph(page, `Couple : ${couple || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW }) - 2;
+  y = drawParagraph(page, `Email : ${clean(args.email) || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW }) - 2;
+  y = drawParagraph(page, `Date du mariage : ${clean(args.wedding_date) || "—"}`, { x: col1x, y, size: 11, font: f, maxWidth: colW });
 
-  y = drawParagraph(page, font, `Email : ${clean(args.email) || "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 4;
+  // Colonne 2
+  let y2 = height - 154;
+  page.drawText("Lieux & Horaires", { x: col2x, y: height - 140, size: 12, font: fb, color: C_ACCENT });
+  y2 = drawParagraph(page, `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`, { x: col2x, y: y2, size: 11, font: f, maxWidth: colW }) - 2;
+  y2 = drawParagraph(page, `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`, { x: col2x, y: y2, size: 11, font: f, maxWidth: colW });
 
-  y = drawParagraph(page, font, `Date du mariage : ${clean(args.wedding_date) || "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 10;
+  const afterHeaderY = Math.min(y, y2) - 12;
+  hr(page, 40, width - 40, afterHeaderY);
 
-  // ——— Lieux & Horaires
-  y = drawParagraph(page, fontBold, "Lieux & Horaires", {
-    x: 50,
-    y,
-    size: 13,
-    color: ORANGE,
-  }) - 6;
+  // Formule & options
+  y = afterHeaderY - 24;
+  page.drawText("Formule & Options", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
+  y -= 16;
 
-  const locs: string[] = [];
-  if (args.ceremony_address || args.ceremony_time) {
-    locs.push(
-      `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`
-    );
+  y = drawParagraph(page, `Formule : ${clean(args.formula) || "—"}`, { x: 40, y, size: 11, font: f, maxWidth: width - 80 }) - 6;
+  if (args.formula_description) {
+    y = drawParagraph(page, clean(args.formula_description), { x: 40, y, size: 10.5, font: f, maxWidth: width - 80, color: C_MUTED }) - 8;
   }
-  if (args.reception_address || args.reception_time) {
-    locs.push(
-      `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`
-    );
-  }
-  if (locs.length === 0) locs.push("—");
-  for (const l of locs) {
-    y = drawParagraph(page, font, l, { x: 50, y, size: 11, color: BLACK }) - 3;
-  }
+
+  const opts = clean(args.selected_options)
+    ? clean(args.selected_options).split(",").map(s => s.trim()).filter(Boolean)
+    : [];
+  y = drawParagraph(page, `Options : ${opts.length ? opts.join(", ") : "—"}`, { x: 40, y, size: 11, font: f, maxWidth: width - 80 }) - 6;
+
+  const extrasHuman = (() => {
+    const raw = clean(args.extras);
+    if (!raw) return "—";
+    const items = raw.split("|").filter(Boolean).map(p => {
+      const [label, amount] = p.split(":");
+      return `${clean(label)}${amount ? ` (${clean(amount)} €)` : ""}`;
+    });
+    return items.length ? items.join(", ") : "—";
+  })();
+  y = drawParagraph(page, `Extras : ${extrasHuman}`, { x: 40, y, size: 11, font: f, maxWidth: width - 80 });
+
+  // Tableau des prix
+  y -= 14;
+  page.drawText("Récapitulatif financier", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
   y -= 8;
 
-  // ——— Formule & Options
-  y = drawParagraph(page, fontBold, "Formule & Options", {
-    x: 50,
-    y,
-    size: 13,
-    color: ORANGE,
-  }) - 6;
+  const tableX = 40;
+  const tableW = width - 80;
+  const colDescW = tableW * 0.65;
+  const rowH = 22;
 
-  y = drawParagraph(page, font, `Formule : ${clean(args.formula) || "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 4;
+  // Header
+  y -= rowH;
+  page.drawRectangle({ x: tableX, y: y, width: tableW, height: rowH, color: C_BG });
+  page.drawText("Description", { x: tableX + 10, y: y + 6, size: 10.5, font: fb, color: C_ACCENT });
+  page.drawText("Montant", { x: tableX + colDescW + 10, y: y + 6, size: 10.5, font: fb, color: C_ACCENT });
 
-  y = drawParagraph(page, font, `Options : ${clean(args.selected_options) || "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 4;
-
-  // ——— Extras (ex: "Heure sup.:150|Déplacement:80")
-  const extrasText = clean(args.extras);
-  let extrasHuman = "—";
-  if (extrasText) {
-    const items = extrasText
-      .split("|")
-      .filter(Boolean)
-      .map((p) => {
-        const [label, amount] = p.split(":");
-        return `${clean(label)}${amount ? ` (${clean(amount)} €)` : ""}`;
-      });
-    extrasHuman = items.length ? items.join(", ") : "—";
+  // Rows
+  function row(desc: string, amount: string) {
+    y -= rowH;
+    page.drawRectangle({ x: tableX, y, width: tableW, height: rowH, color: rgb(1,1,1) });
+    page.drawRectangle({ x: tableX, y, width: tableW, height: 0.8, color: C_BORDER });
+    page.drawText(desc, { x: tableX + 10, y: y + 6, size: 10.5, font: f, color: C_TEXT });
+    page.drawText(amount, { x: tableX + colDescW + 10, y: y + 6, size: 10.5, font: f, color: C_TEXT });
   }
-  y = drawParagraph(page, font, `Extras : ${extrasHuman}`, {
-    x: 50,
-    y,
-    size: 11,
-    color: BLACK,
-  }) - 10;
 
-  // ——— Récapitulatif financier
-  y = drawParagraph(page, fontBold, "Récapitulatif Financier", {
-    x: 50,
-    y,
-    size: 13,
-    color: ORANGE,
-  }) - 6;
+  row(`Formule « ${clean(args.formula) || "—"} »`, euros(args.total_eur || "0"));
 
-  const total = clean(args.total_eur);
-  const deposit = clean(args.deposit_eur);
-  const rest = clean(args.remaining_eur);
+  if (opts.length) row("Options", "—");
+  for (const o of opts) row(`• ${o}`, "—");
 
-  y = drawParagraph(page, font, `Total : ${total ? `${total} €` : "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-  }) - 3;
+  if (extrasHuman !== "—") {
+    row("Extras", "—");
+    for (const e of extrasHuman.split(",").map(s => s.trim())) row(`• ${e}`, "—");
+  }
 
-  y = drawParagraph(
-    page,
-    font,
-    `Acompte conseillé (15% arrondi) : ${deposit ? `${deposit} €` : "—"}`,
-    { x: 50, y, size: 11 }
-  ) - 3;
+  // Totaux dédiés
+  y -= 6;
+  page.drawText("Acompte conseillé (15% arrondi)", { x: tableX, y, size: 10.5, font: fb, color: C_TEXT });
+  page.drawText(euros(args.deposit_eur), { x: tableX + colDescW + 10, y, size: 10.5, font: fb, color: C_TEXT });
 
-  y = drawParagraph(page, font, `Reste à payer le jour J : ${rest ? `${rest} €` : "—"}`, {
-    x: 50,
-    y,
-    size: 11,
-  }) - 10;
+  y -= 18;
+  page.drawText("Reste à payer le jour J", { x: tableX, y, size: 11.5, font: fb, color: C_ACCENT });
+  page.drawText(euros(args.remaining_eur), { x: tableX + colDescW + 10, y, size: 11.5, font: fb, color: C_ACCENT });
 
-  // ——— Mentions & Conditions
-  y = drawParagraph(page, fontBold, "Mentions & Conditions", {
-    x: 50,
-    y,
-    size: 13,
-    color: ORANGE,
-  }) - 6;
+  // Notes éventuelles
+  if (clean(args.notes)) {
+    y -= 24;
+    page.drawText("Notes / souhaits", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
+    y -= 14;
+    y = drawParagraph(page, clean(args.notes), { x: 40, y, size: 10.5, font: f, maxWidth: width - 80, color: C_TEXT });
+  }
+
+  // Mentions & conditions
+  y -= 24;
+  page.drawText("Mentions & Conditions", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
+  y -= 12;
 
   const clauses = [
     "Acompte : 15 % recommandé. L’acompte n’est pas remboursable en cas d’annulation.",
@@ -248,35 +232,30 @@ export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
     "Droits d’auteur : Irzzen Productions conserve les droits d’auteur ; usage privé accordé au client. Toute diffusion publique nécessite autorisation.",
     "Force majeure : en cas d’imprévu majeur (maladie, accident, grève, etc.), un remplaçant ou un remboursement au prorata sera proposé.",
     "Responsabilité : la meilleure diligence est apportée à la prestation ; aucune garantie de résultat artistique spécifique.",
-    "Données personnelles : traitées uniquement pour l’exécution du contrat et la relation commerciale, selon le RGPD.",
+    "Données personnelles : traitées uniquement pour l’exécution du contrat et la relation commerciale, conformément au RGPD.",
     "Livraison : les fichiers numériques sont livrés au plus tard sous 6 mois.",
   ];
 
   for (const c of clauses) {
-    y = drawParagraph(page, font, `• ${c}`, {
-      x: 50,
-      y,
-      size: 10.5,
-      color: GRAY,
-      lineHeight: 1.35,
-    }) - 2;
+    y = drawParagraph(page, `• ${c}`, { x: 40, y, size: 10.5, font: f, maxWidth: width - 80, color: C_MUTED, lineHeight: 1.35 }) - 2;
   }
 
-  // ——— Signatures (visuel)
-  y -= 16;
-  y = drawParagraph(page, fontBold, "Signatures", {
-    x: 50,
-    y,
-    size: 12,
-    color: ORANGE,
-  }) - 10;
+  // Signature
+  y -= 18;
+  page.drawText("Signatures", { x: 40, y, size: 12, font: fb, color: C_ACCENT });
+  y -= 14;
+  page.drawText("Le Client :", { x: 40, y, size: 11, font: f, color: C_TEXT });
+  page.drawLine({ start: { x: 110, y: y - 2 }, end: { x: 280, y: y - 2 }, thickness: 0.8, color: C_BORDER });
+  page.drawText("Le Prestataire :", { x: 320, y, size: 11, font: f, color: C_TEXT });
+  page.drawLine({ start: { x: 420, y: y - 2 }, end: { x: 560, y: y - 2 }, thickness: 0.8, color: C_BORDER });
 
-  page.drawText("Le Client :", { x: 50, y, size: 11, font, color: BLACK });
-  page.drawLine({ start: { x: 120, y: y - 2 }, end: { x: 320, y: y - 2 }, thickness: 0.5, color: GRAY });
-  page.drawText("Le Prestataire :", { x: 330, y, size: 11, font, color: BLACK });
-  page.drawLine({ start: { x: 430, y: y - 2 }, end: { x: 560, y: y - 2 }, thickness: 0.5, color: GRAY });
+  // Footer
+  const footerY = 28;
+  hr(page, 40, width - 40, footerY + 10, C_BORDER);
+  page.drawText("Irzzen Productions — contact@irzzenproductions.fr — www.irzzenproductions.fr", {
+    x: 40, y: footerY, size: 9, font: f, color: C_MUTED,
+  });
+  page.drawText("Page 1 / 1", { x: width - 80, y: footerY, size: 9, font: f, color: C_MUTED });
 
-  // ——— Sauvegarde
-  const pdfBytes = await pdfDoc.save();
-  return pdfBytes;
+  return await pdf.save();
 }

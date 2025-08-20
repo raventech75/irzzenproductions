@@ -1,3 +1,8 @@
+// lib/email.ts
 import { Resend } from "resend";
-export const resend = new Resend(process.env.RESEND_API_KEY!);
-export const MAIL_FROM = process.env.MAIL_FROM || "contact@irzzenproductions.fr";
+
+export const resend = new Resend(process.env.RESEND_API_KEY);
+export const MAIL_FROM =
+  process.env.EMAIL_FROM ||
+  process.env.MAIL_FROM || // au cas où tu utilises cette clé ailleurs
+  "Irzzenproductions <contact@irzzenproductions.fr>";
