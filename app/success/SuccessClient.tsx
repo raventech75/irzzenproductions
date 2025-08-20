@@ -1,83 +1,119 @@
+// app/success/SuccessClient.tsx
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+
+type VerifyResponse = {
+  paid: boolean;
+  email: string | null;
+  pdfUrl: string;
+  metadata: Record<string, string>;
+  error?: string;
+};
 
 export default function SuccessClient() {
-  const searchParams = useSearchParams();
-  const pdfUrl = searchParams.get("pdfUrl"); // URL publique ou signée Supabase
-  const clientEmail = searchParams.get("email") || "client@email.com";
-  const clientName = searchParams.get("name") || "Client";
+  const sp = useSearchParams();
+  const sessionId = sp.get("session_id") || "";
+  const [data, setData] = useState<VerifyResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sendMsg, setSendMsg] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<string | null>(null);
+  const clientName =
+    data?.metadata?.couple_name ||
+    [data?.metadata?.bride_first_name, data?.metadata?.bride_last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    "Client";
 
   useEffect(() => {
-    if (!pdfUrl) {
-      setStatus("Aucun contrat généré.");
+    let mounted = true;
+    async function run() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
+          cache: "no-store",
+        });
+        const json = (await res.json()) as VerifyResponse;
+        if (mounted) setData(json);
+      } catch (e) {
+        if (mounted) setData({ paid: false, email: null, pdfUrl: "", metadata: {}, error: String(e) });
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
-  }, [pdfUrl]);
+    if (sessionId) run();
+    return () => {
+      mounted = false;
+    };
+  }, [sessionId]);
+
+  const canDownload = useMemo(() => Boolean(data?.pdfUrl), [data]);
+  const toEmail = useMemo(() => data?.email || data?.metadata?.email || "", [data]);
 
   const handleDownload = () => {
-    if (!pdfUrl) return;
-    window.open(pdfUrl, "_blank");
+    if (!data?.pdfUrl) return;
+    window.open(data.pdfUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleResend = async () => {
-    if (!pdfUrl) {
-      setStatus("Aucun contrat disponible.");
+    if (!toEmail || !data) {
+      setSendMsg("Email ou contrat indisponible.");
       return;
     }
-    setStatus("Envoi en cours...");
-
+    setSendMsg("Envoi en cours…");
     try {
-      const res = await fetch("/api/admin/contracts/email", {
+      const res = await fetch("/api/send-contract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: clientEmail,
-          pdfUrl,
+          to: toEmail,
+          pdfUrl: data.pdfUrl || null,
+          pdfPath: data.metadata?.pdfPath || null,
         }),
       });
-
-      if (!res.ok) throw new Error("Erreur serveur");
-      setStatus("Contrat renvoyé avec succès ✅");
-    } catch (err) {
-      console.error(err);
-      setStatus("Erreur lors de l’envoi ❌");
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSendMsg(`Erreur d'envoi : ${j?.error || res.statusText}`);
+        return;
+      }
+      setSendMsg("Contrat renvoyé par mail ✅");
+    } catch (e: any) {
+      setSendMsg(`Erreur d'envoi : ${e?.message || e}`);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto text-center py-16">
-      <h1 className="text-3xl font-bold text-orange-600">
+    <div className="max-w-3xl mx-auto text-center py-16">
+      <h1 className="text-4xl md:text-5xl font-extrabold text-orange-600">
         Merci pour votre réservation 🎉
       </h1>
-      <p className="mt-2 text-gray-600">
+      <p className="mt-3 text-gray-600 text-lg">
         Votre contrat a été généré pour <b>{clientName}</b>.
       </p>
 
-      <div className="mt-6 flex justify-center gap-4">
+      <div className="mt-8 flex flex-wrap justify-center gap-4">
         <button
           onClick={handleDownload}
-          disabled={!pdfUrl}
-          className="px-5 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+          disabled={!canDownload || loading}
+          className="px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 disabled:opacity-50"
         >
           📄 Télécharger le contrat
         </button>
         <button
           onClick={handleResend}
-          disabled={!pdfUrl}
-          className="px-5 py-2 rounded-lg border border-orange-500 text-orange-600 hover:bg-orange-50 disabled:opacity-50"
+          disabled={!canDownload || loading}
+          className="px-6 py-3 rounded-xl border border-orange-400 text-orange-600 font-semibold hover:bg-orange-50 disabled:opacity-50"
         >
           ✉️ Renvoyer par email
         </button>
       </div>
 
-      {status && (
-        <p className="mt-4 text-sm text-gray-700">
-          {status}
-        </p>
-      )}
+      <div className="mt-6 text-sm text-gray-700">
+        {loading && <p>Vérification du paiement…</p>}
+        {!loading && !canDownload && <p>Aucun contrat généré.</p>}
+        {sendMsg && <p className="mt-2">{sendMsg}</p>}
+      </div>
     </div>
   );
 }
