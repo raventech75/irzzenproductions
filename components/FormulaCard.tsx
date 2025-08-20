@@ -1,9 +1,8 @@
+// components/FormulaCard.tsx
 "use client";
 
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Money } from "@/components/ui";
 import type { FormulaDetailed } from "@/lib/modules";
+import { eur } from "@/lib/modules";
 
 type Props = {
   formula: FormulaDetailed;
@@ -13,45 +12,37 @@ type Props = {
 
 export default function FormulaCard({ formula, selected, onSelect }: Props) {
   return (
-    <motion.label
-      layout
-      onClick={onSelect}
-      role="button"
-      aria-pressed={selected}
-      className={cn(
-        "cursor-pointer rounded-2xl border px-5 py-4 transition flex flex-col gap-2",
-        selected
-          ? "border-orange-500 bg-orange-50 shadow-md"
-          : "hover:border-orange-300 hover:bg-white"
-      )}
-      initial={{ opacity: 0.0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -1 }}
+    <label
+      className={[
+        "rounded-2xl border px-5 py-4 cursor-pointer transition block bg-white",
+        selected ? "border-orange-500 ring-1 ring-orange-200" : "hover:bg-orange-50/40",
+      ].join(" ")}
     >
-      <div className="flex items-center justify-between">
-        <div className="font-semibold text-lg">{formula.label}</div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="font-semibold text-lg">{formula.name}</div>
+          <div className="opacity-70 text-sm">{formula.description}</div>
+          <div className="mt-1 text-orange-700 font-medium">{eur(formula.price)}</div>
+        </div>
         <input
           type="radio"
           name="formula"
           checked={selected}
           onChange={onSelect}
-          className="w-5 h-5 accent-orange-500"
-          aria-label={`Choisir ${formula.label}`}
+          className="mt-1 w-5 h-5"
         />
       </div>
 
-      <div className="opacity-70 text-sm">
-        <Money value={formula.price} />
-      </div>
-
-      <ul className="mt-2 space-y-1.5 text-sm opacity-90">
-        {formula.features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-orange-500" />
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-    </motion.label>
+      {formula.features && formula.features.length > 0 && (
+        <ul className="mt-3 space-y-1.5 text-sm opacity-90">
+          {formula.features.map((f, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-orange-500" />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </label>
   );
 }

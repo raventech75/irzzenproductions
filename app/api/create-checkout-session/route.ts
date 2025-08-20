@@ -1,116 +1,160 @@
-// /app/api/create-checkout-session/route.ts
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import PDFDocument from "pdfkit";
 import { Resend } from "resend";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2023-10-16", // ✅ version stable
 });
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(req: Request) {
   try {
-    const { formulaId, options, extras, pricing, questionnaire } = await req.json();
+    const body = await req.json();
 
-    // ———————————————————————
-    // 1. Génération PDF en mémoire
-    // ———————————————————————
-    const doc = new PDFDocument({ size: "A4", margin: 50 });
-    const chunks: any[] = [];
-    doc.on("data", (chunk) => chunks.push(chunk));
-    doc.on("end", () => {});
+    // ✅ Récupération des données formulaire
+    const {
+      bride_first_name,
+      bride_last_name,
+      groom_first_name,
+      groom_last_name,
+      email,
+      phone,
+      address,
+      ceremony_address,
+      reception_address,
+      ceremony_time,
+      reception_time,
+      formula,
+      price,
+    } = body;
 
-    doc.fontSize(20).text("Contrat & Confirmation de Réservation", { align: "center" });
-    doc.moveDown(2);
+    // ✅ Génération du PDF contrat avec pdf-lib
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // A4
+    const { height } = page.getSize();
 
-    doc.fontSize(14).text("Informations client", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(11).text(`Mariée : ${questionnaire.brideFirstName} ${questionnaire.brideLastName}`);
-    doc.text(`Marié : ${questionnaire.groomFirstName} ${questionnaire.groomLastName}`);
-    doc.text(`Email : ${questionnaire.email}`);
-    doc.text(`Téléphone : ${questionnaire.phone}`);
-    doc.text(`Adresse : ${questionnaire.address}, ${questionnaire.postalCode} ${questionnaire.city}, ${questionnaire.country}`);
-    doc.text(`Date du mariage : ${questionnaire.weddingDate}`);
-    doc.text(`Invités : ${questionnaire.guests}`);
-    doc.moveDown(1);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    let y = height - 50;
 
-    doc.fontSize(14).text("Formule choisie", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(11).text(`Formule : ${formulaId}`);
-    doc.text(`Options : ${options.join(", ") || "Aucune"}`);
-    doc.text(`Extras : ${extras.map((e: any) => `${e.label} (${e.price} €)`).join(", ") || "Aucun"}`);
-    doc.text(`Total : ${pricing.total} €`);
-    doc.text(`Acompte : ${pricing.depositSuggested} €`);
-    doc.text(`Solde : ${pricing.remainingDayJ} €`);
+    function addLine(text: string, size = 12) {
+      page.drawText(text, { x: 50, y, size, font, color: rgb(0, 0, 0) });
+      y -= size + 8;
+    }
 
-    doc.moveDown(2);
-    doc.fontSize(14).text("Mentions légales & Conditions", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(9).text(
-      `1. Acompte : 15% minimum recommandé. Solde le jour J.\n\n` +
-      `2. Annulation : acompte non remboursable, report possible.\n\n` +
-      `3. Droits d’auteur : usage privé uniquement, diffusion publique soumise à autorisation.\n\n` +
-      `4. Responsabilité : pas de garantie en cas d’imprévu (météo, retard, etc.).\n\n` +
-      `5. Force majeure : remboursement ou remplacement en cas d’empêchement.\n\n` +
-      `6. Confidentialité : données traitées conformément au RGPD.`
-    );
+    addLine("Contrat de prestation photo/vidéo", 18);
+    y -= 10;
 
-    doc.end();
-    const pdfBuffer = await new Promise<Buffer>((resolve) => {
-      const result = Buffer.concat(chunks);
-      resolve(result);
-    });
+    addLine(`Mariés : ${bride_first_name} ${bride_last_name} & ${groom_first_name} ${groom_last_name}`);
+    addLine(`Email : ${email}`);
+    addLine(`Téléphone : ${phone}`);
+    addLine(`Adresse : ${address}`);
+    y -= 10;
 
-    // ———————————————————————
-    // 2. Envoi du mail avec le contrat en PJ
-    // ———————————————————————
+    addLine(`Lieu de la cérémonie : ${ceremony_address}`);
+    addLine(`Heure de la cérémonie : ${ceremony_time}`);
+    addLine(`Lieu de la réception : ${reception_address}`);
+    addLine(`Heure de la réception : ${reception_time}`);
+    y -= 10;
+
+    addLine(`Formule choisie : ${formula}`);
+    addLine(`Montant total : ${price} €`);
+    y -= 20;
+
+    addLine("Mentions légales :", 14);
+    addLine("Le prestataire s'engage à fournir les services photo/vidéo tels que définis dans la formule choisie.");
+    addLine("Le client dispose d'un droit de rétractation de 14 jours après signature du contrat.");
+    addLine("Les données personnelles collectées sont utilisées uniquement pour l'exécution du contrat.");
+    y -= 10;
+
+    addLine("Clauses :", 14);
+    addLine("- Le client s'engage à fournir un accès aux lieux de prestation.");
+    addLine("- En cas d'annulation, les sommes déjà versées restent dues.");
+    addLine("- Le prestataire conserve les droits d'auteur sur les images, sauf accord contraire.");
+    addLine("- Livraison prévue dans un délai de 8 semaines maximum.");
+
+    const pdfBytes = await pdfDoc.save();
+
+    // ✅ Upload Supabase
+    const filePath = `contracts/${Date.now()}_${bride_last_name}_${groom_last_name}.pdf`;
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("contracts")
+      .upload(filePath, pdfBytes, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Erreur upload Supabase:", uploadError);
+      return NextResponse.json({ error: "Upload PDF failed" }, { status: 500 });
+    }
+
+    // ✅ URL publique
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from("contracts")
+      .getPublicUrl(filePath);
+    const pdfUrl = publicUrlData.publicUrl;
+
+    // ✅ Envoi email avec pièce jointe + lien
     await resend.emails.send({
-      from: process.env.EMAIL_FROM!,
-      to: questionnaire.email,
-      subject: "Confirmation de réservation - Irzzen Productions",
+      from: "no-reply@irzzenproductions.fr",
+      to: email,
+      subject: "Votre contrat - Irzzen Productions",
       html: `
-        <p>Bonjour ${questionnaire.brideFirstName} & ${questionnaire.groomFirstName},</p>
-        <p>Merci pour votre confiance. Vous trouverez ci-joint votre contrat de réservation.</p>
-        <p>Total : <strong>${pricing.total} €</strong> — Acompte : <strong>${pricing.depositSuggested} €</strong></p>
-        <p>Nous restons à votre disposition pour toute question.</p>
-        <p><em>Irzzen Productions</em></p>
+        <p>Bonjour ${bride_first_name},</p>
+        <p>Merci d’avoir choisi Irzzen Productions. Vous trouverez ci-joint votre contrat de prestation.</p>
+        <p>Vous pouvez également le télécharger via ce lien : <a href="${pdfUrl}">Télécharger le contrat</a></p>
+        <p>Cordialement,<br/>L'équipe Irzzen</p>
       `,
       attachments: [
         {
-          filename: "Contrat-Reservation.pdf",
-          content: pdfBuffer.toString("base64"),
-          type: "application/pdf",
-          disposition: "attachment",
+          filename: "contrat.pdf",
+          content: Buffer.from(pdfBytes).toString("base64"),
         },
       ],
     });
 
-    // ———————————————————————
-    // 3. Session Stripe
-    // ———————————————————————
+    // ✅ Création session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
       payment_method_types: ["card"],
+      mode: "payment",
       line_items: [
         {
           price_data: {
             currency: "eur",
-            product_data: { name: `Formule ${formulaId}` },
-            unit_amount: pricing.total * 100,
+            product_data: { name: `Formule ${formula}` },
+            unit_amount: price * 100,
           },
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/merci`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?pdfUrl=${encodeURIComponent(
+        pdfUrl
+      )}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/reservation`,
+      metadata: {
+        bride_first_name,
+        bride_last_name,
+        groom_first_name,
+        groom_last_name,
+        email,
+        phone,
+        address,
+        ceremony_address,
+        reception_address,
+        ceremony_time,
+        reception_time,
+        formula,
+        price: price.toString(),
+        pdfUrl,
+      },
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error("Erreur paiement:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    console.error("Erreur:", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

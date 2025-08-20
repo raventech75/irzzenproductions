@@ -1,53 +1,68 @@
+// components/FormulaCompare.tsx
 "use client";
 
 import React, { useMemo } from "react";
-import { FORMULAS_DETAILED } from "@/lib/modules";
+import { FORMULAS_DETAILED, type FormulaDetailed } from "@/lib/modules";
 
-// Check minimaliste inline (pas de dépendance icônes)
-const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
+type Row = {
+  feature: string;
+  presence: Record<string, boolean>; // key = formula.id
+};
+
+function buildRows(formulas: FormulaDetailed[]): Row[] {
+  const featuresSet = new Set<string>();
+  for (const f of formulas) {
+    for (const feat of f.features ?? []) {
+      featuresSet.add(feat);
+    }
+  }
+  const allFeatures = Array.from(featuresSet).sort((a, b) => a.localeCompare(b, "fr"));
+
+  return allFeatures.map((feat) => {
+    const presence: Record<string, boolean> = {};
+    for (const f of formulas) {
+      presence[f.id] = (f.features ?? []).includes(feat);
+    }
+    return { feature: feat, presence };
+  });
+}
 
 export default function FormulaCompareTable() {
-  // On agrège toutes les features de toutes les formules, en liste unique triée
-  const allFeatures = useMemo(() => {
-    const set = new Set<string>();
-    for (const f of FORMULAS_DETAILED) for (const feat of f.features) set.add(feat);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
-  }, []);
+  const formulas = FORMULAS_DETAILED;
+  const rows = useMemo(() => buildRows(formulas), [formulas]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-orange-100 bg-white/70">
+    <div className="w-full overflow-x-auto rounded-xl border bg-white">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="bg-orange-50/60">
-            <th className="px-4 py-3 text-left">Éléments inclus</th>
-            {FORMULAS_DETAILED.map((f) => (
-              <th key={f.id} className="px-4 py-3 text-left">{f.label}</th>
+          <tr className="bg-orange-50 text-orange-900">
+            <th className="text-left px-4 py-3">Caractéristiques</th>
+            {formulas.map((f) => (
+              <th key={f.id} className="text-left px-4 py-3">
+                <div className="font-semibold">{f.name}</div>
+                <div className="text-xs opacity-70">
+                  {f.price.toLocaleString("fr-FR")} €
+                </div>
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {allFeatures.map((feat) => (
-            <tr key={feat} className="border-t align-top">
-              <td className="px-4 py-3 w-[280px]">{feat}</td>
-              {FORMULAS_DETAILED.map((f) => {
-                const present = f.features.includes(feat);
-                return (
-                  <td key={f.id} className="px-4 py-3">
-                    {present ? (
-                      <div className="inline-flex items-center gap-2 rounded-lg bg-orange-50 px-2 py-1 text-orange-700">
-                        <CheckIcon className="w-4 h-4" />
-                        <span className="text-xs">Inclus</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs opacity-50">—</span>
-                    )}
-                  </td>
-                );
-              })}
+          {rows.map((r) => (
+            <tr key={r.feature} className="border-t">
+              <td className="px-4 py-3">{r.feature}</td>
+              {formulas.map((f) => (
+                <td key={f.id} className="px-4 py-3">
+                  {r.presence[f.id] ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-2 py-1 text-orange-700">
+                      <span aria-hidden>✅</span>
+                      <span className="text-xs">Inclus</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs opacity-50">—</span>
+                  )}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

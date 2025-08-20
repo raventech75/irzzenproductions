@@ -1,9 +1,10 @@
+// app/reservation/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { FORMULAS_DETAILED } from "@/lib/modules";
+import { FORMULAS_DETAILED, type FormulaDetailed } from "@/lib/modules";
 import { OPTIONS, euros } from "@/lib/products";
 import { computePricing } from "@/lib/pricing";
 import { Button, Card, Money, SecondaryButton, Stepper } from "@/components/ui";
@@ -24,23 +25,22 @@ type Questionnaire = {
   city: string;
   country: string;
 
-  weddingDate: string; // ISO yyyy-mm-dd
-  guests: string; // on garde string pour rester souple
+  weddingDate: string; // yyyy-mm-dd
+  guests: string;
 
-  // Lieux + horaires
   prepLocation: string;
   prepTime: string;
 
   mairieLocation: string;
   mairieTime: string;
 
-  ceremonyLocation: string; // église / laïque
+  ceremonyLocation: string;
   ceremonyTime: string;
 
-  receptionLocation: string; // lieu cocktail/soirée
+  receptionLocation: string;
   receptionTime: string;
 
-  schedule: string; // déroulé libre
+  schedule: string;
   specialRequests: string;
 };
 
@@ -81,16 +81,16 @@ export default function Reservation() {
   const router = useRouter();
   const [step] = useState<1>(1);
 
-  // —————————— Sélection des formules / options ——————————
+  // —————————— Sélection formule / options ——————————
   const [formulaId, setFormulaId] = useState<string>(FORMULAS_DETAILED[0].id);
-  const currentFormula = FORMULAS_DETAILED.find((f) => f.id === formulaId)!;
+  const currentFormula: FormulaDetailed = FORMULAS_DETAILED.find((f) => f.id === formulaId)!;
 
   const [selected, setSelected] = useState<string[]>([]);
   const [extras, setExtras] = useState<{ label: string; price: number }[]>([]);
   const [extraLabel, setExtraLabel] = useState("");
   const [extraPrice, setExtraPrice] = useState<number | "">("");
 
-  const base = useMemo(() => currentFormula.price, [formulaId]);
+  const base = useMemo(() => currentFormula.price, [currentFormula.price]);
   const optionPrices = useMemo(
     () => [
       ...OPTIONS.filter((o) => selected.includes(o.id)).map((o) => o.price),
@@ -117,13 +117,15 @@ export default function Reservation() {
 
   // —————————— Aller au paiement ——————————
   const goCheckout = () => {
-    // On stocke TOUT (config + questionnaire) — aucune validation bloquante
     const payload = {
       formulaId,
       options: selected,
       extras,
       pricing: totals,
-      questionnaire: q, // sera relu par /checkout
+      questionnaire: q,
+      // pour éventuel affichage/stockage
+      formulaName: currentFormula.name,
+      formulaDescription: currentFormula.description,
     };
     sessionStorage.setItem("bookingConfig", JSON.stringify(payload));
     router.push("/checkout");
@@ -131,7 +133,7 @@ export default function Reservation() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      {/* Barre d’actions rapide */}
+      {/* Barre d’actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span className="px-2 py-1 rounded-md bg-orange-100 text-orange-700">
@@ -156,13 +158,11 @@ export default function Reservation() {
         <Stepper step={step} />
       </div>
 
-      {/* ——— Questionnaire complet (facultatif) ——— */}
+      {/* ——— Questionnaire (facultatif) ——— */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold">Informations du mariage (facultatif)</h2>
-          <span className="text-xs text-gray-500">
-            Aucun champ n’est obligatoire
-          </span>
+          <span className="text-xs text-gray-500">Aucun champ n’est obligatoire</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -339,7 +339,7 @@ export default function Reservation() {
         />
       </Card>
 
-      {/* ——— Sélection des formules (interactive) ——— */}
+      {/* ——— Sélection des formules ——— */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-5">Sélectionnez une formule</h2>
         <div className="grid md:grid-cols-2 gap-4">
