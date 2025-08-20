@@ -4,25 +4,21 @@ import SuccessClient from "./SuccessClient";
 export default function SuccessPage({
   searchParams,
 }: {
-  searchParams: { bookingId?: string };
+  searchParams: { session_id?: string };
 }) {
-  const bookingId = searchParams?.bookingId;
+  const sessionId = searchParams?.session_id;
 
-  if (!bookingId) {
+  if (!sessionId) {
     return (
       <div className="max-w-2xl mx-auto py-16 text-center">
-        Erreur : réservation introuvable
+        Erreur : session Stripe introuvable.
       </div>
     );
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-2xl mx-auto py-16 text-center">Chargement…</div>
-      }
-    >
-      <SuccessClient bookingId={bookingId} />
+    <Suspense fallback={<div className="max-w-2xl mx-auto py-16 text-center">Chargement…</div>}>
+      <SuccessClient sessionId={sessionId} />
     </Suspense>
   );
 }

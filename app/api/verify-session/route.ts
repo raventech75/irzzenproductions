@@ -1,8 +1,7 @@
-// app/api/verify-session/route.ts
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSignedContractUrl, getPublicContractUrl } from "@/lib/storage";
+import { getPublicContractUrl, getSignedContractUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,36 +14,48 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const session_id = searchParams.get("session_id");
-    if (!session_id) {
-      return NextResponse.json({ error: "session_id manquant" }, { status: 400 });
-    }
+    if (!session_id) return NextResponse.json({ error: "session_id manquant" }, { status: 400 });
 
-    // On vérifie l'existence de la session Stripe (et récupère l’email client au passage)
+    // Vérifie la session côté Stripe (récupère l’email)
     const session = await stripe.checkout.sessions.retrieve(session_id);
     const email = session.customer_details?.email || null;
 
-    // On récupère le contrat en BDD
-    const { data, error } = await supabaseAdmin
-      .from("contracts")
-      .select("file_path")
-      .eq("session_id", session_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // Retrouve la booking liée
+    const { data: booking } = await supabaseAdmin
+      .from("bookings")
+      .select("id")
+      .eq("stripe_session_id", session_id)
+      .maybeSingle();
 
-    if (error || !data) {
+    // Va chercher le dernier contrat pour cette booking (ou sans booking si null)
+    let contract: { file_path: string } | null = null;
+
+    if (booking?.id) {
+      const { data } = await supabaseAdmin
+        .from("contracts")
+        .select("file_path")
+        .eq("booking_id", booking.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) contract = data as any;
+    } else {
+      // fallback : chercher par pattern de nom (session.id dans le nom du fichier)
+      const filename = `IRZZEN-Contrat-${session_id}.pdf`;
+      // Si tu as stocké par date dossiers/y/m/d, on ne peut pas lister facilement sans RLS assouplie.
+      // Dans ce cas, on laissera la page success patienter jusqu’à l’insert (polling).
+    }
+
+    if (!contract?.file_path) {
       return NextResponse.json({ ok: true, email, pdfUrl: null, pdfPath: null });
     }
 
-    const file_path = data.file_path as string;
+    const path = contract.file_path;
+    // Essaie public, sinon signé 10 min
+    const publicUrl = getPublicContractUrl(path);
+    const pdfUrl = publicUrl || (await getSignedContractUrl(path, 600));
 
-    // Essaie d’abord une URL publique (si bucket public), sinon une URL signée (si private)
-    const publicUrl = getPublicContractUrl(file_path);
-    const pdfUrl =
-      publicUrl ||
-      (await getSignedContractUrl(file_path, 60 * 10)); // 10 minutes
-
-    return NextResponse.json({ ok: true, email, pdfUrl, pdfPath: file_path });
+    return NextResponse.json({ ok: true, email, pdfUrl, pdfPath: path });
   } catch (e: any) {
     console.error("verify-session error:", e);
     return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
