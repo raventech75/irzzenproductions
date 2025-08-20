@@ -1,12 +1,18 @@
+// app/api/admin/contracts/download/route.ts
 import { NextResponse } from "next/server";
-import { getSignedUrl } from "@/lib/storage";
+import { getSignedContractUrl } from "@/lib/storage";
 
 export async function POST(req: Request) {
-  const { path } = await req.json();
   try {
-    const url = await getSignedUrl(path, 60 * 10);
-    return NextResponse.json({ url });
+    const { path } = await req.json();
+    if (!path) {
+      return NextResponse.json({ error: "Path manquant" }, { status: 400 });
+    }
+
+    const url = await getSignedContractUrl(path, 3600); // 1h
+    return NextResponse.redirect(url);
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("download contract error:", e?.message || e);
+    return NextResponse.json({ error: "Impossible de générer l’URL" }, { status: 500 });
   }
 }

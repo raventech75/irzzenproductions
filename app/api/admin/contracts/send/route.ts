@@ -1,29 +1,42 @@
+// app/api/admin/contracts/send/route.ts
 import { NextResponse } from "next/server";
-import { resend, MAIL_FROM } from "@/lib/email";
-import { getSignedUrl } from "@/lib/storage";
+import { getSignedContractUrl } from "@/lib/storage";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(req: Request) {
-  const { to, subject, html, path, filename } = await req.json();
-
   try {
-    // Récupération du fichier via URL signée
-    const signed = await getSignedUrl(path, 60 * 5);
-    const res = await fetch(signed);
+    const { email, path } = await req.json();
+    if (!email || !path) {
+      return NextResponse.json({ error: "Email ou chemin manquant" }, { status: 400 });
+    }
+
+    // ✅ Génère une URL signée valide pendant 5 minutes
+    const signedUrl = await getSignedContractUrl(path, 60 * 5);
+
+    // Télécharge le fichier via cette URL signée
+    const res = await fetch(signedUrl);
     const arrayBuf = await res.arrayBuffer();
     const base64 = Buffer.from(arrayBuf).toString("base64");
 
-    await resend.emails.send({
-      from: MAIL_FROM,
-      to,
-      subject: subject || "IRZZEN — Contrat / Récapitulatif",
-      html: html || `<p>Veuillez trouver le contrat en pièce jointe.</p>`,
+    // Envoi du mail avec le PDF en PJ
+    const result = await resend.emails.send({
+      from: "Irzzen <no-reply@irzzen.fr>",
+      to: email,
+      subject: "Votre contrat IRZZEN",
+      html: `<p>Bonjour,</p><p>Veuillez trouver ci-joint votre contrat au format PDF.</p>`,
       attachments: [
-        { filename: filename || "contrat.pdf", content: base64 }
-      ]
+        {
+          filename: path.split("/").pop() || "contrat.pdf",
+          content: base64,
+        },
+      ],
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true, result });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("Erreur d'envoi email contrat:", e);
+    return NextResponse.json({ error: "Impossible d’envoyer le contrat" }, { status: 500 });
   }
 }
