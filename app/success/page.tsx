@@ -31,17 +31,35 @@ function SuccessContent() {
     async function verifySession() {
       try {
         console.log('🔍 Vérification session:', sessionId);
+        
+        // 🎯 APPEL À L'API VERIFY-SESSION POUR RÉCUPÉRER LES VRAIES DONNÉES
         const response = await fetch(`/api/verify-session?session_id=${sessionId}`);
         
         if (!response.ok) {
-          throw new Error(`Erreur ${response.status}`);
+          throw new Error(`Erreur ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log("📋 Données session reçues:", data);
         
         if (isMounted) {
-          setSessionData(data);
+          // Utiliser les vraies données de la session Stripe
+          const sessionData: SessionData = {
+            id: data.id || sessionId!,
+            customer_email: data.customer_email || "Email non renseigné",
+            payment_status: data.payment_status || "unknown",
+            metadata: data.metadata || {},
+            pdfUrl: data.pdfUrl || undefined
+          };
+          
+          setSessionData(sessionData);
           setLoading(false);
+          
+          if (!data.pdfUrl) {
+            console.log("⚠️ PDF pas encore accessible");
+          } else {
+            console.log("✅ PDF accessible:", data.pdfUrl);
+          }
         }
       } catch (err: any) {
         console.error('❌ Erreur vérification:', err);
@@ -104,9 +122,12 @@ function SuccessContent() {
           
           <div className="space-y-2">
             <p><span className="font-medium">Email :</span> {sessionData.customer_email}</p>
-            <p><span className="font-medium">Mariée :</span> {sessionData.metadata?.bride_first_name || 'N/A'}</p>
-            <p><span className="font-medium">Marié :</span> {sessionData.metadata?.groom_first_name || 'N/A'}</p>
-            <p><span className="font-medium">Date du mariage :</span> {sessionData.metadata?.wedding_date || 'N/A'}</p>
+            <p><span className="font-medium">Mariée :</span> {sessionData.metadata?.bride_first_name || 'Non renseigné'}</p>
+            <p><span className="font-medium">Marié :</span> {sessionData.metadata?.groom_first_name || 'Non renseigné'}</p>
+            <p><span className="font-medium">Date du mariage :</span> {sessionData.metadata?.wedding_date || 'Non renseignée'}</p>
+            <p><span className="font-medium">Couple :</span> {sessionData.metadata?.couple_name || 'Non renseigné'}</p>
+            <p><span className="font-medium">Formule :</span> {sessionData.metadata?.formula || 'Non renseignée'}</p>
+            <p><span className="font-medium">Total :</span> {sessionData.metadata?.total_eur ? `${sessionData.metadata.total_eur}€` : 'Non renseigné'}</p>
           </div>
 
           {sessionData.pdfUrl ? (

@@ -31,24 +31,24 @@ declare namespace __next_route_internal_types__ {
   type StaticRoutes = 
     | `/admin`
     | `/api/admin/contracts/by-looking`
-    | `/api/admin/contracts/delete`
-    | `/api/admin/contracts/download`
     | `/api/admin/contracts/email`
     | `/api/admin/contracts/list`
     | `/api/admin/contracts`
+    | `/api/admin/contracts/download`
+    | `/api/admin/contracts/delete`
     | `/api/admin/contracts/signed-url`
     | `/api/verify-session`
-    | `/merci`
     | `/`
     | `/rib`
+    | `/merci`
     | `/success`
     | `/reservation`
     | `/api/admin/contracts/send`
     | `/api/debug-pdf`
     | `/api/create-checkout-session`
     | `/api/send-contract`
-    | `/api/create-payment`
     | `/api/webhooks/stripe`
+    | `/api/create-payment`
   type DynamicRoutes<T extends string = string> = never
 
   type RouteImpl<T> = 
