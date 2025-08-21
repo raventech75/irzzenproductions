@@ -36,23 +36,41 @@ export async function GET(request: NextRequest) {
     // 2. Construire l'URL du PDF dans Supabase
     const fileName = `${sessionId}.pdf`;
     
-    // Vérifier si le fichier existe
-    const { data: fileExists, error: checkError } = await supabase.storage
+    // 🔧 VÉRIFIER D'ABORD LE BUCKET "contrats" (utilisé par create-payment)
+    let pdfUrl = null;
+    
+    // Essayer le bucket "contrats" en premier
+    const { data: fileExistsContrats, error: checkErrorContrats } = await supabase.storage
       .from("contrats")
       .list("", { search: fileName });
 
-    let pdfUrl = null;
-    
-    if (!checkError && fileExists && fileExists.length > 0) {
-      // Le fichier existe, générer l'URL publique
+    if (!checkErrorContrats && fileExistsContrats && fileExistsContrats.length > 0) {
+      // Le fichier existe dans "contrats"
       const { data: publicUrlData } = supabase.storage
         .from("contrats")
         .getPublicUrl(fileName);
       
       pdfUrl = publicUrlData.publicUrl;
-      console.log("📂 PDF trouvé:", pdfUrl);
+      console.log("📂 PDF trouvé dans 'contrats':", pdfUrl);
     } else {
-      console.log("⚠️ PDF pas encore généré pour la session:", sessionId);
+      // Essayer le bucket "contracts" en fallback
+      const { data: fileExistsContracts, error: checkErrorContracts } = await supabase.storage
+        .from("contracts")
+        .list("", { search: fileName });
+      
+      if (!checkErrorContracts && fileExistsContracts && fileExistsContracts.length > 0) {
+        // Le fichier existe dans "contracts"
+        const { data: publicUrlData } = supabase.storage
+          .from("contracts")
+          .getPublicUrl(fileName);
+        
+        pdfUrl = publicUrlData.publicUrl;
+        console.log("📂 PDF trouvé dans 'contracts':", pdfUrl);
+      } else {
+        console.log("⚠️ PDF pas encore généré pour la session:", sessionId);
+        console.log("❌ Erreur 'contrats':", checkErrorContrats);
+        console.log("❌ Erreur 'contracts':", checkErrorContracts);
+      }
     }
 
     // 3. Retourner les données de la session + URL du PDF

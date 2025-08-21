@@ -36,14 +36,6 @@
       "static/chunks/main-app-112b21974355425a.js",
       "static/chunks/app/api/admin/contracts/page-d3d879b4b2efeecb.js"
     ],
-    "/merci/page": [
-      "static/chunks/webpack-236482468e99eb15.js",
-      "static/chunks/fd9d1056-1a7fa1a4518a29ec.js",
-      "static/chunks/23-eb0dccc15e91c375.js",
-      "static/chunks/main-app-112b21974355425a.js",
-      "static/chunks/231-073b3568478dc911.js",
-      "static/chunks/app/merci/page-8aeb4d786685042f.js"
-    ],
     "/page": [
       "static/chunks/webpack-236482468e99eb15.js",
       "static/chunks/fd9d1056-1a7fa1a4518a29ec.js",
@@ -58,12 +50,20 @@
       "static/chunks/main-app-112b21974355425a.js",
       "static/chunks/app/rib/page-a1874f6fe38fca63.js"
     ],
+    "/merci/page": [
+      "static/chunks/webpack-236482468e99eb15.js",
+      "static/chunks/fd9d1056-1a7fa1a4518a29ec.js",
+      "static/chunks/23-eb0dccc15e91c375.js",
+      "static/chunks/main-app-112b21974355425a.js",
+      "static/chunks/231-073b3568478dc911.js",
+      "static/chunks/app/merci/page-8aeb4d786685042f.js"
+    ],
     "/success/page": [
       "static/chunks/webpack-236482468e99eb15.js",
       "static/chunks/fd9d1056-1a7fa1a4518a29ec.js",
       "static/chunks/23-eb0dccc15e91c375.js",
       "static/chunks/main-app-112b21974355425a.js",
-      "static/chunks/app/success/page-4e48c56173044ef0.js"
+      "static/chunks/app/success/page-e06abf1da99b3df9.js"
     ],
     "/reservation/page": [
       "static/chunks/webpack-236482468e99eb15.js",

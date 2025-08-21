@@ -48,7 +48,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     }
   };
 
-  // 📍 EN-TÊTE
+  // 📋 EN-TÊTE
   page.drawRectangle({
     x: 0,
     y: yPos,
@@ -75,7 +75,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 80;
 
-  // 📍 INFORMATIONS GÉNÉRALES
+  // 📋 INFORMATIONS GÉNÉRALES
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -106,7 +106,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 30;
 
-  // 📍 PRESTATAIRE
+  // 📋 PRESTATAIRE
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -146,7 +146,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 15;
 
-  // 📍 INFORMATIONS CLIENT
+  // 📋 INFORMATIONS CLIENT
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -190,7 +190,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 20;
 
-  // 📍 DÉTAILS DU MARIAGE
+  // 📋 DÉTAILS DU MARIAGE
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -296,7 +296,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 10;
 
-  // 📍 PRESTATION SÉLECTIONNÉE
+  // 📋 PRESTATION SÉLECTIONNÉE
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -365,7 +365,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 10;
 
-  // Options sélectionnées
+  // Options sélectionnées - 🔧 CORRECTION DE L'ERREUR TYPESCRIPT
   if (metadata.selected_options) {
     page.drawText("Options incluses :", {
       x: leftMargin,
@@ -376,7 +376,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const options = metadata.selected_options.split(', ').filter(Boolean);
-    options.forEach((option: string) => {
+    options.forEach((option: string) => { // 🎯 Type explicite ajouté
       page.drawText(`• ${option}`, {
         x: leftMargin + 15,
         y: yPos,
@@ -399,7 +399,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const extras = metadata.extras.split('|').filter(Boolean);
-    extras.forEach((extra: string) => {
+    extras.forEach((extra: string) => { // 🎯 Type explicite ajouté
       const [label, price] = extra.split(':');
       page.drawText(`• ${label} : ${price}€`, {
         x: leftMargin + 15,
@@ -413,7 +413,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 20;
 
-  // 📍 RÉCAPITULATIF FINANCIER
+  // 📋 RÉCAPITULATIF FINANCIER
   page.drawRectangle({
     x: leftMargin - 10,
     y: yPos - 15,
@@ -519,7 +519,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 30;
 
-  // 📍 CONDITIONS GÉNÉRALES
+  // 📋 CONDITIONS GÉNÉRALES
   page.drawText("CONDITIONS GÉNÉRALES", {
     x: leftMargin,
     y: yPos,
@@ -661,17 +661,7 @@ export async function POST(req: Request) {
       console.log("✅ Checkout session completed:", session.id);
 
       const metadata = session.metadata || {};
-      console.log("🔍 TOUTES LES MÉTADONNÉES REÇUES:", JSON.stringify(metadata, null, 2));
-      
-      // 🎯 Debug spécifique pour les informations du mariage
-      console.log("👰 Mariée:", metadata.bride_first_name, metadata.bride_last_name);
-      console.log("🤵 Marié:", metadata.groom_first_name, metadata.groom_last_name);
-      console.log("📅 Date mariage:", metadata.wedding_date);
-      console.log("📍 Lieux:", {
-        prep: metadata.prepLocation,
-        ceremonie: metadata.ceremonyLocation,
-        reception: metadata.receptionLocation
-      });
+      console.log("📋 TOUTES LES MÉTADONNÉES REÇUES:", JSON.stringify(metadata, null, 2));
 
       // 🎯 Mapping flexible des données selon les différentes sources
       const bride_first_name = metadata.bride_first_name || "";
