@@ -145,6 +145,7 @@ export default function Reservation() {
 
   // ——————————— Aller au paiement DIRECT ———————————
   const [loading, setLoading] = useState(false);
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
 
   const goCheckout = async () => {
     setLoading(true);
@@ -718,37 +719,58 @@ export default function Reservation() {
         <Card className="p-4 bg-white shadow-lg border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">Récapitulatif</h3>
-            {(selected.length + extras.length) > 0 && (
-              <div className="text-xs text-gray-500">
-                {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}
+            <div className="flex items-center gap-3">
+              {(selected.length + extras.length) > 0 && (
+                <div className="text-xs text-gray-500">
+                  {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}
+                </div>
+              )}
+              {/* Bouton collapse - seulement sur desktop */}
+              <button
+                onClick={() => setSummaryCollapsed(!summaryCollapsed)}
+                className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+                title={summaryCollapsed ? "Afficher le détail" : "Réduire le récapitulatif"}
+              >
+                <svg 
+                  className={`w-4 h-4 text-gray-600 transition-transform ${summaryCollapsed ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          {/* Contenu collapsible */}
+          <div className={`${summaryCollapsed ? 'hidden md:hidden' : ''}`}>
+            {/* Résumé simplifié */}
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span>Total estimé</span>
+                <span className="font-bold text-orange-600">
+                  <Money value={totals.total} />
+                </span>
               </div>
-            )}
+              <div className="flex justify-between text-orange-700">
+                <span>Acompte à régler</span>
+                <span className="font-semibold">
+                  <Money value={totals.depositSuggested} />
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-500 text-xs">
+                <span>Solde restant</span>
+                <span><Money value={totals.remainingDayJ} /></span>
+              </div>
+            </div>
+            
+            <p className="text-xs text-gray-600 mb-4">
+              Acompte de 15% requis pour confirmer votre réservation
+            </p>
           </div>
-          
-          {/* Résumé simplifié */}
-          <div className="space-y-2 text-sm mb-4">
-            <div className="flex justify-between">
-              <span>Total estimé</span>
-              <span className="font-bold text-orange-600">
-                <Money value={totals.total} />
-              </span>
-            </div>
-            <div className="flex justify-between text-orange-700">
-              <span>Acompte à régler</span>
-              <span className="font-semibold">
-                <Money value={totals.depositSuggested} />
-              </span>
-            </div>
-            <div className="flex justify-between text-gray-500 text-xs">
-              <span>Solde restant</span>
-              <span><Money value={totals.remainingDayJ} /></span>
-            </div>
-          </div>
-          
-          <p className="text-xs text-gray-600 mb-4">
-            Acompte de 15% requis pour confirmer votre réservation
-          </p>
 
+          {/* Boutons toujours visibles */}
           <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               onClick={goCheckout} 
@@ -764,7 +786,9 @@ export default function Reservation() {
                   Redirection...
                 </span>
               ) : (
-                <span>Régler par carte</span>
+                <span>
+                  {summaryCollapsed ? `Régler ${euros(totals.depositSuggested)}` : 'Régler par carte'}
+                </span>
               )}
             </Button>
             <a
@@ -774,6 +798,23 @@ export default function Reservation() {
               Virement
             </a>
           </div>
+
+          {/* Affichage ultra-compact quand réduit (desktop seulement) */}
+          {summaryCollapsed && (
+            <div className="hidden md:block mt-2 pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">
+                  {currentFormula.name}
+                  {(selected.length + extras.length) > 0 && (
+                    <span className="text-orange-600"> + {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}</span>
+                  )}
+                </span>
+                <span className="font-bold text-orange-600">
+                  <Money value={totals.total} />
+                </span>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </div>
