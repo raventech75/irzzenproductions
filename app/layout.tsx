@@ -1,5 +1,6 @@
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import CrispChat from '@/components/CrispChat';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const cormorant = Cormorant_Garamond({
@@ -10,7 +11,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata = {
   title: "Irzzenproductions",
-  description: "Photographe & vidéaste de mariage — réservation élégante"
+  description: "Photographe & vidéaste de mariage – réservation élégante"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -32,10 +33,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <footer className="border-t border-soft/60 bg-white/60 backdrop-blur supports-[backdrop-filter]:bg-white/40">
           <div className="max-w-6xl mx-auto px-6 py-8 text-sm opacity-70 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-            <p>© {new Date().getFullYear()} Irzzenproductions — 15+ ans — Équipe de 12 pros</p>
+            <p>© {new Date().getFullYear()} Irzzenproductions – 15+ ans – Équipe de 12 pros</p>
             <p>Conditions : aucune annulation recevable · acompte non remboursable · livraison ≤ 6 mois</p>
           </div>
         </footer>
+        
+        {/* Crisp Chat - Chargé globalement */}
+        <CrispChat />
       </body>
     </html>
   );

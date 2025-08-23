@@ -1,4 +1,3 @@
-// app/reservation/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -8,7 +7,7 @@ import { FORMULAS_DETAILED, type FormulaDetailed } from "@/lib/modules";
 import { OPTIONS, euros, getOptionsByCategory, getPopularOptions, CATEGORY_LABELS } from "@/lib/products";
 import { computePricing } from "@/lib/pricing";
 import { Button, Card, Money, SecondaryButton } from "@/components/ui";
-// Nous n'utilisons plus FormulaCard car nous avons intégré le design directement
+import CrispChat from '@/components/CrispChat';
 
 /** Questionnaire : tout FACULTATIF */
 type Questionnaire = {
@@ -16,33 +15,24 @@ type Questionnaire = {
   brideLastName: string;
   groomFirstName: string;
   groomLastName: string;
-
   email: string;
   phone: string;
-
   address: string;
   postalCode: string;
   city: string;
   country: string;
-
   weddingDate: string; // yyyy-mm-dd
   guests: string;
-
   prepLocation: string;
   prepTime: string;
-
   mairieLocation: string;
   mairieTime: string;
-
   ceremonyLocation: string;
   ceremonyTime: string;
-
   shootingLocation: string;
   shootingTime: string;
-
   receptionLocation: string;
   receptionTime: string;
-
   schedule: string;
   specialRequests: string;
 };
@@ -52,33 +42,24 @@ const initialQ: Questionnaire = {
   brideLastName: "",
   groomFirstName: "",
   groomLastName: "",
-
   email: "",
   phone: "",
-
   address: "",
   postalCode: "",
   city: "",
   country: "",
-
   weddingDate: "",
   guests: "",
-
   prepLocation: "",
   prepTime: "",
-
   mairieLocation: "",
   mairieTime: "",
-
   ceremonyLocation: "",
   ceremonyTime: "",
-
   shootingLocation: "",
   shootingTime: "",
-
   receptionLocation: "",
   receptionTime: "",
-
   schedule: "",
   specialRequests: "",
 };
@@ -100,15 +81,16 @@ export default function Reservation() {
   const [extras, setExtras] = useState<{ label: string; price: number }[]>([]);
   const [extraLabel, setExtraLabel] = useState("");
   const [extraPrice, setExtraPrice] = useState<number | "">("");
-  
-  // Devis personnalisé
   const [customPrice, setCustomPrice] = useState<number | "">("");
-  
-  // Affichage des options par catégorie
   const [activeCategory, setActiveCategory] = useState<string>("popular");
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // ——————————— Questionnaire ———————————
+  const [q, setQ] = useState<Questionnaire>(initialQ);
+  const onQ = (k: keyof Questionnaire, v: string) => setQ((prev) => ({ ...prev, [k]: v }));
 
   const base = useMemo(() => {
-    // Si c'est un devis personnalisé, utiliser le prix saisi par le client
     if (formulaId === "custom") {
       return typeof customPrice === "number" ? customPrice : 0;
     }
@@ -122,7 +104,10 @@ export default function Reservation() {
     ],
     [selected, extras]
   );
+  
   const totals = computePricing(base, optionPrices);
+  const optionsByCategory = getOptionsByCategory();
+  const popularOptions = getPopularOptions();
 
   const toggleOption = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -139,36 +124,14 @@ export default function Reservation() {
     setExtras((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ——————————— Questionnaire (facultatif) ———————————
-  const [q, setQ] = useState<Questionnaire>(initialQ);
-  const onQ = (k: keyof Questionnaire, v: string) => setQ((prev) => ({ ...prev, [k]: v }));
-
-  // ——————————— Aller au paiement DIRECT ———————————
-  const [loading, setLoading] = useState(false);
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-
   const goCheckout = async () => {
     setLoading(true);
     
     try {
-      // 🔍 Debug complet : voir tous les calculs
-      console.log("💰 Prix de base (formule):", base);
-      console.log("💸 Prix des options:", optionPrices);
-      console.log("🧮 Totals calculés:", totals);
-      console.log("💳 Acompte qui sera facturé:", totals.depositSuggested);
-      console.log("📋 Options sélectionnées (IDs):", selected);
-      console.log("🎯 Extras ajoutés:", extras);
-
-      // 🔍 Debug : voir exactement ce qui est envoyé
-      console.log("💾 Données du questionnaire:", q);
-      console.log("📋 Formule sélectionnée:", currentFormula);
-
-      // 🎯 Appel direct à l'API pour créer la session Stripe
       const response = await fetch("/api/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // Customer info (minimal pour Stripe)
           customer: {
             email: q.email || "",
             firstName: q.brideFirstName || "",
@@ -176,16 +139,13 @@ export default function Reservation() {
             coupleName: `${q.brideFirstName} & ${q.groomFirstName}`.trim(),
             weddingDate: q.weddingDate || "",
           },
-          // Toutes les données du questionnaire détaillé
           questionnaire: q,
-          // Configuration de la prestation
           config: {
             formulaId,
             customPrice: formulaId === "custom" ? (typeof customPrice === "number" ? customPrice : 0) : undefined,
             options: selected,
             extras,
           },
-          // Force le paiement par carte
           payWith: "card"
         })
       });
@@ -201,8 +161,6 @@ export default function Reservation() {
         throw new Error("URL de paiement Stripe non reçue");
       }
 
-      // 🚀 Redirection directe vers Stripe
-      console.log("🎉 Redirection vers Stripe:", data.url);
       window.location.href = data.url;
 
     } catch (error: any) {
@@ -212,8 +170,15 @@ export default function Reservation() {
     }
   };
 
-  const optionsByCategory = getOptionsByCategory();
-  const popularOptions = getPopularOptions();
+  // Préparer les données pour Crisp Chat
+  const crispUserData = {
+    userEmail: q.email,
+    userFirstName: q.brideFirstName,
+    userLastName: q.brideLastName, 
+    weddingDate: q.weddingDate,
+    currentFormula: currentFormula.name,
+    estimatedBudget: totals.total
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -234,9 +199,9 @@ export default function Reservation() {
         <h1 className="font-serif text-4xl">Configurez votre prestation</h1>
       </div>
 
-      {/* ——— Questionnaire (facultatif) ——— */}
+      {/* ——— Questionnaire ——— */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-5">
           <h2 className="text-xl font-semibold">Informations du mariage (facultatif)</h2>
         </div>
 
@@ -332,7 +297,6 @@ export default function Reservation() {
           />
         </div>
 
-        {/* Lieux & horaires */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
           <input
             className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
@@ -430,10 +394,10 @@ export default function Reservation() {
         />
       </Card>
 
-      {/* ——— Sélection des formules ——— */}
+      {/* ——— Formules ——— */}
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-2">Choisissez votre formule</h2>
-        <p className="text-gray-600 mb-6">Sélectionnez la formule qui correspond le mieux à vos besoins et votre budget</p>
+        <p className="text-gray-600 mb-6">Sélectionnez la formule qui correspond le mieux à vos besoins</p>
         
         <div className="grid lg:grid-cols-2 gap-6">
           {FORMULAS_DETAILED.map((f) => (
@@ -442,7 +406,7 @@ export default function Reservation() {
               className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
                 formulaId === f.id 
                   ? "border-orange-500 bg-orange-50 shadow-lg transform scale-[1.02]" 
-                  : "border-gray-200 hover:border-orange-300 hover:bg-orange-25"
+                  : "border-gray-200 hover:border-orange-300"
               }`}
               onClick={() => setFormulaId(f.id)}
             >
@@ -451,7 +415,6 @@ export default function Reservation() {
                   <h3 className="font-bold text-xl mb-2">{f.name}</h3>
                   <p className="text-gray-600 text-sm mb-3">{f.description}</p>
                   
-                  {/* Informations clés */}
                   <div className="grid grid-cols-1 gap-2 mb-4 text-sm">
                     {f.duration && (
                       <div className="flex items-center gap-2">
@@ -497,7 +460,6 @@ export default function Reservation() {
                 </div>
               </div>
 
-              {/* Points forts */}
               {f.highlights && f.highlights.length > 0 && (
                 <div className="mb-4">
                   <div className="text-sm font-semibold text-gray-700 mb-2">✨ Points forts:</div>
@@ -514,10 +476,9 @@ export default function Reservation() {
                 </div>
               )}
 
-              {/* Features détaillées */}
               {f.features && f.features.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-sm font-semibold text-gray-700 mb-2">📋 Inclus dans cette formule:</div>
+                  <div className="text-sm font-semibold text-gray-700 mb-2">📋 Inclus:</div>
                   <div className="space-y-1">
                     {f.features.map((feature, idx) => (
                       <div key={idx} className="text-sm text-gray-600 flex items-start gap-2">
@@ -578,16 +539,13 @@ export default function Reservation() {
         </div>
       </Card>
 
-      {/* ——— Options & extras améliorées ——— */}
+      {/* ——— Options ——— */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-semibold mb-1">Personnalisez votre prestation</h2>
-            <p className="text-gray-600">Ajoutez des options pour enrichir votre expérience</p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-1">Personnalisez votre prestation</h2>
+          <p className="text-gray-600">Ajoutez des options pour enrichir votre expérience</p>
         </div>
 
-        {/* Onglets de catégories */}
         <div className="flex flex-wrap gap-2 mb-6 border-b">
           <button
             onClick={() => setActiveCategory("popular")}
@@ -614,7 +572,6 @@ export default function Reservation() {
           ))}
         </div>
 
-        {/* Options selon la catégorie active */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {(activeCategory === "popular" 
             ? popularOptions 
@@ -625,7 +582,7 @@ export default function Reservation() {
               className={`rounded-2xl border-2 px-5 py-4 flex flex-col cursor-pointer transition-all duration-200 ${
                 selected.includes(option.id) 
                   ? "border-orange-500 bg-orange-50 shadow-md" 
-                  : "border-gray-200 hover:border-orange-300 hover:bg-orange-25"
+                  : "border-gray-200 hover:border-orange-300"
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -667,7 +624,7 @@ export default function Reservation() {
           <div className="grid md:grid-cols-[1fr_160px_140px] gap-3 mb-4">
             <input
               className="border rounded-2xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-              placeholder="Intitulé (ex: heure supplémentaire, déplacement spécial...)"
+              placeholder="Intitulé (ex: heure supplémentaire...)"
               value={extraLabel}
               onChange={(e) => setExtraLabel(e.target.value)}
             />
@@ -714,7 +671,7 @@ export default function Reservation() {
         </div>
       </Card>
 
-      {/* ——— Récap + CTA ——— */}
+      {/* ——— Récapitulatif ——— */}
       <div className="lg:sticky lg:bottom-4 z-10">
         <Card className="p-4 bg-white shadow-lg border border-gray-200">
           <div className="flex items-center justify-between mb-3">
@@ -725,7 +682,6 @@ export default function Reservation() {
                   {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}
                 </div>
               )}
-              {/* Bouton collapse - seulement sur desktop */}
               <button
                 onClick={() => setSummaryCollapsed(!summaryCollapsed)}
                 className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
@@ -743,9 +699,7 @@ export default function Reservation() {
             </div>
           </div>
           
-          {/* Contenu collapsible */}
           <div className={`${summaryCollapsed ? 'hidden md:hidden' : ''}`}>
-            {/* Résumé simplifié */}
             <div className="space-y-2 text-sm mb-4">
               <div className="flex justify-between">
                 <span>Total estimé</span>
@@ -770,7 +724,6 @@ export default function Reservation() {
             </p>
           </div>
 
-          {/* Boutons toujours visibles */}
           <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               onClick={goCheckout} 
@@ -799,7 +752,6 @@ export default function Reservation() {
             </a>
           </div>
 
-          {/* Affichage ultra-compact quand réduit (desktop seulement) */}
           {summaryCollapsed && (
             <div className="hidden md:block mt-2 pt-2 border-t border-gray-200">
               <div className="flex items-center justify-between text-sm">
@@ -817,6 +769,25 @@ export default function Reservation() {
           )}
         </Card>
       </div>
+
+      {/* Message d'invitation à utiliser le chat */}
+      <Card className="p-6">
+        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
+          <div className="flex items-start gap-3 p-4">
+            <span className="text-2xl">💬</span>
+            <div>
+              <h4 className="font-semibold text-orange-800 mb-1">Des questions ?</h4>
+              <p className="text-sm text-orange-700">
+                N'hésitez pas à utiliser le chat en bas à droite pour me poser directement vos questions ! 
+                Je suis là pour vous aider à choisir la formule parfaite. 😊
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Chat contextuel avec données utilisateur */}
+      <CrispChat {...crispUserData} />
     </div>
   );
 }
