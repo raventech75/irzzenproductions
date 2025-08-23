@@ -1,5 +1,6 @@
-import Stripe from "stripe";
+// app/api/verify-session/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -11,117 +12,115 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const sessionId = searchParams.get("session_id");
-
-  if (!sessionId) {
-    return NextResponse.json(
-      { error: "Session ID manquant" },
-      { status: 400 }
-    );
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    // 1. Récupérer les données de la session Stripe
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('session_id');
+    
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID manquant' }, { status: 400 });
+    }
+
+    console.log('🔍 Vérification session:', sessionId);
+
+    // Récupérer la session Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-    if (session.payment_status !== "paid") {
-      return NextResponse.json(
-        { error: "Paiement non confirmé" },
-        { status: 400 }
-      );
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Session introuvable' }, { status: 404 });
     }
 
-    // 2. Récupérer le nom du fichier depuis les métadonnées
-    const metadata = session.metadata || {};
-    const pdfFileName = metadata.pdf_filename;
-    
-    console.log("🔍 Recherche PDF avec nom:", pdfFileName || "non défini");
-    console.log("📋 Toutes les métadonnées:", metadata);
+    console.log('📋 Session récupérée:', {
+      id: session.id,
+      payment_status: session.payment_status,
+      customer_email: session.customer_email
+    });
 
-    let pdfUrl = null;
-    
-    if (pdfFileName && pdfFileName.trim() !== "") {
-      // 🎯 NOUVEAU : Utiliser le nom personnalisé du fichier
-      console.log("🎯 Utilisation du nom personnalisé:", pdfFileName);
-      
-      // Vérifier si le fichier existe en essayant de le télécharger (head only)
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("contrats")
-        .download(pdfFileName);
-      
-      if (!downloadError && fileData) {
-        // Le fichier existe, générer l'URL publique
-        const { data: publicUrlData } = supabase.storage
-          .from("contrats")
-          .getPublicUrl(pdfFileName);
-        
-        pdfUrl = publicUrlData.publicUrl;
-        console.log("✅ PDF trouvé avec nom personnalisé:", pdfUrl);
-      } else {
-        console.log("⚠️ PDF avec nom personnalisé introuvable:", pdfFileName);
-        console.log("❌ Erreur download:", downloadError?.message);
-      }
-    } else {
-      console.log("⚠️ Nom de fichier personnalisé vide ou non défini");
-    }
-    
-    // 🔄 FALLBACK : Si pas trouvé avec le nom personnalisé, essayer l'ancien système
-    if (!pdfUrl) {
-      console.log("🔄 Fallback vers l'ancien système (session ID)");
-      const legacyFileName = `${sessionId}.pdf`;
-      
-      // Essayer le bucket "contrats" en premier
-      const { data: fileDataContrats, error: downloadErrorContrats } = await supabase.storage
-        .from("contrats")
-        .download(legacyFileName);
-      
-      if (!downloadErrorContrats && fileDataContrats) {
-        const { data: publicUrlData } = supabase.storage
-          .from("contrats")
-          .getPublicUrl(legacyFileName);
-        
-        pdfUrl = publicUrlData.publicUrl;
-        console.log("📂 PDF trouvé dans 'contrats' (fallback):", pdfUrl);
-      } else {
-        console.log("⚠️ PDF non trouvé dans 'contrats', test 'contracts'...");
-        
-        // Essayer le bucket "contracts" en fallback
-        const { data: fileDataContracts, error: downloadErrorContracts } = await supabase.storage
-          .from("contracts")
-          .download(legacyFileName);
-        
-        if (!downloadErrorContracts && fileDataContracts) {
-          const { data: publicUrlData } = supabase.storage
-            .from("contracts")
-            .getPublicUrl(legacyFileName);
-          
-          pdfUrl = publicUrlData.publicUrl;
-          console.log("📂 PDF trouvé dans 'contracts' (fallback):", pdfUrl);
-        } else {
-          console.log("❌ PDF introuvable dans les deux buckets");
-          console.log("❌ Erreur 'contrats':", downloadErrorContrats?.message);
-          console.log("❌ Erreur 'contracts':", downloadErrorContracts?.message);
-        }
-      }
-    }
-
-    // 3. Retourner les données de la session + URL du PDF
-    return NextResponse.json({
+    // Préparer la réponse de base
+    const responseData = {
       id: session.id,
       customer_email: session.customer_email,
       payment_status: session.payment_status,
       metadata: session.metadata || {},
-      pdfUrl: pdfUrl, // 🎯 URL du PDF si disponible
-      pdfFileName: pdfFileName, // 🎯 Nom du fichier pour info
-    });
+      pdfUrl: undefined as string | undefined
+    };
 
+    // Si le paiement est réussi, chercher le PDF sur Supabase
+    if (session.payment_status === 'paid') {
+      try {
+        // Le nom du fichier correspond au session ID (comme dans votre webhook)
+        const fileName = `${session.id}.pdf`;
+        
+        console.log('🔍 Recherche du PDF sur Supabase:', fileName);
+        
+        // Vérifier si le fichier existe sur Supabase
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('contrats')
+          .list('', {
+            search: fileName
+          });
+
+        if (fileError) {
+          console.error('❌ Erreur recherche fichier sur Supabase:', fileError);
+        } else if (fileData && fileData.length > 0) {
+          // Le fichier existe, récupérer l'URL publique
+          const { data: publicUrlData } = supabase.storage
+            .from('contrats')
+            .getPublicUrl(fileName);
+          
+          responseData.pdfUrl = publicUrlData.publicUrl;
+          console.log('✅ PDF trouvé sur Supabase:', publicUrlData.publicUrl);
+          
+        } else {
+          console.log('⏳ PDF pas encore généré sur Supabase pour:', fileName);
+          
+          // Attendre un peu au cas où le webhook est encore en cours d'exécution
+          console.log('🔄 Attente et nouvelle tentative...');
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 secondes
+          
+          // Réessayer une fois
+          const { data: retryFileData, error: retryError } = await supabase.storage
+            .from('contrats')
+            .list('', { search: fileName });
+            
+          if (!retryError && retryFileData && retryFileData.length > 0) {
+            const { data: publicUrlData } = supabase.storage
+              .from('contrats')
+              .getPublicUrl(fileName);
+            
+            responseData.pdfUrl = publicUrlData.publicUrl;
+            console.log('✅ PDF trouvé après retry:', publicUrlData.publicUrl);
+          } else {
+            console.log('⚠️ PDF toujours pas disponible après retry');
+            
+            // Vérifier l'état du bucket pour debug
+            const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+            if (bucketsError) {
+              console.error('❌ Erreur listBuckets:', bucketsError);
+            } else {
+              console.log('📁 Buckets disponibles:', buckets?.map(b => b.name));
+              
+              // Lister tous les fichiers du bucket contrats
+              const { data: allFiles } = await supabase.storage
+                .from('contrats')
+                .list('');
+              console.log('📄 Fichiers dans le bucket contrats:', allFiles?.map(f => f.name));
+            }
+          }
+        }
+        
+      } catch (pdfError) {
+        console.error('❌ Erreur vérification PDF sur Supabase:', pdfError);
+        // On continue sans PDF, ce n'est pas bloquant pour l'affichage de la page
+      }
+    }
+
+    return NextResponse.json(responseData);
+    
   } catch (error: any) {
-    console.error("[verify-session] Erreur:", error.message);
-    return NextResponse.json(
-      { error: "Erreur lors de la vérification" },
-      { status: 500 }
-    );
+    console.error('❌ Erreur verify-session:', error);
+    return NextResponse.json({ 
+      error: error.message || 'Erreur serveur' 
+    }, { status: 500 });
   }
 }
