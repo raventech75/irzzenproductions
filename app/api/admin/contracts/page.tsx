@@ -10,13 +10,13 @@ type Item = {
   signedUrl?: string | null;
 };
 
-export default function AdminContractsPage() {
+export default function AdmincontratsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/contracts/list", { cache: "no-store" });
+    const res = await fetch("/api/admin/contrats/list", { cache: "no-store" });
     const data = await res.json();
     setItems(data.items || []);
     setLoading(false);
@@ -29,7 +29,7 @@ export default function AdminContractsPage() {
   const sendMail = async (path: string) => {
     const to = prompt("Envoyer à (email) :");
     if (!to) return;
-    const res = await fetch("/api/admin/contracts/email", {
+    const res = await fetch("/api/admin/contrats/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path, to }),
@@ -44,7 +44,7 @@ export default function AdminContractsPage() {
 
   const removeFile = async (path: string) => {
     if (!confirm(`Supprimer ce contrat ?\n${path}`)) return;
-    const res = await fetch("/api/admin/contracts/delete", {
+    const res = await fetch("/api/admin/contrats/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
@@ -93,7 +93,7 @@ export default function AdminContractsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end">
                       <a
-                        href={`/api/admin/contracts/signed-url?path=${encodeURIComponent(it.path)}`}
+                        href={`/api/admin/contrats/signed-url?path=${encodeURIComponent(it.path)}`}
                         className="rounded-lg border px-3 py-1 hover:bg-orange-50"
                         target="_blank"
                       >

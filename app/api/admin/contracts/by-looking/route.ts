@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
     // Récupérer le contrat lié à la réservation
     const { data, error } = await supabase
-      .from("contracts")
+      .from("contrats")
       .select("file_path, bytes, created_at")
       .eq("booking_id", bookingId)
       .order("created_at", { ascending: false }) // dernier en priorité
