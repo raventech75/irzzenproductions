@@ -93,18 +93,47 @@ export async function GET(req: NextRequest) {
           } else {
             console.log('⚠️ PDF toujours pas disponible après retry');
             
-            // Vérifier l'état du bucket pour debug
-            const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-            if (bucketsError) {
-              console.error('❌ Erreur listBuckets:', bucketsError);
-            } else {
-              console.log('📁 Buckets disponibles:', buckets?.map(b => b.name));
+            // ✨ NOUVEAU : Génération forcée automatique si PDF manquant
+            console.log('🚀 Tentative de génération automatique du PDF...');
+            
+            try {
+              // Appeler l'API force-pdf pour générer le PDF
+              const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+              const forceResponse = await fetch(`${baseUrl}/api/force-pdf`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: session.id })
+              });
               
-              // Lister tous les fichiers du bucket contrats
-              const { data: allFiles } = await supabase.storage
-                .from('contrats')
-                .list('');
-              console.log('📄 Fichiers dans le bucket contrats:', allFiles?.map(f => f.name));
+              if (forceResponse.ok) {
+                const forceData = await forceResponse.json();
+                if (forceData.success && forceData.pdfUrl) {
+                  responseData.pdfUrl = forceData.pdfUrl;
+                  console.log('✅ PDF généré automatiquement via force-pdf:', forceData.pdfUrl);
+                } else {
+                  console.log('⚠️ Force-pdf a répondu mais sans URL PDF:', forceData);
+                }
+              } else {
+                console.error('❌ Erreur appel force-pdf:', forceResponse.status, await forceResponse.text());
+              }
+            } catch (forceError) {
+              console.error('❌ Erreur lors de la génération forcée:', forceError);
+            }
+            
+            // Vérifier l'état du bucket pour debug (seulement si PDF toujours pas généré)
+            if (!responseData.pdfUrl) {
+              const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+              if (bucketsError) {
+                console.error('❌ Erreur listBuckets:', bucketsError);
+              } else {
+                console.log('📁 Buckets disponibles:', buckets?.map(b => b.name));
+                
+                // Lister tous les fichiers du bucket contrats
+                const { data: allFiles } = await supabase.storage
+                  .from('contrats')
+                  .list('');
+                console.log('📄 Fichiers dans le bucket contrats:', allFiles?.map(f => f.name));
+              }
             }
           }
         }
