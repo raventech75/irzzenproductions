@@ -44,13 +44,13 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Galerie en ligne sécurisée"
     ],
     features: [
-      "📸 Couverture photo de la cérémonie et moments clés",
-      "🎥 Clip vidéo de 2-3 minutes avec musique",
-      "✨ 150-200 photos HD sélectionnées et retouchées",
-      "💻 Galerie en ligne privée (accès 1 an)",
-      "📥 Téléchargement haute résolution inclus",
-      "📱 Photos optimisées pour réseaux sociaux",
-      "🎁 Droits d'usage et impression inclus"
+      "• Couverture photo de la cérémonie et moments clés",
+      "• Clip vidéo de 2-3 minutes avec musique",
+      "• 150-200 photos HD sélectionnées et retouchées",
+      "• Galerie en ligne privée (accès 1 an)",
+      "• Téléchargement haute résolution inclus",
+      "• Photos optimisées pour réseaux sociaux",
+      "• Droits d'usage et impression inclus"
     ],
     options: [
       { 
@@ -88,14 +88,14 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Reportage des préparatifs"
     ],
     features: [
-      "👰 Préparatifs de la mariée (coiffure, maquillage, robe)",
-      "🤵 Préparatifs du marié et témoins",
-      "💒 Cérémonie civile et/ou religieuse complète",
-      "🥂 Cocktail et photos de groupe",
-      "🎥 Clip vidéo de 5-8 minutes avec moments forts",
-      "📸 300-400 photos HD triées et retouchées",
-      "💻 Galerie en ligne avec partage invités",
-      "📱 Stories Instagram prêtes à publier"
+      "• Préparatifs de la mariée (coiffure, maquillage, robe)",
+      "• Préparatifs du marié et témoins",
+      "• Cérémonie civile et/ou religieuse complète",
+      "• Cocktail et photos de groupe",
+      "• Clip vidéo de 5-8 minutes avec moments forts",
+      "• 300-400 photos HD triées et retouchées",
+      "• Galerie en ligne avec partage invités",
+      "• Stories Instagram prêtes à publier"
     ],
     options: [
       { 
@@ -139,14 +139,14 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Cohérence artistique garantie"
     ],
     features: [
-      "📸 Reportage photo complet (préparatifs à soirée)",
-      "🎬 Film de mariage cinématographique 8-12 minutes",
-      "📱 Teaser court pour réseaux sociaux (1-2 min)",
-      "✨ 300+ photos HD sélectionnées et retouchées",
-      "🎵 Montage vidéo avec musique de qualité",
-      "💻 Galerie en ligne photo + vidéo intégrée",
-      "📥 Téléchargement HD photos et vidéos",
-      "🎭 Style artistique cohérent photo/vidéo"
+      "• Reportage photo complet (préparatifs à soirée)",
+      "• Film de mariage cinématographique 8-12 minutes",
+      "• Teaser court pour réseaux sociaux (1-2 min)",
+      "• 300+ photos HD sélectionnées et retouchées",
+      "• Montage vidéo avec musique de qualité",
+      "• Galerie en ligne photo + vidéo intégrée",
+      "• Téléchargement HD photos et vidéos",
+      "• Style artistique cohérent photo/vidéo"
     ],
     options: [
       { 
@@ -190,14 +190,14 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Teaser pour réseaux sociaux"
     ],
     features: [
-      "🎬 Équipe complète photo + vidéo professionnelle",
-      "📽️ Film souvenir cinématographique",
-      "📱 Teaser 2-3 minutes optimisé réseaux sociaux",
-      "📸 500+ photos HD avec retouches professionnelles",
-      "🚁 Captation drone incluse au parc(si autorisée)",
-      "💫 Etalonnage vidéo",
-      "💝 USB personnalisée dans écrin de luxe",
-      "🌐 Galerie en ligne premium avec mot de passe"
+      "• Équipe complète photo + vidéo professionnelle",
+      "• Film souvenir cinématographique",
+      "• Teaser 2-3 minutes optimisé réseaux sociaux",
+      "• 500+ photos HD avec retouches professionnelles",
+      "• Captation drone incluse (si autorisée)",
+      "• Étalonnage vidéo professionnel",
+      "• USB personnalisée dans écrin de luxe",
+      "• Galerie en ligne premium avec mot de passe"
     ],
     options: [
       { 
@@ -241,16 +241,16 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Livrables multiples inclus"
     ],
     features: [
-      "👥 Équipe de 3 : photographe principal + vidéaste + drone",
-      "📷 Matériel professionnel haut de gamme (Canon R5, optiques L)",
-      "🎬 Film cinématographique + making-off",
-      "📸 800+ photos avec retouches artistiques individuelles",
-      "🚁 Drone professionnel inclus + pilote certifié",
-      "💎 Album cuir luxe 30x40cm + coffret USB",
-      "💫 Etalonnage vidéo",
-      "💝 USB personnalisée dans écrin de luxe",
-      "⚡ Livraison express 50 photos sous 24h",
-      "🎁 Story de votre journée inclus"
+      "• Équipe de 3 : photographe principal + vidéaste + drone",
+      "• Matériel professionnel haut de gamme (Canon R5, optiques L)",
+      "• Film cinématographique + making-off",
+      "• 800+ photos avec retouches artistiques individuelles",
+      "• Drone professionnel inclus + pilote certifié",
+      "• Album cuir luxe 30x40cm + coffret USB",
+      "• Étalonnage vidéo professionnel",
+      "• USB personnalisée dans écrin de luxe",
+      "• Livraison express 50 photos sous 24h",
+      "• Story de votre journée inclus"
     ],
     options: [
       { 

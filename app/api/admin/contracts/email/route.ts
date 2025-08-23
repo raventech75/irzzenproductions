@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
     // 1) URL signée courte pour fetch le PDF
     const { data: signed, error: signErr } = await supabaseAdmin.storage
-      .from("contracts")
+      .from("contrats")
       .createSignedUrl(path, 10 * 60); // 10 min
 
     if (signErr || !signed?.signedUrl) {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const base64 = Buffer.from(arrayBuf).toString("base64");
 
     // 3) URL publique (si le bucket est public) — pour le lien direct dans l'email admin
-    const { data: pub } = supabaseAdmin.storage.from("contracts").getPublicUrl(path);
+    const { data: pub } = supabaseAdmin.storage.from("contrats").getPublicUrl(path);
     const publicUrl = pub?.publicUrl || null;
 
     const filename = path.split("/").pop() || "contrat.pdf";

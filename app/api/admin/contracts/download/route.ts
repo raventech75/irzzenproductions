@@ -1,4 +1,4 @@
-// app/api/admin/contracts/download/route.ts
+// app/api/admin/contrats/download/route.ts
 import { NextResponse } from "next/server";
 import { getSignedContractUrl } from "@/lib/storage";
 

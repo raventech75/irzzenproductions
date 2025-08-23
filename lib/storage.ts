@@ -1,7 +1,7 @@
 // lib/storage.ts
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-const BUCKET = "contracts";
+const BUCKET = "contrats";
 
 /** Essaie d'obtenir une URL publique (si le bucket est public) */
 export function getPublicContractUrl(path: string): string | null {

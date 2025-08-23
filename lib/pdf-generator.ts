@@ -1,23 +1,9 @@
-import Stripe from "stripe";
-import { headers } from "next/headers";
+// lib/pdf-generator.ts
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { createClient } from "@supabase/supabase-js";
+import type Stripe from "stripe";
 
-// ⚡ Config Stripe + Supabase
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
-});
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-// 🎨 Fonction pour générer un PDF professionnel
-async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Session) {
+// Copiez EXACTEMENT votre fonction createProfessionalPDF du webhook ici
+export async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Session) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // Format A4
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -33,7 +19,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
   const leftMargin = 50;
   const rightMargin = 545;
 
-  // 🎯 Fonction pour formater une date
+  // 🛠️ Fonction pour formater une date
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Date à confirmer";
     try {
@@ -220,7 +206,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 25;
 
-  // 🎯 Toutes les informations du mariage détaillées
+  // 🛠️ Toutes les informations du mariage détaillées
   const marriageDetails = [
     { label: "Nombre d'invités", value: metadata.guests },
     { label: "Lieu des préparatifs", value: metadata.prepLocation },
@@ -365,7 +351,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 10;
 
-  // Options sélectionnées - 🔧 CORRECTION DE L'ERREUR TYPESCRIPT
+  // Options sélectionnées
   if (metadata.selected_options) {
     page.drawText("Options incluses :", {
       x: leftMargin,
@@ -376,7 +362,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const options = metadata.selected_options.split(', ').filter(Boolean);
-    options.forEach((option: string) => { // 🎯 Type explicite ajouté
+    options.forEach((option: string) => {
       page.drawText(`• ${option}`, {
         x: leftMargin + 15,
         y: yPos,
@@ -399,7 +385,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
     yPos -= 20;
 
     const extras = metadata.extras.split('|').filter(Boolean);
-    extras.forEach((extra: string) => { // 🎯 Type explicite ajouté
+    extras.forEach((extra: string) => {
       const [label, price] = extra.split(':');
       page.drawText(`• ${label} : ${price}€`, {
         x: leftMargin + 15,
@@ -519,7 +505,7 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
 
   yPos -= 30;
 
-  // 📋 CONDITIONS GÉNÉRALES
+  // 📋 CONDITIONS GÉNÉRALES (version simplifiée pour cette page)
   page.drawText("CONDITIONS GÉNÉRALES", {
     x: leftMargin,
     y: yPos,
@@ -531,87 +517,43 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
   yPos -= 25;
 
   const conditions = [
-    "ARTICLE 1 - OBJET DU CONTRAT",
-    "Le présent contrat a pour objet la réalisation d'une prestation photographique et/ou",
-    "vidéographique lors de l'événement spécifié ci-dessus.",
-    "",
-    "ARTICLE 2 - OBLIGATIONS DU PRESTATAIRE",
-    "• Réaliser la prestation selon les modalités convenues",
-    "• Livrer les photos/vidéos retouchées dans un délai de 4 à 6 semaines",
-    "• Respecter la confidentialité de l'événement",
-    "• Fournir un matériel professionnel en parfait état de fonctionnement",
-    "",
-    "ARTICLE 3 - OBLIGATIONS DU CLIENT",
-    "• Régler les sommes dues selon les modalités prévues",
-    "• Informer le prestataire de tout changement d'horaire ou de lieu",
-    "• Faciliter l'accès aux lieux de la prestation",
-    "• Assurer la sécurité du matériel durant la prestation",
-    "",
-    "ARTICLE 4 - TARIFS ET MODALITÉS DE PAIEMENT",
-    "• L'acompte confirme la réservation et n'est pas obligatoire",
-    "• Le solde est payable le jour de la prestation (espèces, chèque ou virement)",
-    "• Aucun escompte ne sera accordé en cas de paiement anticipé",
-    "",
-    "ARTICLE 5 - ANNULATION",
-    "• Annulation par le client : possible jusqu'à 30 jours avant (acompte non remboursé)",
-    "• Annulation à moins de 30 jours : intégralité due",
-    "• Force majeure : report sans frais supplémentaires",
-    "",
-    "ARTICLE 6 - PROPRIÉTÉ INTELLECTUELLE",
+    "• Acompte non obligatoire mais recommandé (15% du montant total)",
+    "• Solde à régler le jour de la prestation (espèces, chèque ou virement)",
+    "• Livraison sous 4 à 6 semaines via galerie en ligne sécurisée",
     "• Le prestataire conserve tous les droits d'auteur sur ses créations",
     "• Le client dispose d'un droit d'usage privé et familial des œuvres",
-    "• Toute utilisation commerciale nécessite l'accord écrit du prestataire",
-    "",
-    "ARTICLE 7 - LIVRAISON",
-    "• Livraison sous 4 à 6 semaines via galerie en ligne sécurisée",
-    "• Les fichiers source ne sont pas fournis (sauf mention contraire)",
-    "• Sauvegarde garantie pendant 2 ans après livraison",
-    "",
-    "ARTICLE 8 - RESPONSABILITÉ",
-    "• Le prestataire ne peut être tenu responsable d'événements indépendants",
-    "de sa volonté (panne matériel, conditions météo, etc.)",
+    "• Annulation possible jusqu'à 30 jours avant (acompte non remboursé)",
+    "• En cas de force majeure : report sans frais supplémentaires",
     "• Assurance responsabilité civile professionnelle souscrite",
-    "",
-    "ARTICLE 9 - DROIT À L'IMAGE",
-    "• Le prestataire peut utiliser les images à des fins promotionnelles",
-    "• Opposition possible sur simple demande écrite",
-    "",
-    "ARTICLE 10 - LITIGES",
-    "• Tout litige relève de la compétence des tribunaux français",
-    "• Droit applicable : droit français",
   ];
 
   let currentPage = page;
   let currentYPos = yPos;
 
-  conditions.forEach((condition, index) => {
+  conditions.forEach(condition => {
     // Vérifier si on a besoin d'une nouvelle page
     if (currentYPos < 100) {
       currentPage = pdfDoc.addPage([595, 842]);
       currentYPos = 800;
-    }
-
-    const isTitle = condition.startsWith("ARTICLE");
-    const isEmpty = condition === "";
-    
-    if (isEmpty) {
-      currentYPos -= 8;
-      return;
+      
+      // En-tête nouvelle page
+      currentPage.drawText("CONTRAT IRZZEN PRODUCTIONS (suite)", {
+        x: leftMargin, y: currentYPos, size: 12, font: fontBold, color: primaryColor,
+      });
+      currentYPos -= 30;
     }
 
     currentPage.drawText(condition, {
       x: leftMargin,
       y: currentYPos,
-      size: isTitle ? 10 : 9,
-      font: isTitle ? fontBold : font,
-      color: isTitle ? primaryColor : grayText,
+      size: 10,
+      font,
+      color: grayText,
     });
-    currentYPos -= isTitle ? 18 : 12;
+    currentYPos -= 15;
   });
 
-  currentYPos -= 30;
-
-  // Pied de page sur toutes les pages uniquement
+  // Pied de page sur toutes les pages
   const pageCount = pdfDoc.getPageCount();
   for (let i = 0; i < pageCount; i++) {
     const currentPageForFooter = pdfDoc.getPage(i);
@@ -633,166 +575,4 @@ async function createProfessionalPDF(metadata: any, session: Stripe.Checkout.Ses
   }
 
   return await pdfDoc.save();
-}
-
-export async function POST(req: Request) {
-  const sig = headers().get("stripe-signature");
-  if (!sig) return new Response("Missing signature", { status: 400 });
-
-  const rawBody = await req.text();
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err: any) {
-    console.error("[stripe webhook] Signature invalide:", err.message);
-    return new Response("Invalid signature", { status: 400 });
-  }
-
-  console.log("[stripe webhook] Event reçu:", event.type);
-
-  try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      console.log("✅ Checkout session completed:", session.id);
-
-      const metadata = session.metadata || {};
-      console.log("📋 TOUTES LES MÉTADONNÉES REÇUES:", JSON.stringify(metadata, null, 2));
-
-      // 🎯 Mapping flexible des données selon les différentes sources
-      const bride_first_name = metadata.bride_first_name || "";
-      const bride_last_name = metadata.bride_last_name || "";
-      const groom_first_name = metadata.groom_first_name || "";
-      const groom_last_name = metadata.groom_last_name || "";
-      const couple_name = metadata.couple_name || `${bride_first_name} ${bride_last_name} & ${groom_first_name} ${groom_last_name}`;
-      const wedding_date = metadata.wedding_date || "";
-      
-      // 🎯 TOUTES les informations du questionnaire détaillé
-      const phone = metadata.phone || "";
-      const address = metadata.address || "";
-      const postalCode = metadata.postalCode || "";
-      const city = metadata.city || "";
-      const country = metadata.country || "";
-      const guests = metadata.guests || "";
-      const prepLocation = metadata.prepLocation || "";
-      const prepTime = metadata.prepTime || "";
-      const mairieLocation = metadata.mairieLocation || "";
-      const mairieTime = metadata.mairieTime || "";
-      const ceremonyLocation = metadata.ceremonyLocation || metadata.ceremony_address || "";
-      const ceremonyTime = metadata.ceremonyTime || metadata.ceremony_time || "";
-      const receptionLocation = metadata.receptionLocation || metadata.reception_address || "";
-      const receptionTime = metadata.receptionTime || metadata.reception_time || "";
-      const schedule = metadata.schedule || "";
-      const specialRequests = metadata.specialRequests || "";
-      
-      // Prestation
-      const formula = metadata.formula || "";
-      const formula_description = metadata.formula_description || "";
-      const total_eur = metadata.total_eur || "";
-      const deposit_eur = metadata.deposit_eur || "";
-      const remaining_eur = metadata.remaining_eur || "";
-      const selected_options = metadata.selected_options || "";
-      const extras = metadata.extras || "";
-      const email = session.customer_email || metadata.email || "";
-
-      // Objet structuré pour le PDF
-      const contractData = {
-        bride_first_name,
-        bride_last_name,
-        groom_first_name,
-        groom_last_name,
-        couple_name,
-        wedding_date,
-        phone,
-        address,
-        postalCode,
-        city,
-        country,
-        guests,
-        prepLocation,
-        prepTime,
-        mairieLocation,
-        mairieTime,
-        ceremonyLocation,
-        ceremonyTime,
-        receptionLocation,
-        receptionTime,
-        schedule,
-        specialRequests,
-        formula,
-        formula_description,
-        total_eur,
-        deposit_eur,
-        remaining_eur,
-        selected_options,
-        extras,
-        email,
-      };
-
-      console.log("📋 Données structurées pour le PDF:", contractData);
-
-      // 🎨 Générer le PDF professionnel avec toutes les données
-      const pdfBytes = await createProfessionalPDF(contractData, session);
-      console.log("📄 PDF professionnel généré, taille:", pdfBytes.length, "bytes");
-
-      // Vérifier le bucket
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      if (bucketsError) {
-        console.error("❌ Erreur listBuckets:", bucketsError);
-        return new Response("Bucket check failed", { status: 500 });
-      }
-      
-      const contratsBucket = buckets?.find(b => b.name === 'contrats');
-      if (!contratsBucket) {
-        console.error("❌ Bucket 'contrats' introuvable. Buckets disponibles:", 
-          buckets?.map(b => b.name));
-        return new Response("Bucket not found", { status: 500 });
-      }
-
-      console.log("✅ Bucket 'contrats' trouvé");
-
-      // Upload du PDF
-      const fileName = `${session.id}.pdf`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("contrats")
-        .upload(fileName, pdfBytes, {
-          contentType: "application/pdf",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error("❌ Erreur upload Supabase:", uploadError);
-        return new Response(`Upload failed: ${uploadError.message}`, { status: 500 });
-      }
-
-      console.log("✅ Upload réussi:", uploadData?.path);
-
-      // URL publique
-      const { data: publicUrlData } = supabase.storage
-        .from("contrats")
-        .getPublicUrl(fileName);
-
-      console.log("📂 PDF professionnel accessible ici:", publicUrlData.publicUrl);
-
-      return new Response(
-        JSON.stringify({
-          received: true,
-          pdfUrl: publicUrlData.publicUrl,
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err: any) {
-    console.error("[stripe webhook] Handler error:", err);
-    return new Response(`Server error: ${err.message}`, { status: 500 });
-  }
 }

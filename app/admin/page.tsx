@@ -29,7 +29,7 @@ export default function Admin() {
 
   const refresh = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/contracts/list");
+    const res = await fetch("/api/admin/contrats/list");
     const data = await res.json();
     setRows(data.items || []);
     setLoading(false);
@@ -47,7 +47,7 @@ export default function Admin() {
   }, [rows, filter]);
 
   const download = async (path: string) => {
-    const res = await fetch("/api/admin/contracts/download", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ path }) });
+    const res = await fetch("/api/admin/contrats/download", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ path }) });
     const { url } = await res.json();
     if (url) window.open(url, "_blank");
   };
@@ -56,7 +56,7 @@ export default function Admin() {
     const to = emailTo || row.bookings?.customers?.email;
     if (!to) { alert("Renseignez un email destinataire."); return; }
     const filename = row.file_path.split("/").pop();
-    const res = await fetch("/api/admin/contracts/send", {
+    const res = await fetch("/api/admin/contrats/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ to, path: row.file_path, filename })
@@ -67,7 +67,7 @@ export default function Admin() {
 
   const remove = async (row: Row) => {
     if (!confirm("Supprimer définitivement ce PDF ?")) return;
-    const res = await fetch("/api/admin/contracts/delete", {
+    const res = await fetch("/api/admin/contrats/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: row.id, path: row.file_path })
