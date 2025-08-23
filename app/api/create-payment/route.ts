@@ -71,12 +71,38 @@ export async function POST(req: Request) {
     
     // 🎯 Extraction de la config (formule + options)
     const config = body?.config || {};
-    const formula: any = resolveFormulaLoose(config);
+    const formulaId = clean(config?.formulaId);
+    
+    // 🎯 GESTION DU DEVIS PERSONNALISÉ
+    let formula: any;
+    let base: number;
+    
+    if (formulaId === "custom") {
+      // Pour un devis personnalisé, utiliser le prix saisi par le client
+      const customPrice = Number(config?.customPrice || 0);
+      console.log("💰 DEVIS PERSONNALISÉ détecté - Prix:", customPrice);
+      
+      formula = {
+        id: "custom",
+        label: "Devis personnalisé",
+        price: customPrice,
+        description: `Devis personnalisé de ${customPrice}€`,
+        features: ["Prestation personnalisée selon devis"]
+      };
+      base = customPrice;
+    } else {
+      // Pour une formule standard
+      formula = resolveFormulaLoose(config);
+      base = Number(formula?.price || 0);
+    }
+    
+    console.log("📋 Formule utilisée:", formulaName(formula));
+    console.log("💰 Prix de base:", base);
+    
     const selectedOptions: string[] = Array.isArray(config?.options) ? config.options : [];
     const extras: Array<{ label: string; price: number }> = Array.isArray(config?.extras) ? config.extras : [];
 
     // Calcul des prix avec debug - UTILISATION DES VRAIES OPTIONS
-    const base = Number(formula?.price || 0);
     const optionPrices = selectedOptions.map((id) => {
       const option = OPTIONS.find((o) => o.id === id);
       const price = Number(option?.price || 0);
@@ -85,14 +111,70 @@ export async function POST(req: Request) {
     });
     const extraPrices = extras.map((e) => Number(e?.price || 0));
     
-    console.log("💰 Prix de base (formule):", base);
     console.log("💸 Prix des options:", optionPrices);
-    console.log("🎁 Prix des extras:", extraPrices);
+    console.log("🎨 Prix des extras:", extraPrices);
     
     const totals = computePricing(base, [...optionPrices, ...extraPrices]);
     
     console.log("🧮 Totals recalculés dans l'API:", totals);
     console.log("💳 Acompte qui va être facturé sur Stripe:", totals.depositSuggested);
+
+    // 🎯 GÉNÉRATION DU NOM DE FICHIER PERSONNALISÉ EN AMONT
+    function generateFileName() {
+      const cleanName = (str: string) => str
+        .replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '') // Garde lettres, chiffres, accents, espaces et tirets
+        .replace(/\s+/g, '') // Supprime tous les espaces
+        .trim();
+      
+      const formatDate = (dateStr: string) => {
+        try {
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // Format YYYY-MM-DD -> YYYYMMDD
+            return dateStr.replace(/-/g, '');
+          }
+          // Autres formats : essayer de parser
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}${month}${day}`;
+          }
+        } catch (e) {
+          console.log("⚠️ Erreur formatage date:", e);
+        }
+        return null;
+      };
+      
+      const brideFirstName = cleanName(clean(questionnaire?.brideFirstName) || '');
+      const groomFirstName = cleanName(clean(questionnaire?.groomFirstName) || '');
+      const weddingDateForFile = weddingDate ? formatDate(weddingDate) : null;
+      
+      console.log("🎯 DEBUG nom fichier:");
+      console.log("  - brideFirstName nettoyé:", brideFirstName);
+      console.log("  - groomFirstName nettoyé:", groomFirstName); 
+      console.log("  - weddingDate formatée:", weddingDateForFile);
+      
+      // Si on a au moins un prénom et une date
+      if ((brideFirstName || groomFirstName) && weddingDateForFile) {
+        let couplePart = '';
+        if (brideFirstName && groomFirstName) {
+          couplePart = `${brideFirstName}&${groomFirstName}`;
+        } else {
+          couplePart = brideFirstName || groomFirstName;
+        }
+        const fileName = `${couplePart}-${weddingDateForFile}.pdf`;
+        console.log("📋 Nom généré avec infos:", fileName);
+        return fileName;
+      }
+      
+      // Sinon nom par défaut
+      console.log("📋 Nom par défaut utilisé");
+      return "IZ-ContratPhoto&Video.pdf";
+    }
+    
+    const pdfFileName = generateFileName();
+    console.log("📋 Nom de fichier final qui sera utilisé:", pdfFileName);
 
     // 🎯 Métadonnées COMPLÈTES pour Stripe (toutes les infos du questionnaire)
     const meta = {
@@ -122,6 +204,8 @@ export async function POST(req: Request) {
       mairieTime: clean(questionnaire?.mairieTime),
       ceremonyLocation: clean(questionnaire?.ceremonyLocation),
       ceremonyTime: clean(questionnaire?.ceremonyTime),
+      shootingLocation: clean(questionnaire?.shootingLocation),
+      shootingTime: clean(questionnaire?.shootingTime),
       receptionLocation: clean(questionnaire?.receptionLocation),
       receptionTime: clean(questionnaire?.receptionTime),
       
@@ -141,6 +225,13 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .join(", "),
       extras: extras.map((e) => `${clean(e.label)}:${Number(e.price || 0)}`).join("|"),
+      
+      // 🎯 AJOUT du flag devis personnalisé
+      is_custom_quote: formulaId === "custom" ? "true" : "false",
+      custom_price: formulaId === "custom" ? String(base) : "",
+      
+      // 🎯 AJOUT du nom de fichier généré EN AMONT
+      pdf_filename: pdfFileName,
     };
 
     console.log("📋 Métadonnées COMPLÈTES construites pour Stripe:", meta);
@@ -150,6 +241,8 @@ export async function POST(req: Request) {
 
     // Créer la session Stripe
     const amountCents = Math.round(Number(totals.depositSuggested) * 100);
+    console.log("💳 Montant en centimes qui sera facturé:", amountCents, "centimes =", totals.depositSuggested, "€");
+    
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -174,7 +267,7 @@ export async function POST(req: Request) {
 
     console.log("🎉 Session Stripe créée:", session.id);
 
-    // 🎯 GÉNÉRER LE PDF AVEC DEBUG DÉTAILLÉ
+    // 🎯 GÉNÉRATION DU PDF AVEC DEBUG DÉTAILLÉ
     try {
       console.log("📄 Import des librairies PDF...");
       const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
@@ -384,7 +477,7 @@ export async function POST(req: Request) {
       yPos -= 30;
       console.log("✅ Section prestataire générée");
 
-      console.log("🔄 Génération section client enrichie...");
+      console.log("📄 Génération section client enrichie...");
       currentPage.drawRectangle({
         x: MARGIN_LEFT - 10,
         y: yPos - 25,
@@ -517,7 +610,8 @@ export async function POST(req: Request) {
 
       console.log("✅ Section client enrichie générée");
 
-      console.log("🔄 Génération section détails du mariage enrichie...");
+      console.log("📄 Génération section détails du mariage enrichie...");
+      addNewPageIfNeeded(200); // S'assurer qu'on a assez d'espace pour la section
       yPos -= 20; // Espacement avant nouvelle section
 
       currentPage.drawRectangle({
@@ -553,6 +647,7 @@ export async function POST(req: Request) {
       };
 
       const weddingDate = formatDate(meta.wedding_date);
+      addNewPageIfNeeded(50);
       currentPage.drawText(`Date du mariage : ${weddingDate}`, {
         x: MARGIN_LEFT,
         y: yPos,
@@ -563,6 +658,7 @@ export async function POST(req: Request) {
       yPos -= LINE_HEIGHT * 1.5;
 
       if (meta.guests) {
+        addNewPageIfNeeded(30);
         currentPage.drawText(`Nombre d'invités : ${meta.guests} personnes`, {
           x: MARGIN_LEFT,
           y: yPos,
@@ -574,6 +670,7 @@ export async function POST(req: Request) {
       }
 
       // === PLANNING DÉTAILLÉ ===
+      addNewPageIfNeeded(50);
       currentPage.drawText("Planning de la journée :", {
         x: MARGIN_LEFT,
         y: yPos,
@@ -600,6 +697,11 @@ export async function POST(req: Request) {
           time: meta.ceremonyTime
         },
         { 
+          label: "Shooting", 
+          location: meta.shootingLocation, 
+          time: meta.shootingTime
+        },
+        { 
           label: "Réception", 
           location: meta.receptionLocation, 
           time: meta.receptionTime
@@ -623,6 +725,7 @@ export async function POST(req: Request) {
         
         if (hasInfo) {
           // Titre de l'étape en gras
+          addNewPageIfNeeded(40);
           currentPage.drawText(`• ${item.label} :`, {
             x: MARGIN_LEFT + 15,
             y: yPos,
@@ -633,6 +736,7 @@ export async function POST(req: Request) {
           yPos -= LINE_HEIGHT;
           
           // Détails en retrait
+          addNewPageIfNeeded(30);
           currentPage.drawText(details, {
             x: MARGIN_LEFT + 35,
             y: yPos,
@@ -643,6 +747,7 @@ export async function POST(req: Request) {
           yPos -= LINE_HEIGHT * 1.2; // Espacement entre les étapes
         } else {
           // Étape non renseignée
+          addNewPageIfNeeded(30);
           currentPage.drawText(`• ${item.label} : À définir`, {
             x: MARGIN_LEFT + 15,
             y: yPos,
@@ -657,6 +762,7 @@ export async function POST(req: Request) {
       // === DÉROULEMENT DÉTAILLÉ ===
       if (meta.schedule && meta.schedule.trim()) {
         yPos -= 10;
+        addNewPageIfNeeded(50);
         currentPage.drawText("Déroulement détaillé :", {
           x: MARGIN_LEFT,
           y: yPos,
@@ -677,6 +783,7 @@ export async function POST(req: Request) {
         words.forEach((word) => {
           if ((currentLine + ' ' + word).length > maxLineLength && currentLine) {
             // Écrire la ligne actuelle
+            addNewPageIfNeeded(30);
             currentPage.drawText(currentLine, {
               x: MARGIN_LEFT + 15,
               y: yPos,
@@ -693,6 +800,7 @@ export async function POST(req: Request) {
         
         // Écrire la dernière ligne
         if (currentLine) {
+          addNewPageIfNeeded(30);
           currentPage.drawText(currentLine, {
             x: MARGIN_LEFT + 15,
             y: yPos,
@@ -707,6 +815,7 @@ export async function POST(req: Request) {
       // === DEMANDES SPÉCIALES ===
       if (meta.specialRequests && meta.specialRequests.trim()) {
         yPos -= 15;
+        addNewPageIfNeeded(50);
         currentPage.drawText("Demandes particulières :", {
           x: MARGIN_LEFT,
           y: yPos,
@@ -723,6 +832,7 @@ export async function POST(req: Request) {
         
         words.forEach((word) => {
           if ((currentLine + ' ' + word).length > 70 && currentLine) {
+            addNewPageIfNeeded(30);
             currentPage.drawText(currentLine, {
               x: MARGIN_LEFT + 15,
               y: yPos,
@@ -738,6 +848,7 @@ export async function POST(req: Request) {
         });
         
         if (currentLine) {
+          addNewPageIfNeeded(30);
           currentPage.drawText(currentLine, {
             x: MARGIN_LEFT + 15,
             y: yPos,
@@ -783,6 +894,27 @@ export async function POST(req: Request) {
         color: primaryColor,
       });
       yPos -= LINE_HEIGHT * 1.5;
+
+      // 🎯 AFFICHAGE SPÉCIAL POUR DEVIS PERSONNALISÉ
+      if (formulaId === "custom") {
+        currentPage.drawText("Type : Devis personnalisé", {
+          x: MARGIN_LEFT,
+          y: yPos,
+          size: 11,
+          font: fontBold,
+          color: rgb(0.8, 0.4, 0.1), // Orange foncé pour le mettre en évidence
+        });
+        yPos -= LINE_HEIGHT;
+        
+        currentPage.drawText(`Montant personnalisé : ${base}€`, {
+          x: MARGIN_LEFT + 15,
+          y: yPos,
+          size: 10,
+          font,
+          color: grayText,
+        });
+        yPos -= LINE_HEIGHT;
+      }
 
       // Description de la formule
       if (meta.formula_description) {
@@ -949,8 +1081,8 @@ export async function POST(req: Request) {
 
       console.log("✅ Section récapitulatif financier générée");
 
-      // 🔄 ÉTAPE 3 : CONDITIONS GÉNÉRALES
-      console.log("🔄 Génération conditions générales...");
+      // 📄 ÉTAPE 3 : CONDITIONS GÉNÉRALES
+      console.log("📄 Génération conditions générales...");
 
       // SECTION 1: OBJET DU CONTRAT
       addSection("1. OBJET DU CONTRAT");
@@ -1085,8 +1217,6 @@ export async function POST(req: Request) {
         "Les parties s'engagent à rechercher une solution amiable avant tout recours judiciaire."
       );
 
-
-
       console.log("✅ Conditions générales générées");
 
       console.log("📄 Sauvegarde du PDF...");
@@ -1094,11 +1224,11 @@ export async function POST(req: Request) {
       console.log("✅ PDF sauvegardé, taille:", pdfBytes.length, "bytes");
 
       console.log("📤 Upload vers bucket 'contrats'...");
-      const fileName = `${session.id}.pdf`;
+      console.log("📋 Utilisation du nom de fichier:", pdfFileName);
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("contrats")
-        .upload(fileName, pdfBytes, {
+        .upload(pdfFileName, pdfBytes, {
           contentType: "application/pdf",
           upsert: true,
         });
