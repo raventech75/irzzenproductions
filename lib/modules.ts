@@ -34,7 +34,7 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
     name: "Formule Essentielle",
     description: "L'essentiel de votre mariage capturé avec soin et professionnalisme",
     price: 890,
-    duration: "5-6 heures de couverture",
+    duration: "3-4 heures de couverture",
     deliverables: "150-200 photos + vidéo courte",
     deliveryTime: "3-4 semaines",
     idealFor: "Mariages intimistes, cérémonies simples, budgets maîtrisés",
@@ -62,7 +62,7 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       { 
         id: "drone", 
         name: "Captation aérienne drone", 
-        price: 320,
+        price: 350,
         description: "Prises de vues aériennes (si autorisées) + photos/vidéos drone" 
       },
       { 
@@ -181,8 +181,8 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
     description: "Expérience photo-vidéo complète avec équipe dédiée et livrables multiples",
     price: 2200,
     duration: "12 heures de couverture",
-    deliverables: "500+ photos + film 10-15 min + teaser",
-    deliveryTime: "5-6 semaines",
+    deliverables: "500+ photos + film de mariage entier + teaser",
+    deliveryTime: "8-12 semaines",
     idealFor: "Grands mariages, couples exigeants, événements d'envergure",
     highlights: [
       "Équipe photo + vidéo dédiée",
@@ -191,12 +191,12 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
     ],
     features: [
       "🎬 Équipe complète photo + vidéo professionnelle",
-      "📽️ Film souvenir cinématographique 10-15 minutes",
-      "📱 Teaser 2 minutes optimisé réseaux sociaux",
+      "📽️ Film souvenir cinématographique",
+      "📱 Teaser 2-3 minutes optimisé réseaux sociaux",
       "📸 500+ photos HD avec retouches professionnelles",
-      "🚁 Captation drone incluse (si autorisée)",
-      "💫 Effets spéciaux et étalonnage vidéo",
-      "💝 USB personnalisée dans écrin luxe",
+      "🚁 Captation drone incluse au parc(si autorisée)",
+      "💫 Etalonnage vidéo",
+      "💝 USB personnalisée dans écrin de luxe",
       "🌐 Galerie en ligne premium avec mot de passe"
     ],
     options: [
@@ -215,7 +215,7 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       { 
         id: "same-day-edit", 
         name: "Montage en direct", 
-        price: 650,
+        price: 350,
         description: "Vidéo de 3-5 min montée et diffusée le jour même en soirée" 
       },
       { 
@@ -230,10 +230,10 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
     id: "prestige",
     name: "Formule Prestige",
     description: "L'excellence absolue : équipe complète, matériel haut de gamme, livrables premium",
-    price: 3200,
+    price: 3800,
     duration: "Journée complète illimitée",
-    deliverables: "800+ photos + film 20 min + multiples formats",
-    deliveryTime: "6-8 semaines",
+    deliverables: "800+ photos + film entier + teaser",
+    deliveryTime: "16-24 semaines",
     idealFor: "Mariages d'exception, châteaux, événements luxe, couples célébrités",
     highlights: [
       "Équipe de 3 professionnels",
@@ -241,14 +241,16 @@ export const FORMULAS_DETAILED: FormulaDetailed[] = [
       "Livrables multiples inclus"
     ],
     features: [
-      "👥 Équipe de 3 : photographe principal + vidéaste + assistant",
+      "👥 Équipe de 3 : photographe principal + vidéaste + drone",
       "📷 Matériel professionnel haut de gamme (Canon R5, optiques L)",
-      "🎬 Film cinématographique 20 minutes + making-of",
+      "🎬 Film cinématographique + making-off",
       "📸 800+ photos avec retouches artistiques individuelles",
       "🚁 Drone professionnel inclus + pilote certifié",
-      "💎 Album cuir luxe 50x35cm + coffret USB cristal",
+      "💎 Album cuir luxe 30x40cm + coffret USB",
+      "💫 Etalonnage vidéo",
+      "💝 USB personnalisée dans écrin de luxe",
       "⚡ Livraison express 50 photos sous 24h",
-      "🎁 Tirage d'art grand format offert (60x40cm)"
+      "🎁 Story de votre journée inclus"
     ],
     options: [
       { 
