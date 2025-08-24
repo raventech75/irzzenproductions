@@ -1,3 +1,8 @@
+// 🔧 CORRECTION VERCEL: Forcer le rendu dynamique
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
@@ -112,6 +117,9 @@ export async function GET(req: Request) {
       formula_description: md.formula_description || "",
       formula_id: md.formula_id || "",
       
+      // 🔧 AJOUT: Support prix personnalisé
+      custom_price: md.custom_price || "",
+      
       // Finances
       total_eur: md.total_eur || "0",
       deposit_eur: md.deposit_eur || "0",
@@ -141,7 +149,7 @@ export async function GET(req: Request) {
       })(),
     };
 
-    console.log("🔄 [API] Métadonnées harmonisées pour le générateur professionnel");
+    console.log("📄 [API] Métadonnées harmonisées pour le générateur professionnel");
 
     /* === GÉNÉRATION PDF AVEC LE GÉNÉRATEUR PROFESSIONNEL === */
     console.log("📄 [API] Génération PDF avec createProfessionalPDF...");
@@ -207,6 +215,9 @@ export async function GET(req: Request) {
       guests: harmonizedMetadata.guests,
       specialRequests: harmonizedMetadata.specialRequests,
       notes: harmonizedMetadata.notes,
+      // 🔧 AJOUT: Support prix personnalisé dans l'email
+      customPrice: harmonizedMetadata.custom_price,
+      isCustomFormula: harmonizedMetadata.formula_id === "custom",
     };
 
     console.log("🎉 [API] Succès complet !");
