@@ -1,200 +1,107 @@
-'use client';
+"use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import EmailSender from "@/components/EmailSender";
 
-interface SessionData {
-  id: string;
-  customer_email: string;
-  payment_status: string;
-  metadata: Record<string, string>;
-  pdfUrl?: string;
-}
-
-function SuccessContent() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams?.get('session_id');
-  
-  const [sessionData, setSessionData] = useState<SessionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!sessionId) {
-      setError('Session ID manquant');
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    async function verifySession() {
-      try {
-        console.log('🔍 Vérification session:', sessionId);
-        
-        // 🎯 APPEL À L'API VERIFY-SESSION POUR RÉCUPÉRER LES VRAIES DONNÉES
-        const response = await fetch(`/api/verify-session?session_id=${sessionId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log("📋 Données session reçues:", data);
-        
-        if (isMounted) {
-          // Utiliser les vraies données de la session Stripe
-          const sessionData: SessionData = {
-            id: data.id || sessionId!,
-            customer_email: data.customer_email || "Email non renseigné",
-            payment_status: data.payment_status || "unknown",
-            metadata: data.metadata || {},
-            pdfUrl: data.pdfUrl || undefined
-          };
-          
-          setSessionData(sessionData);
-          setLoading(false);
-          
-          if (!data.pdfUrl) {
-            console.log("⚠️ PDF pas encore accessible");
-          } else {
-            console.log("✅ PDF accessible:", data.pdfUrl);
-          }
-        }
-      } catch (err: any) {
-        console.error('❌ Erreur vérification:', err);
-        if (isMounted) {
-          setError(err.message);
-          setLoading(false);
-        }
-      }
-    }
-
-    verifySession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [sessionId]);
-
-  if (!sessionId) {
-    return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="text-red-500 mb-4">❌ Erreur</div>
-        <p>Session Stripe introuvable.</p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Vérification de votre paiement...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="text-red-500 mb-4">❌ Erreur</div>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto py-16 px-4">
-      <div className="text-center mb-8">
-        <div className="text-6xl mb-4">🎉</div>
-        <h1 className="text-3xl font-bold text-green-600 mb-2">
-          Paiement confirmé !
-        </h1>
-        <p className="text-gray-600">
-          Merci pour votre confiance. Votre réservation est confirmée.
-        </p>
-      </div>
-
-      {sessionData && (
-        <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">📋 Détails de votre réservation</h2>
-          
-          <div className="space-y-2">
-            <p><span className="font-medium">Email :</span> {sessionData.customer_email}</p>
-            <p><span className="font-medium">Mariée :</span> {sessionData.metadata?.bride_first_name || 'Non renseigné'}</p>
-            <p><span className="font-medium">Marié :</span> {sessionData.metadata?.groom_first_name || 'Non renseigné'}</p>
-            <p><span className="font-medium">Date du mariage :</span> {sessionData.metadata?.wedding_date || 'Non renseignée'}</p>
-            <p><span className="font-medium">Couple :</span> {sessionData.metadata?.couple_name || 'Non renseigné'}</p>
-            <p><span className="font-medium">Formule :</span> {sessionData.metadata?.formula || 'Non renseignée'}</p>
-            <p><span className="font-medium">Total :</span> {sessionData.metadata?.total_eur ? `${sessionData.metadata.total_eur}€` : 'Non renseigné'}</p>
-          </div>
-
-          {sessionData.pdfUrl ? (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">📄 Votre contrat</h3>
-              <p className="text-sm text-blue-600 mb-3">
-                Votre contrat PDF a été généré automatiquement.
-              </p>
-              <div className="flex gap-3">
-                <a
-                  href={sessionData.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  👁️ Voir le contrat
-                </a>
-                <a
-                  href={sessionData.pdfUrl}
-                  download={`contrat-${sessionData.id}.pdf`}
-                  className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  📥 Télécharger le PDF
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-              <h3 className="font-semibold text-yellow-800 mb-2">⏳ Génération en cours</h3>
-              <p className="text-sm text-yellow-600">
-                Votre contrat PDF est en cours de génération. Rafraîchissez la page dans quelques instants.
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-2 inline-block bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
-              >
-                🔄 Rafraîchir
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="text-center">
-        <p className="text-gray-600 mb-4">
-          Un email de confirmation vous a été envoyé avec tous les détails.
-        </p>
-        <a
-          href="/"
-          className="inline-block bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          ← Retour à l'accueil
-        </a>
-      </div>
-    </div>
-  );
-}
+type EmailPayload = {
+  toEmail: string;
+  couple: string;
+  dateMariage: string;
+  formule: string;
+  montant: string | number;
+  dateContrat: string;
+  lienPdf: string;
+};
 
 export default function SuccessPage() {
+  const search = useSearchParams();
+  const sessionId = search.get("session_id") || "";
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
+  const [payload, setPayload] = useState<EmailPayload | null>(null);
+  const [pdfUrl, setPdfUrl]   = useState<string>("");
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
+        const j = await res.json();
+        console.log("📋 JSON brut:", JSON.stringify(j, null, 2));
+
+        if (!res.ok || j?.ok === false) {
+          setError(j?.error || `Erreur API (${res.status})`);
+        }
+
+        // Lis d'abord data.urlPdf (que l'API renvoie tjrs désormais)
+        const url = j?.data?.urlPdf || j?.data?.pdfUrl || j?.data?.url_pdf || j?.data?.emailPayload?.lienPdf || "";
+        setPdfUrl(url);
+        setPayload(j?.data?.emailPayload || null);
+      } catch (e: any) {
+        setError(e.message || "Erreur inconnue");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (sessionId) void run();
+  }, [sessionId]);
+
+  if (loading) return <main className="p-6">⏳ Génération en cours…</main>;
+
   return (
-    <Suspense fallback={
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Chargement...</p>
+    <main className="mx-auto max-w-3xl p-6 space-y-6">
+      <div className="rounded-xl border bg-emerald-50 p-6 shadow-sm">
+        <h2 className="text-xl font-semibold">📄 Votre contrat est prêt !</h2>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <a
+            href={pdfUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`px-4 py-2 rounded-lg text-center text-white ${pdfUrl ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}`}
+          >
+            👁️ Consulter le contrat
+          </a>
+          <a
+            href={pdfUrl || "#"}
+            download
+            className={`px-4 py-2 rounded-lg text-center text-white ${pdfUrl ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"}`}
+          >
+            📩 Télécharger le PDF
+          </a>
+        </div>
+
+        {pdfUrl && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Aperçu :</h3>
+            <div className="w-full h-[600px] border rounded-lg overflow-hidden shadow">
+              <iframe src={pdfUrl} className="w-full h-full" style={{ border: "none" }} />
+            </div>
+          </div>
+        )}
+
+        {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
       </div>
-    }>
-      <SuccessContent />
-    </Suspense>
+
+      <div>
+        {payload ? (
+          <EmailSender
+            toEmail={payload.toEmail}
+            couple={payload.couple}
+            dateMariage={payload.dateMariage}
+            formule={payload.formule}
+            montant={payload.montant}
+            dateContrat={payload.dateContrat}
+            lienPdf={pdfUrl}
+            buttonLabel="Envoyer le contrat ✉️"
+          />
+        ) : (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Le lien PDF fonctionne, mais le payload d’email est incomplet.
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

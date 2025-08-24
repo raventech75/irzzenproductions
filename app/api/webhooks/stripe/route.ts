@@ -746,8 +746,8 @@ export async function POST(req: Request) {
         return new Response("Bucket check failed", { status: 500 });
       }
       
-      const contratsBucket = buckets?.find(b => b.name === 'contrats');
-      if (!contratsBucket) {
+      const contractsBucket = buckets?.find(b => b.name === 'contrats');
+      if (!contractsBucket) {
         console.error("❌ Bucket 'contrats' introuvable. Buckets disponibles:", 
           buckets?.map(b => b.name));
         return new Response("Bucket not found", { status: 500 });

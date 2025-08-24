@@ -1,4 +1,4 @@
-// app/api/admin/contrats/send/route.ts
+// app/api/admin/contracts/send/route.ts
 import { NextResponse } from "next/server";
 import { resend, MAIL_FROM } from "@/lib/email";
 import { getSignedContractUrl } from "@/lib/storage";
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, id: emailResp.data?.id ?? null });
   } catch (err: any) {
-    console.error("contrats/send error:", err);
+    console.error("contracts/send error:", err);
     return NextResponse.json({ error: err?.message || "Erreur serveur" }, { status: 500 });
   }
 }

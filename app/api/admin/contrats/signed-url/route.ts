@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
 
   const { data, error } = await supabaseAdmin.storage
-    .from("contrats")
+    .from("contracts")
     .createSignedUrl(path, 60 * 60); // 1h
 
   if (error || !data?.signedUrl) {

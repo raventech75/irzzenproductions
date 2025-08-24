@@ -1,92 +1,236 @@
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { createProfessionalPDF } from "@/lib/pdf-generator"; // ✅ Utiliser le VRAI générateur
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+/* -------- helpers format ---------- */
+function toTitleCase(s?: string) {
+  if (!s) return "";
+  return s.trim().toLowerCase().replace(/\b\p{L}/gu, (m) => m.toUpperCase());
+}
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const sessionId = searchParams.get("session_id");
+function fullName(first?: string, last?: string) {
+  const f = toTitleCase(first);
+  const l = toTitleCase(last);
+  return [f, l].filter(Boolean).join(" ");
+}
 
-  if (!sessionId) {
-    return NextResponse.json(
-      { error: "Session ID manquant" },
-      { status: 400 }
-    );
+function humanDate(input?: string) {
+  if (!input) return "";
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(input)) return input; // DD/MM/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const [y, m, d] = input.split("-");
+    return `${d}/${m}/${y}`;
   }
+  const dt = new Date(input);
+  return !isNaN(dt.getTime()) ? dt.toLocaleDateString("fr-FR") : input;
+}
 
+function dateForFile(input?: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input || "")) return input!;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(input || "")) {
+    const [dd, mm, yy] = (input as string).split("/");
+    return `${yy}-${mm}-${dd}`;
+  }
+  const dt = input ? new Date(input) : new Date();
+  const y = String(dt.getFullYear());
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  const d = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function slug(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/* -------- ROUTE ---------- */
+export async function GET(req: Request) {
   try {
-    // 1. Récupérer les données de la session Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-    if (session.payment_status !== "paid") {
-      return NextResponse.json(
-        { error: "Paiement non confirmé" },
-        { status: 400 }
-      );
+    console.log("🚀 [API] verify-session appelée");
+    
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get("session_id");
+    
+    if (!sessionId) {
+      console.error("❌ [API] session_id manquant");
+      return NextResponse.json({ ok: false, error: "session_id manquant" }, { status: 400 });
     }
 
-    // 2. Construire l'URL du PDF dans Supabase
-    const fileName = `${sessionId}.pdf`;
+    console.log("🔥 [API] Récupération session Stripe:", sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["customer_details"] });
+    const md = (session.metadata || {}) as Record<string, string | undefined>;
+
+    console.log("📊 [API] Métadonnées reçues:", Object.keys(md));
+
+    /* === HARMONISATION DES MÉTADONNÉES pour createProfessionalPDF === */
     
-    // 🔧 VÉRIFIER D'ABORD LE BUCKET "contrats" (utilisé par create-payment)
-    let pdfUrl = null;
+    // Le générateur professionnel attend des noms spécifiques, on les mappe
+    const harmonizedMetadata = {
+      // Identité
+      couple_name: md.couple_name || "",
+      bride_first_name: md.bride_first_name || "",
+      bride_last_name: md.bride_last_name || "",
+      groom_first_name: md.groom_first_name || "",
+      groom_last_name: md.groom_last_name || "",
+      
+      // Contact
+      email: md.email || session.customer_details?.email || "",
+      phone: md.phone || "",
+      address: md.address || "",
+      postalCode: md.postal_code || "",
+      city: md.city || "",
+      country: md.country || "",
+      
+      // Mariage
+      wedding_date: md.wedding_date || "",
+      guests: md.guests || "",
+      
+      // Lieux - Mapping des noms
+      prepLocation: md.prep_location || "",
+      prepTime: md.prep_time || "",
+      mairieLocation: md.mairie_location || "",
+      mairieTime: md.mairie_time || "",
+      ceremonyLocation: md.ceremony_location || "",
+      ceremonyTime: md.ceremony_time || "",
+      receptionLocation: md.reception_location || "",
+      receptionTime: md.reception_time || "",
+      
+      // Planning
+      schedule: md.schedule || "",
+      specialRequests: md.special_requests || "",
+      notes: md.notes || "",
+      
+      // Prestation
+      formula: md.formula || "Formule",
+      formula_description: md.formula_description || "",
+      formula_id: md.formula_id || "",
+      
+      // Finances
+      total_eur: md.total_eur || "0",
+      deposit_eur: md.deposit_eur || "0",
+      remaining_eur: md.remaining_eur || "0",
+      
+      // Options - Parse JSON si nécessaire
+      selected_options: (() => {
+        try {
+          const options = md.selected_options ? JSON.parse(md.selected_options) : [];
+          return Array.isArray(options) ? options.join(', ') : md.selected_options_labels || "";
+        } catch {
+          return md.selected_options_labels || "";
+        }
+      })(),
+      
+      // Extras - Parse JSON et formate
+      extras: (() => {
+        try {
+          const extras = md.extras ? JSON.parse(md.extras) : [];
+          if (Array.isArray(extras)) {
+            return extras.map(e => `${e.label}:${e.price}`).join('|');
+          }
+          return "";
+        } catch {
+          return "";
+        }
+      })(),
+    };
+
+    console.log("🔄 [API] Métadonnées harmonisées pour le générateur professionnel");
+
+    /* === GÉNÉRATION PDF AVEC LE GÉNÉRATEUR PROFESSIONNEL === */
+    console.log("📄 [API] Génération PDF avec createProfessionalPDF...");
     
-    // Essayer le bucket "contrats" en premier
-    const { data: fileExistsContrats, error: checkErrorContrats } = await supabase.storage
+    const pdfBytes = await createProfessionalPDF(harmonizedMetadata, session);
+    
+    console.log("✅ [API] PDF généré avec succès, taille:", pdfBytes.length);
+
+    /* === UPLOAD SUPABASE === */
+    console.log("📤 [API] Upload vers Supabase...");
+    
+    const brideFirst = harmonizedMetadata.bride_first_name || "";
+    const groomFirst = harmonizedMetadata.groom_first_name || "";
+    const rawWeddingDate = harmonizedMetadata.wedding_date;
+    
+    const namePart = slug([brideFirst, groomFirst].filter(Boolean).join("-")) || "contrat";
+    const datePart = dateForFile(rawWeddingDate);
+    const fileName = `${namePart}_${datePart}_${sessionId.substring(0, 8)}.pdf`;
+
+    const { error: upErr } = await supabaseAdmin
+      .storage
       .from("contrats")
-      .list("", { search: fileName });
-
-    if (!checkErrorContrats && fileExistsContrats && fileExistsContrats.length > 0) {
-      // Le fichier existe dans "contrats"
-      const { data: publicUrlData } = supabase.storage
-        .from("contrats")
-        .getPublicUrl(fileName);
+      .upload(fileName, pdfBytes, { contentType: "application/pdf", upsert: true });
       
-      pdfUrl = publicUrlData.publicUrl;
-      console.log("📂 PDF trouvé dans 'contrats':", pdfUrl);
-    } else {
-      // Essayer le bucket "contrats" en fallback
-      const { data: fileExistscontrats, error: checkErrorcontrats } = await supabase.storage
-        .from("contrats")
-        .list("", { search: fileName });
-      
-      if (!checkErrorcontrats && fileExistscontrats && fileExistscontrats.length > 0) {
-        // Le fichier existe dans "contrats"
-        const { data: publicUrlData } = supabase.storage
-          .from("contrats")
-          .getPublicUrl(fileName);
-        
-        pdfUrl = publicUrlData.publicUrl;
-        console.log("📂 PDF trouvé dans 'contrats':", pdfUrl);
-      } else {
-        console.log("⚠️ PDF pas encore généré pour la session:", sessionId);
-        console.log("❌ Erreur 'contrats':", checkErrorContrats);
-        console.log("❌ Erreur 'contrats':", checkErrorcontrats);
-      }
+    if (upErr) {
+      console.error("❌ [API] Erreur upload:", upErr);
+      throw upErr;
     }
 
-    // 3. Retourner les données de la session + URL du PDF
-    return NextResponse.json({
-      id: session.id,
-      customer_email: session.customer_email,
-      payment_status: session.payment_status,
-      metadata: session.metadata || {},
-      pdfUrl: pdfUrl, // 🎯 URL du PDF si disponible
-    });
+    const { data: pub } = supabaseAdmin.storage.from("contrats").getPublicUrl(fileName);
+    const lienPdf = pub?.publicUrl || "";
 
-  } catch (error: any) {
-    console.error("[verify-session] Erreur:", error.message);
-    return NextResponse.json(
-      { error: "Erreur lors de la vérification" },
-      { status: 500 }
-    );
+    console.log("✅ [API] PDF uploadé:", lienPdf);
+
+    /* === PAYLOAD EMAIL ENRICHI === */
+    const couple = harmonizedMetadata.couple_name || 
+      `${harmonizedMetadata.bride_first_name} & ${harmonizedMetadata.groom_first_name}`.replace(/^\s*&\s*|\s*&\s*$/g, '') || 
+      "Couple";
+    
+    const emailPayload = {
+      toEmail: harmonizedMetadata.email,
+      couple: couple,
+      coupleName: couple,
+      dateMariage: humanDate(harmonizedMetadata.wedding_date),
+      weddingDate: humanDate(harmonizedMetadata.wedding_date),
+      formule: harmonizedMetadata.formula,
+      formula: harmonizedMetadata.formula,
+      montant: Number(harmonizedMetadata.total_eur || 0),
+      totalAmount: Number(harmonizedMetadata.total_eur || 0),
+      acompte: Number(harmonizedMetadata.deposit_eur || 0),
+      depositAmount: Number(harmonizedMetadata.deposit_eur || 0),
+      solde: Number(harmonizedMetadata.remaining_eur || 0),
+      remainingAmount: Number(harmonizedMetadata.remaining_eur || 0),
+      dateContrat: new Date().toLocaleDateString("fr-FR"),
+      contractDate: new Date().toLocaleDateString("fr-FR"),
+      lienPdf: lienPdf,
+      pdfUrl: lienPdf,
+      fileName: fileName,
+      // Informations supplémentaires
+      clientPhone: harmonizedMetadata.phone,
+      clientAddress: harmonizedMetadata.address,
+      clientCity: harmonizedMetadata.city,
+      guests: harmonizedMetadata.guests,
+      specialRequests: harmonizedMetadata.specialRequests,
+      notes: harmonizedMetadata.notes,
+    };
+
+    console.log("🎉 [API] Succès complet !");
+    
+    return NextResponse.json({
+      ok: true,
+      data: {
+        sessionId,
+        emailPayload,
+        urlPdf: lienPdf,
+        pdfUrl: lienPdf,
+        url_pdf: lienPdf,
+        fileName,
+      },
+    });
+    
+  } catch (err: any) {
+    console.error("❌ [API] Erreur verify-session:", err);
+    console.error("❌ [API] Stack:", err.stack);
+    
+    return NextResponse.json({ 
+      ok: false, 
+      error: err?.message || "Erreur serveur",
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }, { status: 500 });
   }
 }

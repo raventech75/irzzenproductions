@@ -1,124 +1,165 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import EmailSender from "@/components/EmailSender";
 
-interface SessionData {
-  id: string;
-  customer_email: string;
-  metadata: Record<string, string>;
-  pdfUrl?: string;
-}
+type EmailPayload = {
+  toEmail: string;
+  couple: string;
+  dateMariage: string;
+  formule: string;
+  montant: string | number;
+  dateContrat: string;
+  lienPdf: string;
+};
 
 export default function SuccessClient({ sessionId }: { sessionId: string }) {
-  const [sessionData, setSessionData] = useState<SessionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [payload, setPayload]   = useState<EmailPayload | null>(null);
+  const [pdfUrl, setPdfUrl]     = useState<string>("");
 
   useEffect(() => {
-    let isMounted = true; // Éviter les setState si le composant est démonté
-
-    async function verifySession() {
-      try {
-        console.log('🔍 Vérification session:', sessionId);
-        const response = await fetch(`/api/verify-session?session_id=${sessionId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Erreur ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (isMounted) {
-          setSessionData(data);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        console.error('❌ Erreur vérification:', err);
-        if (isMounted) {
-          setError(err.message);
-          setLoading(false);
-        }
+    const load = async () => {
+      if (!sessionId) {
+        setError("Aucun session_id fourni dans l’URL.");
+        setLoading(false);
+        return;
       }
-    }
+      try {
+        setLoading(true);
+        setError(null);
 
-    verifySession();
+        const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        });
 
-    return () => {
-      isMounted = false; // Cleanup pour éviter les fuites mémoire
+        const j = await res.json().catch(() => ({} as any));
+        console.log("[SuccessClient] Réponse API /api/verify-session:", j);
+
+        // Même si res.ok=false, l’API peut renvoyer un fallback urlPdf pour ne pas bloquer l’UI
+        if (!res.ok) {
+          const apiErr = j?.error || `Erreur API (${res.status})`;
+          // On tente quand même de récupérer un fallback d’URL PDF si présent
+          if (j?.data?.urlPdf) setPdfUrl(j.data.urlPdf);
+          setError(apiErr);
+          return;
+        }
+
+        // Cas “ok false mais data fournie” (fallback forcé)
+        if (j && j.ok === false) {
+          if (j?.data?.urlPdf) setPdfUrl(j.data.urlPdf);
+          setError(j?.error || "Réponse partielle de l’API");
+          return;
+        }
+
+        const ep: EmailPayload | null = j?.data?.emailPayload ?? null;
+        const url: string = j?.data?.urlPdf ?? "";
+
+        if (!url) {
+          setError("L’API n’a pas renvoyé d’URL PDF.");
+          return;
+        }
+
+        setPdfUrl(url);
+        setPayload(ep);
+      } catch (e: any) {
+        console.error("[SuccessClient] erreur:", e);
+        setError(e?.message || "Erreur inconnue");
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [sessionId]); // 🎯 Dépendance fixe, pas de re-render infini
 
-  if (loading) {
+    void load();
+  }, [sessionId]);
+
+  if (!sessionId) {
     return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Vérification de votre paiement...</p>
+      <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+        <p className="font-semibold">session_id manquant</p>
+        <p className="text-sm">La redirection Stripe doit inclure <code>?session_id=...</code>.</p>
       </div>
     );
   }
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="text-red-500 mb-4">❌ Erreur</div>
-        <p>{error}</p>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="text-lg font-semibold">Traitement en cours…</div>
+        <p className="mt-2 text-gray-600">Nous vérifions votre paiement et générons votre contrat.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-16 px-4">
-      <div className="text-center mb-8">
-        <div className="text-6xl mb-4">🎉</div>
-        <h1 className="text-3xl font-bold text-green-600 mb-2">
-          Paiement confirmé !
-        </h1>
-        <p className="text-gray-600">
-          Merci pour votre confiance. Votre réservation est confirmée.
+    <>
+      {/* Carte PDF */}
+      <div className="rounded-xl border bg-emerald-50 p-6 shadow-sm">
+        <h2 className="text-xl font-semibold">📄 Votre contrat est prêt !</h2>
+        <p className="text-emerald-900/80">
+          {error
+            ? "Un incident est survenu, mais un lien de prévisualisation est disponible."
+            : "Vous pouvez le consulter, le télécharger ou l’envoyer par email."}
         </p>
-      </div>
 
-      {sessionData && (
-        <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">📋 Détails de votre réservation</h2>
-          
-          <div className="space-y-2">
-            <p><span className="font-medium">Email :</span> {sessionData.customer_email}</p>
-            <p><span className="font-medium">Mariée :</span> {sessionData.metadata?.bride_first_name || 'N/A'}</p>
-            <p><span className="font-medium">Marié :</span> {sessionData.metadata?.groom_first_name || 'N/A'}</p>
-            <p><span className="font-medium">Date du mariage :</span> {sessionData.metadata?.wedding_date || 'N/A'}</p>
-          </div>
-
-          {sessionData.pdfUrl && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">📄 Votre contrat</h3>
-              <p className="text-sm text-blue-600 mb-3">
-                Votre contrat PDF a été généré automatiquement.
-              </p>
-              <a
-                href={sessionData.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                📥 Télécharger le contrat
-              </a>
-            </div>
-          )}
+        <div className="mt-4 flex flex-col gap-2">
+          <a
+            href={pdfUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg text-center disabled:opacity-50"
+          >
+            👁️ Consulter le contrat (nouvel onglet)
+          </a>
+          <a
+            href={pdfUrl || "#"}
+            download
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center disabled:opacity-50"
+          >
+            📩 Télécharger le PDF
+          </a>
         </div>
-      )}
 
-      <div className="text-center">
-        <p className="text-gray-600 mb-4">
-          Un email de confirmation vous a été envoyé avec tous les détails.
-        </p>
-        <a
-          href="/"
-          className="inline-block bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          ← Retour à l'accueil
-        </a>
+        {/* Aperçu intégré si on a bien une URL */}
+        {pdfUrl && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Aperçu du contrat :</h3>
+            <div className="w-full h-[600px] border rounded-lg overflow-hidden shadow">
+              <iframe src={pdfUrl} className="w-full h-full" style={{ border: "none" }} />
+            </div>
+          </div>
+        )}
+
+        {/* Message d’erreur éventuel */}
+        {error && (
+          <p className="mt-4 text-sm text-red-700">
+            ⚠️ {error}
+          </p>
+        )}
       </div>
-    </div>
+
+      {/* Bouton EmailJS (uniquement si on a un payload complet) */}
+      <div className="mt-6">
+        {payload ? (
+          <EmailSender
+            toEmail={payload.toEmail}
+            couple={payload.couple}
+            dateMariage={payload.dateMariage}
+            formule={payload.formule}
+            montant={payload.montant}
+            dateContrat={payload.dateContrat}
+            lienPdf={payload.lienPdf}
+            buttonLabel="Envoyer le contrat ✉️"
+          />
+        ) : (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Le payload d’email est incomplet. Le lien PDF fonctionne, mais l’envoi automatique est désactivé.
+          </div>
+        )}
+      </div>
+    </>
   );
 }
