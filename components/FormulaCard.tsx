@@ -2,7 +2,7 @@
 "use client";
 
 import type { FormulaDetailed } from "@/lib/modules";
-import { eur } from "@/lib/modules";
+import { euros } from "@/lib/products"; // Correction: utiliser euros depuis products
 
 type Props = {
   formula: FormulaDetailed;
@@ -22,7 +22,7 @@ export default function FormulaCard({ formula, selected, onSelect }: Props) {
         <div>
           <div className="font-semibold text-lg">{formula.name}</div>
           <div className="opacity-70 text-sm">{formula.description}</div>
-          <div className="mt-1 text-orange-700 font-medium">{eur(formula.price)}</div>
+          <div className="mt-1 text-orange-700 font-medium">{euros(formula.price)}</div>
         </div>
         <input
           type="radio"

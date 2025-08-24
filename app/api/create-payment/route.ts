@@ -90,8 +90,17 @@ export async function POST(req: Request) {
     const selectedOptions: string[] = Array.isArray(config?.options) ? config.options : [];
     const extras: Array<{ label: string; price: number }> = Array.isArray(config?.extras) ? config.extras : [];
 
+    // 🔧 CORRECTION: Calcul du prix de base avec support du prix personnalisé
+    let base = 0;
+    if (config?.formulaId === "custom" && config?.customPrice !== undefined) {
+      base = Number(config.customPrice) || 0;
+      console.log("💼 Prix personnalisé détecté:", base, "€");
+    } else {
+      base = Number(formula?.price || 0);
+      console.log("📋 Prix formule standard:", base, "€");
+    }
+
     // Calcul des prix avec debug - UTILISATION DES VRAIES OPTIONS
-    const base = Number(formula?.price || 0);
     const optionPrices = selectedOptions.map((id) => {
       const option = OPTIONS.find((o) => o.id === id);
       const price = Number(option?.price || 0);
@@ -110,7 +119,7 @@ export async function POST(req: Request) {
     console.log("💳 Acompte qui va être facturé sur Stripe:", totals.depositSuggested);
 
     // 🎯 Métadonnées COMPLÈTES pour Stripe (toutes les infos du questionnaire)
-    const meta = {
+    const meta: Record<string, string | number | null> = {
       // Informations de base
       email: customerEmail,
       couple_name: coupleName,
@@ -145,8 +154,8 @@ export async function POST(req: Request) {
       special_requests: clean(questionnaire?.specialRequests),
       
       // Prestation
-      formula: formulaName(formula),
-      formula_id: formula?.id,
+      formula: config?.formulaId === "custom" ? "Devis personnalisé" : formulaName(formula),
+      formula_id: formula?.id || "",
       total_eur: String(totals.total),
       deposit_eur: String(totals.depositSuggested),
       remaining_eur: String(totals.remainingDayJ),
@@ -160,10 +169,27 @@ export async function POST(req: Request) {
       extras: JSON.stringify(extras),
     };
 
+    // Ajouter custom_price seulement si c'est un devis personnalisé
+    if (config?.formulaId === "custom") {
+      meta.custom_price = String(base);
+    }
+
     console.log("📋 Métadonnées COMPLÈTES construites pour Stripe:", meta);
 
     // Créer la session Stripe
     const amountCents = Math.round(Number(totals.depositSuggested) * 100);
+    
+    // 🔧 CORRECTION: Description adaptée pour le devis personnalisé
+    const productName = config?.formulaId === "custom" 
+      ? `Acompte — Devis personnalisé` 
+      : `Acompte — ${formulaName(formula)}`;
+    
+    const productDescription = `Acompte de ${totals.depositSuggested}€ sur un total de ${totals.total}€`;
+    
+    console.log("🏷️ Produit Stripe:", productName);
+    console.log("📝 Description:", productDescription);
+    console.log("💰 Montant en centimes:", amountCents);
+    
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -173,8 +199,8 @@ export async function POST(req: Request) {
           price_data: {
             currency: "eur",
             product_data: { 
-              name: `Acompte — ${formulaName(formula)}`,
-              description: `Acompte de ${totals.depositSuggested}€ sur un total de ${totals.total}€`
+              name: productName,
+              description: productDescription
             },
             unit_amount: amountCents,
           },
@@ -187,6 +213,7 @@ export async function POST(req: Request) {
     });
 
     console.log("🎉 Session Stripe créée:", session.id);
+    console.log("🔗 URL de paiement:", session.url);
 
     // 🚫 GÉNÉRATION PDF DÉSACTIVÉE TEMPORAIREMENT POUR TEST
     console.log("🔧 [TEST] Génération PDF désactivée dans create-payment");
