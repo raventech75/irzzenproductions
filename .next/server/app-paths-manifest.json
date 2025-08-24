@@ -1,7 +1,5 @@
 {
-  "/reservation/page": "app/reservation/page.js",
-  "/page": "app/page.js",
-  "/api/create-payment/route": "app/api/create-payment/route.js",
   "/success/page": "app/success/page.js",
-  "/api/verify-session/route": "app/api/verify-session/route.js"
+  "/rib/page": "app/rib/page.js",
+  "/reservation/page": "app/reservation/page.js"
 }

@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const { path } = await req.json();
     if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
 
-    const { error } = await supabaseAdmin.storage.from("contrats").remove([path]);
+    const { error } = await supabaseAdmin.storage.from("contracts").remove([path]);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ ok: true });

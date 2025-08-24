@@ -1,290 +1,151 @@
-// lib/modules.ts
+// lib/modules.ts - Formules détaillées pour la nouvelle interface
 
-export type FormulaOption = {
+export interface FormulaDetailed {
   id: string;
   name: string;
+  title?: string;
+  label?: string;
   price: number;
-  description?: string; // Description détaillée de l'option
-};
-
-export type FormulaDetailed = {
-  id: string;
-  name: string;
   description: string;
-  price: number;
-  /** Liste de points clés à afficher dans la carte */
-  features?: string[];
-  /** Options proposées pour cette formule */
-  options?: FormulaOption[];
-  /** Durée de couverture */
   duration?: string;
-  /** Nombre de photos/vidéos estimées */
   deliverables?: string;
-  /** Points forts à mettre en avant */
-  highlights?: string[];
-  /** Pour quel type de mariage cette formule est idéale */
-  idealFor?: string;
-  /** Délai de livraison */
   deliveryTime?: string;
-};
+  idealFor?: string;
+  features?: string[];
+  highlights?: string[];
+  isCustom?: boolean;
+}
 
 export const FORMULAS_DETAILED: FormulaDetailed[] = [
   {
     id: "essentielle",
     name: "Formule Essentielle",
-    description: "L'essentiel de votre mariage capturé avec soin et professionnalisme",
+    title: "Formule Essentielle",
+    label: "Formule Essentielle", 
     price: 890,
-    duration: "3-4 heures de couverture",
-    deliverables: "150-200 photos + vidéo courte",
-    deliveryTime: "3-4 semaines",
-    idealFor: "Mariages intimistes, cérémonies simples, budgets maîtrisés",
-    highlights: [
-      "Rapport qualité-prix optimal",
-      "Livraison rapide",
-      "Galerie en ligne sécurisée"
-    ],
+    description: "L'essentiel de votre mariage capturé avec soin et professionnalisme",
+    duration: "4 heures",
+    deliverables: "200 photos retouchées + galerie en ligne",
+    deliveryTime: "8 semaines",
+    idealFor: "Mariages intimistes, cérémonies simples, couples avec budget maîtrisé",
     features: [
-      "• Couverture photo de la cérémonie et moments clés",
-      "• Clip vidéo de 2-3 minutes avec musique",
-      "• 150-200 photos HD sélectionnées et retouchées",
-      "• Galerie en ligne privée (accès 1 an)",
-      "• Téléchargement haute résolution inclus",
-      "• Photos optimisées pour réseaux sociaux",
-      "• Droits d'usage et impression inclus"
+      "Couverture photo 4h",
+      "200 photos retouchées",
+      "Galerie en ligne privée",
+      "Livraison sous 4 semaines"
     ],
-    options: [
-      { 
-        id: "extra-photo", 
-        name: "Séance engagement avant mariage", 
-        price: 220,
-        description: "Séance photo de couple d'1h30 dans un lieu de votre choix" 
-      },
-      { 
-        id: "drone", 
-        name: "Captation aérienne drone", 
-        price: 350,
-        description: "Prises de vues aériennes (si autorisées) + photos/vidéos drone" 
-      },
-      { 
-        id: "retouches", 
-        name: "Pack retouches avancées", 
-        price: 180,
-        description: "Retouches artistiques poussées sur 20 photos de votre choix" 
-      },
-    ],
+    highlights: ["Économique", "Rapide", "Efficace"]
   },
   {
-    id: "classique",
+    id: "classique", 
     name: "Formule Classique",
+    title: "Formule Classique",
+    label: "Formule Classique",
+    price: 1490,
     description: "Reportage complet de votre journée, des préparatifs au début de soirée",
-    price: 1350,
-    duration: "8-10 heures de couverture",
-    deliverables: "300-400 photos + vidéo 5-8 min",
-    deliveryTime: "4-5 semaines",
+    duration: "8 heures", 
+    deliverables: "400+ photos retouchées + Film de mariage 5-10 minutes + clé USB + galerie",
+    deliveryTime: "8 semaines",
     idealFor: "Mariages traditionnels, journées complètes, couples souhaitant un reportage détaillé",
-    highlights: [
-      "Couverture complète de la journée",
-      "Vidéo des moments forts incluse",
-      "Reportage des préparatifs"
-    ],
     features: [
-      "• Préparatifs de la mariée (coiffure, maquillage, robe)",
-      "• Préparatifs du marié et témoins",
-      "• Cérémonie civile et/ou religieuse complète",
-      "• Cocktail et photos de groupe",
-      "• Clip vidéo de 5-8 minutes avec moments forts",
-      "• 300-400 photos HD triées et retouchées",
-      "• Galerie en ligne avec partage invités",
-      "• Stories Instagram prêtes à publier"
+      "Couverture photo 8h",
+      "Couverture video 8h",
+      "400+ photos retouchées",
+      "Galerie en ligne privée",
+      "Clé USB personnalisée",
+      "Livraison sous 8 semaines"
     ],
-    options: [
-      { 
-        id: "album", 
-        name: "Album photo premium 30x30cm", 
-        price: 280,
-        description: "Album rigide 40 pages, papier photo premium, mise en page soignée" 
-      },
-      { 
-        id: "second-shooter", 
-        name: "Deuxième photographe", 
-        price: 450,
-        description: "Photographe supplémentaire pour multiplier les angles et moments capturés" 
-      },
-      { 
-        id: "drone", 
-        name: "Captation aérienne drone", 
-        price: 320,
-        description: "Prises de vues aériennes spectaculaires de votre lieu" 
-      },
-      { 
-        id: "extended-coverage", 
-        name: "Extension soirée +3h", 
-        price: 350,
-        description: "Prolongation de la couverture jusqu'en fin de soirée" 
-      },
-    ],
+    highlights: ["Complet", "Populaire", "Équilibré"]
   },
   {
-    id: "complete",
+    id: "complete-photo-video",
     name: "Formule Complète Photo & Vidéo",
+    title: "Formule Complète Photo & Vidéo", 
+    label: "Formule Complète Photo & Vidéo",
+    price: 1690,
     description: "Couverture photo et vidéo par un seul professionnel polyvalent",
-    price: 1500,
-    duration: "8-9 heures de couverture",
-    deliverables: "300+ photos + film 8-12 min",
-    deliveryTime: "4-5 semaines",
+    duration: "12 heures",
+    deliverables: "400+ photos + film highlight + clé USB",
+    deliveryTime: "8 - 12 semaines",
     idealFor: "Couples cherchant photo + vidéo avec un budget maîtrisé, mariages de taille moyenne",
-    highlights: [
-      "Photo et vidéo par un expert",
-      "Budget optimisé",
-      "Cohérence artistique garantie"
-    ],
     features: [
-      "• Reportage photo complet (préparatifs à soirée)",
-      "• Film de mariage cinématographique 8-12 minutes",
-      "• Teaser court pour réseaux sociaux (1-2 min)",
-      "• 300+ photos HD sélectionnées et retouchées",
-      "• Montage vidéo avec musique de qualité",
-      "• Galerie en ligne photo + vidéo intégrée",
-      "• Téléchargement HD photos et vidéos",
-      "• Style artistique cohérent photo/vidéo"
+      "Couverture photo + vidéo 12h",
+      "400+ photos retouchées",
+      "Film highlight 5-10 min + soirée entière",
+      "Galerie en ligne privée",
+      "Clé USB avec photos et vidéos"
     ],
-    options: [
-      { 
-        id: "drone", 
-        name: "Captation aérienne drone", 
-        price: 320,
-        description: "Prises de vues aériennes pour photos et vidéos" 
-      },
-      { 
-        id: "album", 
-        name: "Album photo premium", 
-        price: 280,
-        description: "Album rigide 30x30cm avec sélection des meilleures photos" 
-      },
-      { 
-        id: "extended-film", 
-        name: "Film étendu 20 min", 
-        price: 300,
-        description: "Version longue du film avec plus de moments capturés" 
-      },
-      { 
-        id: "same-day-teaser", 
-        name: "Teaser jour J", 
-        price: 400,
-        description: "Montage express diffusé en soirée (3-4 min)" 
-      },
-    ],
+    highlights: ["Photo & Vidéo", "Polyvalent", "Moderne"]
   },
   {
     id: "premium",
     name: "Formule Premium",
+    title: "Formule Premium",
+    label: "Formule Premium",
+    price: 3490,
     description: "Expérience photo-vidéo complète avec équipe dédiée et livrables multiples",
-    price: 2200,
-    duration: "12 heures de couverture",
-    deliverables: "500+ photos + film de mariage entier + teaser",
-    deliveryTime: "8-12 semaines",
+    duration: "12 heures",
+    deliverables: "500+ photos + films multiples + album + drone",
+    deliveryTime: "16-24 semaines", 
     idealFor: "Grands mariages, couples exigeants, événements d'envergure",
-    highlights: [
-      "Équipe photo + vidéo dédiée",
-      "Film cinématographique inclus",
-      "Teaser pour réseaux sociaux"
-    ],
     features: [
-      "• Équipe complète photo + vidéo professionnelle",
-      "• Film souvenir cinématographique",
-      "• Teaser 2-3 minutes optimisé réseaux sociaux",
-      "• 500+ photos HD avec retouches professionnelles",
-      "• Captation drone incluse (si autorisée)",
-      "• Étalonnage vidéo professionnel",
-      "• USB personnalisée dans écrin de luxe",
-      "• Galerie en ligne premium avec mot de passe"
+      "Équipe photo + vidéo 12h",
+      "500+ photos retouchées",
+      "Film highlight + film long",
+      "Drone (si autorisé)",
+      "Album photo premium", 
+      "Livraison sous 16-24 semaines"
     ],
-    options: [
-      { 
-        id: "video-longue", 
-        name: "Film documentaire 30-45 min", 
-        price: 480,
-        description: "Version longue avec interviews et moments intimes" 
-      },
-      { 
-        id: "album-luxe", 
-        name: "Album photo luxe cuir 40x30cm", 
-        price: 420,
-        description: "Album prestige couverture cuir, 60 pages, impression photo pro" 
-      },
-      { 
-        id: "same-day-edit", 
-        name: "Montage en direct", 
-        price: 350,
-        description: "Vidéo de 3-5 min montée et diffusée le jour même en soirée" 
-      },
-      { 
-        id: "photos-instant", 
-        name: "Sélection express 50 photos", 
-        price: 200,
-        description: "50 photos livrées sous 48h pour partage immédiat" 
-      },
-    ],
+    highlights: ["Haut de gamme", "Équipe dédiée", "Complet"]
   },
   {
     id: "prestige",
     name: "Formule Prestige",
+    title: "Formule Prestige",
+    label: "Formule Prestige",
+    price: 3890,
     description: "L'excellence absolue : équipe complète, matériel haut de gamme, livrables premium",
-    price: 3800,
-    duration: "Journée complète illimitée",
-    deliverables: "800+ photos + film entier + teaser",
+    duration: "12h+",
+    deliverables: "Photos illimitées + films multiples + album luxe + séance couple",
     deliveryTime: "16-24 semaines",
     idealFor: "Mariages d'exception, châteaux, événements luxe, couples célébrités",
-    highlights: [
-      "Équipe de 3 professionnels",
-      "Matériel professionnel haut de gamme",
-      "Livrables multiples inclus"
-    ],
     features: [
-      "• Équipe de 3 : photographe principal + vidéaste + drone",
-      "• Matériel professionnel haut de gamme (Canon R5, optiques L)",
-      "• Film cinématographique + making-off",
-      "• 800+ photos avec retouches artistiques individuelles",
-      "• Drone professionnel inclus + pilote certifié",
-      "• Album cuir luxe 30x40cm + coffret USB",
-      "• Étalonnage vidéo professionnel",
-      "• USB personnalisée dans écrin de luxe",
-      "• Livraison express 50 photos sous 24h",
-      "• Story de votre journée inclus"
+      "Équipe complète 12h+",
+      "Couverture photo illimitée", 
+      "Films multiples + documentaire",
+      "Drone professionnel",
+      "Album photo luxe",
+      "Séance couple offerte",
+      "Livraison premium sous 16-24 semaines"
     ],
-    options: [
-      { 
-        id: "second-shooter", 
-        name: "Photographe supplémentaire", 
-        price: 450,
-        description: "4ème professionnel pour couverture exhaustive" 
-      },
-      { 
-        id: "afterday", 
-        name: "Séance After Day", 
-        price: 580,
-        description: "Séance photo le lendemain en tenue de mariés (2h)" 
-      },
-      { 
-        id: "engagement-session", 
-        name: "Séance engagement premium", 
-        price: 380,
-        description: "Séance photo de fiançailles 2h + 50 photos retouchées" 
-      },
-      { 
-        id: "live-streaming", 
-        name: "Retransmission en direct", 
-        price: 750,
-        description: "Diffusion live professionnelle HD pour invités distants" 
-      },
-    ],
-  },
+    highlights: ["Luxe", "Illimité", "Exception"]
+  }
 ];
 
-// Formatage €
-export const eur = (value: number) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-  }).format(value);
+// Helper pour rechercher une formule
+export function findFormula(formulaId?: string, formulaName?: string): FormulaDetailed | null {
+  if (!formulaId && !formulaName) return null;
+  
+  // Recherche par ID d'abord
+  if (formulaId) {
+    const byId = FORMULAS_DETAILED.find(f => f.id === formulaId);
+    if (byId) return byId;
+  }
+  
+  // Recherche par nom/title/label
+  if (formulaName) {
+    const name = formulaName.toLowerCase();
+    const byName = FORMULAS_DETAILED.find(f => 
+      f.name?.toLowerCase().includes(name) ||
+      f.title?.toLowerCase().includes(name) ||
+      f.label?.toLowerCase().includes(name)
+    );
+    if (byName) return byName;
+  }
+  
+  return null;
+}
+
+// Export pour compatibilité
+export { FORMULAS_DETAILED as FORMULES_DETAILLEES };
+export default FORMULAS_DETAILED;

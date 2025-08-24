@@ -25,6 +25,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/success/page.js"
+    ],
+    "/rib/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rib/page.js"
     ]
   }
 }

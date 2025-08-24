@@ -1,479 +1,679 @@
-// lib/pdf.ts
-// Contrat PDF "pro" avec pdf-lib : 2 pages, gabarit, tableau, sauts de page automatiques
-import { PDFDocument, StandardFonts, rgb, type RGB } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export interface BuildPdfArgs {
-  couple_name?: string;
-  bride_first_name?: string;
-  bride_last_name?: string;
-  groom_first_name?: string;
-  groom_last_name?: string;
-  email?: string;
-
-  wedding_date?: string;
+  couple_name: string;
+  email: string;
+  wedding_date: string;
+  formula: string;
+  total_eur: number;
+  client_phone?: string;
+  address_billing?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  guests?: string;
+  prep_address_bride?: string;
+  prep_time_bride?: string;
+  prep_address_groom?: string;
+  prep_time_groom?: string;
+  mairie_address?: string;
+  mairie_time?: string;
+  ceremony_type?: string;
   ceremony_address?: string;
   ceremony_time?: string;
   reception_address?: string;
   reception_time?: string;
+  schedule?: string;
+  special_requests?: string;
+  selected_options?: string[];
+  extras?: { label: string; price: number }[];
+  deposit_amount?: number;
+  remaining_amount?: number;
   notes?: string;
-
-  formula?: string;                // "Essentielle", "Prestige"…
-  formula_description?: string;    // phrase descriptive courte
-  total_eur?: string;              // "2800"
-  deposit_eur?: string;            // "420"
-  remaining_eur?: string;          // "2380"
-  selected_options?: string;       // "Drone, Album..."
-  extras?: string;                 // "Heure sup.:150|Projection jour J:300"
 }
-
-// Palette pastel orange
-const C_BG: RGB = rgb(1, 0.976, 0.96);
-const C_ACCENT: RGB = rgb(0.95, 0.45, 0.2);
-const C_TEXT: RGB = rgb(0.12, 0.12, 0.12);
-const C_MUTED: RGB = rgb(0.45, 0.45, 0.46);
-const C_BORDER: RGB = rgb(0.92, 0.84, 0.78);
-
-const PAGE_W = 595; // A4 portrait
-const PAGE_H = 842;
-const MARGIN = 40;
-const HEADER_H = 120;
-const FOOTER_H = 42;
-
-function clean(v: any) {
-  return String(v ?? "").replace(/\u202F/g, " ").replace(/\u00A0/g, " ").trim();
-}
-function euros(n: string | number | undefined | null) {
-  if (n == null || n === "") return "—";
-  const num = typeof n === "string" ? Number(n) : n;
-  if (Number.isNaN(num)) return String(n);
-  return `${num.toLocaleString("fr-FR")} €`;
-}
-
-type DrawWrapOpts = {
-  x: number;
-  y?: number;            // ← y devient optionnel (utilise ctx.y par défaut)
-  size: number;
-  color?: RGB;
-  font: any;
-  maxWidth?: number;
-  lineHeight?: number;
-};
-
-type LayoutCtx = {
-  pdf: PDFDocument;
-  page: any;
-  f: any;
-  fb: any;
-  y: number;
-  pageIndex: number;
-  totalPages: number; // on écrit "Page X / Y" après coup
-};
-
-// ==== Gabarit (header/footer) ====
-
-function drawHeader(ctx: LayoutCtx) {
-  const p = ctx.page;
-  p.drawRectangle({ x: 0, y: PAGE_H - HEADER_H, width: PAGE_W, height: HEADER_H, color: C_BG });
-  p.drawText("I R Z Z E N   P R O D U C T I O N S", {
-    x: MARGIN,
-    y: PAGE_H - 48,
-    size: 10,
-    font: ctx.fb,
-    color: C_ACCENT,
-  });
-}
-
-function drawFooter(ctx: LayoutCtx) {
-  const p = ctx.page;
-  const y = FOOTER_H - 14;
-  // trait
-  p.drawLine({
-    start: { x: MARGIN, y: FOOTER_H },
-    end: { x: PAGE_W - MARGIN, y: FOOTER_H },
-    thickness: 1,
-    color: C_BORDER,
-  });
-  p.drawText("Irzzen Productions — contact@irzzenproductions.fr — www.irzzenproductions.fr", {
-    x: MARGIN,
-    y,
-    size: 9,
-    font: ctx.f,
-    color: C_MUTED,
-  });
-  // pagination (on écrira la vraie valeur à la fin)
-  const label = `Page ${ctx.pageIndex} / ${ctx.totalPages || " "}`;
-  const width = ctx.f.widthOfTextAtSize(label, 9);
-  p.drawText(label, { x: PAGE_W - MARGIN - width, y, size: 9, font: ctx.f, color: C_MUTED });
-}
-
-function newPage(ctx: LayoutCtx) {
-  ctx.page = ctx.pdf.addPage([PAGE_W, PAGE_H]);
-  ctx.pageIndex += 1;
-  drawHeader(ctx);
-  drawFooter(ctx);
-  ctx.y = PAGE_H - HEADER_H - 24; // zone de contenu
-}
-
-function ensureSpace(ctx: LayoutCtx, needed: number) {
-  if (ctx.y - needed < FOOTER_H + 16) {
-    newPage(ctx);
-  }
-}
-
-function drawTitle(ctx: LayoutCtx, text: string, size = 18) {
-  ensureSpace(ctx, size + 8);
-  ctx.page.drawText(text, { x: MARGIN, y: ctx.y, size, font: ctx.fb, color: C_ACCENT });
-  ctx.y -= size + 8;
-}
-
-function hr(ctx: LayoutCtx) {
-  ensureSpace(ctx, 12);
-  ctx.page.drawLine({
-    start: { x: MARGIN, y: ctx.y },
-    end: { x: PAGE_W - MARGIN, y: ctx.y },
-    thickness: 1,
-    color: C_BORDER,
-  });
-  ctx.y -= 12;
-}
-
-function drawParagraphWrapped(
-  ctx: LayoutCtx,
-  text: string,
-  opts: Omit<DrawWrapOpts, "font"> & { font?: any } = { x: MARGIN, size: 11 }
-) {
-  const font = opts.font || ctx.f;
-  const maxWidth = opts.maxWidth ?? (PAGE_W - MARGIN * 2);
-  const lineHeight = opts.lineHeight ?? 1.32;
-  const color = opts.color ?? C_TEXT;
-
-  // si y non fourni, on utilise ctx.y
-  let y = opts.y ?? ctx.y;
-
-  // word wrap + saut de page auto
-  const words = text.split(/\s+/);
-  let line = "";
-  const lines: string[] = [];
-  for (const w of words) {
-    const testLine = line ? `${line} ${w}` : w;
-    const wpt = font.widthOfTextAtSize(testLine, opts.size);
-    if (wpt > maxWidth && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) lines.push(line);
-
-  for (const ln of lines) {
-    ensureSpace(ctx, opts.size * lineHeight + 2);
-    ctx.page.drawText(ln, {
-      x: opts.x ?? MARGIN,
-      y,
-      size: opts.size,
-      font,
-      color,
-    });
-    y -= opts.size * lineHeight;
-  }
-
-  // synchronise le curseur global
-  ctx.y = y;
-}
-
-// ==== Construction du document ====
 
 export async function buildBookingPdf(args: BuildPdfArgs): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create();
-  const f = await pdf.embedFont(StandardFonts.Helvetica);
-  const fb = await pdf.embedFont(StandardFonts.HelveticaBold);
+  try {
+    console.log("🚀 [CONTRACT-VERSION-2025] Génération contrat professionnel COMPLET...");
+    console.log("📊 [CONTRACT] Version avec conditions générales et mentions légales");
+    
+    // Fonction de nettoyage
+    const clean = (text: any): string => {
+      return String(text || "")
+        .replace(/\u202F/g, " ")
+        .replace(/\u00A0/g, " ")
+        .replace(/[^\x20-\x7E\u00C0-\u017F]/g, " ")
+        .trim();
+    };
+    
+    const pdf = await PDFDocument.create();
+    const regular = await pdf.embedFont(StandardFonts.Helvetica);
+    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  const ctx: LayoutCtx = {
-    pdf,
-    page: null as any,
-    f,
-    fb,
-    y: 0,
-    pageIndex: 0,
-    totalPages: 0,
-  };
+    // Constantes
+    const PAGE_WIDTH = 595.28;
+    const PAGE_HEIGHT = 841.89;
+    const MARGIN = 50;
+    const LINE_HEIGHT = 14;
 
-  // Page 1
-  newPage(ctx);
-  drawTitle(ctx, "Contrat & Confirmation de Réservation", 18);
+    // Variables globales
+    let currentPage = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    let yPos = PAGE_HEIGHT - 60;
+    let pageNum = 1;
 
-  // Bloc "Client" + "Évènement" (2 colonnes)
-  const couple =
-    clean(args.couple_name) ||
-    [clean(args.bride_first_name), clean(args.bride_last_name), "&", clean(args.groom_first_name), clean(args.groom_last_name)]
-      .filter(Boolean)
-      .join(" ");
+    // Couleurs
+    const brandColor = rgb(1, 0.45, 0);
+    const grayColor = rgb(0.4, 0.4, 0.4);
+    const blackColor = rgb(0, 0, 0);
+    const lightGray = rgb(0.95, 0.95, 0.95);
 
-  // Sous-titre
-  ensureSpace(ctx, 14);
-  ctx.page.drawText("Informations Clients", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-  ctx.y -= 16;
-
-  // Deux colonnes
-  const colTop = ctx.y;
-  let col1Y = colTop;
-
-  const col1X = MARGIN;
-  const colW = (PAGE_W - MARGIN * 2 - 20) / 2; // 20 = gouttière
-  const col2X = col1X + colW + 20;
-
-  // Col 1
-  {
-    const ySave = ctx.y;
-    ctx.y = col1Y;
-    drawParagraphWrapped(ctx, `Couple : ${couple || "—"}`, { x: col1X, size: 11, maxWidth: colW });
-    drawParagraphWrapped(ctx, `Email : ${clean(args.email) || "—"}`, { x: col1X, size: 11, maxWidth: colW });
-    drawParagraphWrapped(ctx, `Date du mariage : ${clean(args.wedding_date) || "—"}`, { x: col1X, size: 11, maxWidth: colW });
-    col1Y = ctx.y;
-    ctx.y = ySave;
-  }
-
-  // Col 2
-  let col2Y = colTop;
-  {
-    const ySave = ctx.y;
-    ctx.y = col2Y;
-    drawParagraphWrapped(ctx, `Cérémonie : ${clean(args.ceremony_address) || "—"}${args.ceremony_time ? ` (${clean(args.ceremony_time)})` : ""}`, { x: col2X, size: 11, maxWidth: colW });
-    drawParagraphWrapped(ctx, `Réception : ${clean(args.reception_address) || "—"}${args.reception_time ? ` (${clean(args.reception_time)})` : ""}`, { x: col2X, size: 11, maxWidth: colW });
-    col2Y = ctx.y;
-    ctx.y = Math.min(col1Y, col2Y) - 8;
-  }
-
-  hr(ctx);
-
-  // Formule & options
-  ensureSpace(ctx, 16);
-  ctx.page.drawText("Formule & Options", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-  ctx.y -= 16;
-
-  drawParagraphWrapped(ctx, `Formule : ${clean(args.formula) || "—"}`, { x: MARGIN, size: 11 });
-  if (clean(args.formula_description)) {
-    drawParagraphWrapped(ctx, clean(args.formula_description), { x: MARGIN, size: 10.5, color: C_MUTED });
-  }
-
-  const opts = clean(args.selected_options)
-    ? clean(args.selected_options).split(",").map(s => s.trim()).filter(Boolean)
-    : [];
-  drawParagraphWrapped(ctx, `Options : ${opts.length ? opts.join(", ") : "—"}`, { x: MARGIN, size: 11 });
-
-  const extrasHuman = (() => {
-    const raw = clean(args.extras);
-    if (!raw) return "—";
-    const items = raw.split("|").filter(Boolean).map(p => {
-      const [label, amount] = p.split(":");
-      return `${clean(label)}${amount ? ` (${clean(amount)} €)` : ""}`;
-    });
-    return items.length ? items.join(", ") : "—";
-  })();
-  drawParagraphWrapped(ctx, `Extras : ${extrasHuman}`, { x: MARGIN, size: 11 });
-
-  // Tableau financier
-  ctx.y -= 6;
-  ensureSpace(ctx, 20);
-  ctx.page.drawText("Récapitulatif financier", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-  ctx.y -= 12;
-
-  const tableX = MARGIN;
-  const tableW = PAGE_W - MARGIN * 2;
-  const colDescW = tableW * 0.65;
-  const rowH = 22;
-
-  function tableHeader() {
-    ensureSpace(ctx, rowH);
-    ctx.page.drawRectangle({ x: tableX, y: ctx.y - rowH + 2, width: tableW, height: rowH, color: C_BG });
-    ctx.page.drawText("Description", { x: tableX + 10, y: ctx.y - rowH + 8, size: 10.5, font: fb, color: C_ACCENT });
-    ctx.page.drawText("Montant", { x: tableX + colDescW + 10, y: ctx.y - rowH + 8, size: 10.5, font: fb, color: C_ACCENT });
-    ctx.y -= rowH + 2;
-  }
-  function tableRow(desc: string, amount: string) {
-    ensureSpace(ctx, rowH);
-    ctx.page.drawRectangle({ x: tableX, y: ctx.y - rowH + 2, width: tableW, height: rowH, color: rgb(1, 1, 1) });
-    ctx.page.drawRectangle({ x: tableX, y: ctx.y + 2, width: tableW, height: 0.8, color: C_BORDER });
-    // description tronquée si trop longue
-    const maxDescW = colDescW - 16;
-    let d = desc;
-    const ell = "…";
-    while (ctx.f.widthOfTextAtSize(d, 10.5) > maxDescW && d.length > 0) {
-      d = d.slice(0, -1);
+    // Fonction pour nouvelle page
+    function newPage() {
+      currentPage = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      yPos = PAGE_HEIGHT - MARGIN;
+      pageNum++;
+      
+      // Numéro de page en bas à droite
+      currentPage.drawText(`Page ${pageNum}`, {
+        x: PAGE_WIDTH - MARGIN - 40,
+        y: 30,
+        size: 9,
+        font: regular,
+        color: grayColor
+      });
     }
-    if (d !== desc) d = d.slice(0, Math.max(0, d.length - 1)) + ell;
 
-    ctx.page.drawText(d, { x: tableX + 10, y: ctx.y - rowH + 8, size: 10.5, font: f, color: C_TEXT });
-    ctx.page.drawText(amount, { x: tableX + colDescW + 10, y: ctx.y - rowH + 8, size: 10.5, font: f, color: C_TEXT });
-    ctx.y -= rowH;
-  }
-
-  tableHeader();
-  tableRow(`Formule « ${clean(args.formula) || "—"} »`, euros(args.total_eur || "0"));
-  if (opts.length) {
-    tableRow("Options", "—");
-    for (const o of opts) tableRow(`• ${o}`, "—");
-  }
-  if (extrasHuman !== "—") {
-    tableRow("Extras", "—");
-    for (const e of extrasHuman.split(",").map(s => s.trim())) tableRow(`• ${e}`, "—");
-  }
-
-  // Totaux
-  ensureSpace(ctx, 40);
-  ctx.page.drawText("Acompte conseillé (15% arrondi)", { x: tableX, y: ctx.y, size: 10.5, font: fb, color: C_TEXT });
-  ctx.page.drawText(euros(args.deposit_eur), { x: tableX + colDescW + 10, y: ctx.y, size: 10.5, font: fb, color: C_TEXT });
-  ctx.y -= 18;
-  ctx.page.drawText("Reste à payer le jour J", { x: tableX, y: ctx.y, size: 11.5, font: fb, color: C_ACCENT });
-  ctx.page.drawText(euros(args.remaining_eur), { x: tableX + colDescW + 10, y: ctx.y, size: 11.5, font: fb, color: C_ACCENT });
-  ctx.y -= 18;
-
-  // Notes
-  if (clean(args.notes)) {
-    ensureSpace(ctx, 30);
-    ctx.page.drawText("Notes / souhaits", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-    ctx.y -= 14;
-    drawParagraphWrapped(ctx, clean(args.notes), { x: MARGIN, size: 10.5, color: C_TEXT });
-  }
-
-  // Signatures
-  ensureSpace(ctx, 40);
-  ctx.page.drawText("Signatures", { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-  ctx.y -= 16;
-  ctx.page.drawText("Le Client :", { x: MARGIN, y: ctx.y, size: 11, font: f, color: C_TEXT });
-  ctx.page.drawLine({ start: { x: MARGIN + 70, y: ctx.y - 2 }, end: { x: MARGIN + 240, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
-  ctx.page.drawText("Le Prestataire :", { x: MARGIN + 280, y: ctx.y, size: 11, font: f, color: C_TEXT });
-  ctx.page.drawLine({ start: { x: MARGIN + 380, y: ctx.y - 2 }, end: { x: PAGE_W - MARGIN, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
-  ctx.y -= 14;
-
-  // Page 2 – CGV
-  newPage(ctx);
-  drawTitle(ctx, "Conditions Générales de Vente", 16);
-
-  const sections: Array<{ title: string; body: string[] }> = [
-    {
-      title: "1. Objet",
-      body: [
-        "Les présentes conditions régissent les prestations de photographie et/ou vidéographie fournies par Irzzen Productions (« le Prestataire ») au client (« le Client »). Toute réservation implique l’acceptation sans réserve des présentes.",
-      ],
-    },
-    {
-      title: "2. Réservation & acompte",
-      body: [
-        "La réservation est confirmée à réception d’un acompte (15 % recommandé, arrondi à la centaine supérieure). L’acompte n’est pas remboursable en cas d’annulation, quelle qu’en soit la cause.",
-      ],
-    },
-    {
-      title: "3. Annulation",
-      body: [
-        "Aucune annulation n’est recevable après réservation ; le solde reste dû selon les termes convenus. En cas d’annulation par le Prestataire pour force majeure, un remboursement au prorata ou une solution de remplacement sera proposée.",
-      ],
-    },
-    {
-      title: "4. Modification",
-      body: [
-        "Toute modification (lieu, horaire, déroulé, options) doit être notifiée par écrit au moins 7 jours avant l’évènement et demeure soumise à l’accord du Prestataire. Des frais peuvent s’appliquer.",
-      ],
-    },
-    {
-      title: "5. Déroulé & coopération",
-      body: [
-        "Le Client s’engage à fournir toutes les informations nécessaires (adresses, accès, autorisations) et à faciliter la réalisation de la prestation (coordination avec les intervenants, respect des horaires).",
-      ],
-    },
-    {
-      title: "6. Livraison",
-      body: [
-        "Les livrables numériques sont fournis au plus tard dans un délai de 6 mois. Les délais sont indicatifs et peuvent varier selon la charge et la complexité du montage.",
-      ],
-    },
-    {
-      title: "7. Propriété intellectuelle",
-      body: [
-        "Le Prestataire conserve l’intégralité des droits d’auteur sur les images. Une licence d’usage privé est concédée au Client. Toute diffusion publique (site, réseaux sociaux, presse, publicité) nécessite une autorisation écrite préalable.",
-      ],
-    },
-    {
-      title: "8. Données personnelles",
-      body: [
-        "Les données sont traitées pour la gestion du contrat et conservées le temps nécessaire aux obligations légales. Le Client dispose d’un droit d’accès, de rectification et d’opposition conformément au RGPD.",
-      ],
-    },
-    {
-      title: "9. Responsabilité",
-      body: [
-        "Le Prestataire met en œuvre tous les moyens raisonnables pour assurer une prestation de qualité, sans garantie de résultat artistique spécifique. Il ne saurait être tenu responsable des aléas extérieurs (météo, interdictions, retards, pannes de tiers).",
-      ],
-    },
-    {
-      title: "10. Force majeure",
-      body: [
-        "En cas d’évènement imprévisible et insurmontable (maladie, accident, grève, catastrophe, etc.), la responsabilité du Prestataire ne pourra être engagée. Un remplacement ou un remboursement au prorata sera proposé dans la mesure du possible.",
-      ],
-    },
-    {
-      title: "11. Règlement",
-      body: [
-        "Sauf mention contraire, le solde est exigible au plus tard le jour de la prestation. Tout retard de paiement entraîne l’application de pénalités légales et, le cas échéant, la suspension de la livraison.",
-      ],
-    },
-    {
-      title: "12. Réclamations",
-      body: [
-        "Toute réclamation doit être formulée par écrit dans les 7 jours suivant la livraison. Passé ce délai, les livrables sont réputés conformes.",
-      ],
-    },
-    {
-      title: "13. Loi applicable & juridiction",
-      body: [
-        "Les présentes sont soumises au droit français. Tout litige relève des tribunaux compétents du ressort du siège du Prestataire.",
-      ],
-    },
-  ];
-
-  for (const sec of sections) {
-    ensureSpace(ctx, 28);
-    ctx.page.drawText(sec.title, { x: MARGIN, y: ctx.y, size: 12, font: fb, color: C_ACCENT });
-    ctx.y -= 14;
-    for (const p of sec.body) {
-      drawParagraphWrapped(ctx, p, { x: MARGIN, size: 10.5, color: C_TEXT, lineHeight: 1.35 });
-      ctx.y -= 6;
+    // Fonction pour vérifier l'espace
+    function checkSpace(needed: number) {
+      if (yPos < MARGIN + needed) {
+        newPage();
+      }
     }
-  }
 
-  // Zone "Fait à / le" + signature
-  ensureSpace(ctx, 40);
-  ctx.page.drawText("Fait à :", { x: MARGIN, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
-  ctx.page.drawLine({ start: { x: MARGIN + 42, y: ctx.y - 2 }, end: { x: MARGIN + 180, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
-  ctx.page.drawText("Le :", { x: MARGIN + 210, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
-  ctx.page.drawLine({ start: { x: MARGIN + 240, y: ctx.y - 2 }, end: { x: MARGIN + 380, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
-  ctx.y -= 20;
-  ctx.page.drawText("Signature du Client :", { x: MARGIN, y: ctx.y, size: 10.5, font: f, color: C_TEXT });
-  ctx.page.drawLine({ start: { x: MARGIN + 140, y: ctx.y - 2 }, end: { x: MARGIN + 420, y: ctx.y - 2 }, thickness: 0.8, color: C_BORDER });
+    // Fonction pour ajouter du texte
+    function addText(text: string, options: {
+      size?: number;
+      font?: any;
+      color?: any;
+      x?: number;
+      indent?: number;
+      spacing?: number;
+    } = {}) {
+      const {
+        size = 11,
+        font = regular,
+        color = blackColor,
+        x = MARGIN + (options.indent || 0),
+        spacing = LINE_HEIGHT
+      } = options;
 
-  // — Finalisation : pagination correcte "Page X / Y"
-  ctx.totalPages = ctx.pdf.getPageCount();
-  for (let i = 0; i < ctx.totalPages; i++) {
-    const p = ctx.pdf.getPage(i);
-    const label = `Page ${i + 1} / ${ctx.totalPages}`;
-    const width = f.widthOfTextAtSize(label, 9);
-    // petite passe blanche pour garantir la lisibilité si re-draw
-    p.drawRectangle({
-      x: PAGE_W - MARGIN - width - 2,
-      y: FOOTER_H - 18,
-      width: width + 2,
-      height: 12,
-      color: rgb(1, 1, 1),
+      checkSpace(spacing + 5);
+      
+      currentPage.drawText(clean(text), {
+        x,
+        y: yPos,
+        size,
+        font,
+        color
+      });
+      
+      yPos -= spacing;
+    }
+
+    // Fonction pour ajouter une section avec fond
+    function addSectionHeader(title: string, backgroundColor = lightGray) {
+      checkSpace(35);
+      
+      // Rectangle de fond
+      currentPage.drawRectangle({
+        x: MARGIN - 5,
+        y: yPos - 20,
+        width: PAGE_WIDTH - 2 * MARGIN + 10,
+        height: 25,
+        color: backgroundColor
+      });
+      
+      addText(title, {
+        size: 13,
+        font: bold,
+        color: brandColor,
+        spacing: 25
+      });
+    }
+
+    // Fonction pour ajouter du texte long avec retour à la ligne
+    function addParagraph(text: string, options: any = {}) {
+      const maxWidth = PAGE_WIDTH - 2 * MARGIN - (options.indent || 0);
+      const fontSize = options.size || 10;
+      const words = text.split(' ');
+      let currentLine = '';
+      
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const textWidth = regular.widthOfTextAtSize(testLine, fontSize);
+        
+        if (textWidth > maxWidth && currentLine) {
+          addText(currentLine, { ...options, spacing: 12 });
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+      
+      if (currentLine) {
+        addText(currentLine, { ...options, spacing: 12 });
+      }
+    }
+
+    console.log("📄 [CONTRACT] Page 1 - En-tête...");
+    
+    // ========== EN-TÊTE PROFESSIONNEL ==========
+    // Bandeau orange
+    currentPage.drawRectangle({
+      x: 0,
+      y: PAGE_HEIGHT - 100,
+      width: PAGE_WIDTH,
+      height: 100,
+      color: brandColor
     });
-    p.drawText(label, {
-      x: PAGE_W - MARGIN - width,
-      y: FOOTER_H - 14,
+
+    currentPage.drawText(clean("IRZZEN PRODUCTIONS"), {
+      x: MARGIN,
+      y: PAGE_HEIGHT - 40,
+      size: 22,
+      font: bold,
+      color: rgb(1, 1, 1)
+    });
+
+    currentPage.drawText(clean(">>> VERSION COMPLETE AVEC CONDITIONS GÉNÉRALES <<<"), {
+      x: MARGIN,
+      y: PAGE_HEIGHT - 60,
+      size: 12,
+      font: regular,
+      color: rgb(1, 1, 1)
+    });
+
+    currentPage.drawText(clean("CONTRAT DE PRESTATION"), {
+      x: MARGIN,
+      y: PAGE_HEIGHT - 80,
+      size: 16,
+      font: bold,
+      color: rgb(1, 1, 1)
+    });
+
+    // Date du contrat en haut à droite
+    const today = new Date().toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+    currentPage.drawText(clean(`Établi le ${today}`), {
+      x: PAGE_WIDTH - MARGIN - 120,
+      y: PAGE_HEIGHT - 35,
+      size: 10,
+      font: regular,
+      color: rgb(1, 1, 1)
+    });
+
+    yPos = PAGE_HEIGHT - 130;
+
+    // ========== PARTIES AU CONTRAT ==========
+    addSectionHeader("PARTIES AU CONTRAT");
+    
+    addText("LE PRESTATAIRE :", {
+      size: 12,
+      font: bold,
+      spacing: 18
+    });
+    
+    addText("IRZZEN PRODUCTIONS", {
+      indent: 15,
+      font: bold
+    });
+    addText("Société de services audiovisuels", { indent: 15 });
+    addText("Email : contact@irzzenproductions.fr", { indent: 15 });
+    addText("Téléphone : [À compléter]", { indent: 15 });
+    addText("Adresse : [À compléter]", { indent: 15 });
+    addText("SIRET : [À compléter]", { indent: 15 });
+    
+    yPos -= 10;
+    
+    addText("LE CLIENT :", {
+      size: 12,
+      font: bold,
+      spacing: 18
+    });
+    
+    addText(`Futurs époux : ${args.couple_name}`, {
+      indent: 15,
+      font: bold
+    });
+    
+    if (args.email) {
+      addText(`Email : ${args.email}`, { indent: 15 });
+    }
+    if (args.client_phone) {
+      addText(`Téléphone : ${args.client_phone}`, { indent: 15 });
+    }
+    
+    // Adresse complète
+    const addressParts = [
+      args.address_billing,
+      args.postal_code && args.city ? `${args.postal_code} ${args.city}` : args.city,
+      args.country && args.country !== 'France' ? args.country : null
+    ].filter(Boolean);
+    
+    if (addressParts.length > 0) {
+      addText("Adresse :", { indent: 15, font: bold });
+      addressParts.forEach(part => {
+        addText(part!, { indent: 25 });
+      });
+    }
+
+    yPos -= 15;
+
+    // ========== OBJET DU CONTRAT ==========
+    addSectionHeader("OBJET DU CONTRAT");
+    
+    addParagraph(
+      "Le présent contrat a pour objet la prestation de services photographiques et/ou " +
+      "vidéographiques pour l'événement de mariage défini ci-après. La prestation sera " +
+      "réalisée selon les modalités et conditions définies dans le présent contrat."
+    );
+
+    yPos -= 10;
+
+    // ========== DÉTAILS DE LA PRESTATION ==========
+    addSectionHeader("DÉTAILS DE LA PRESTATION");
+    
+    addText(`Date de l'événement : ${args.wedding_date || "À confirmer"}`, {
+      font: bold,
+      size: 12
+    });
+    
+    addText(`Formule choisie : ${args.formula}`, {
+      font: bold,
+      size: 12
+    });
+
+    if (args.guests) {
+      addText(`Nombre d'invités : ${args.guests} personnes`);
+    }
+
+    // Planning détaillé
+    if (args.prep_time_bride || args.mairie_time || args.ceremony_time || args.reception_time) {
+      yPos -= 5;
+      addText("Planning de la journée :", { font: bold });
+      
+      const planningItems = [
+        { label: "Préparatifs", time: args.prep_time_bride, location: args.prep_address_bride },
+        { label: "Mairie", time: args.mairie_time, location: args.mairie_address },
+        { label: "Cérémonie", time: args.ceremony_time, location: args.ceremony_address },
+        { label: "Réception", time: args.reception_time, location: args.reception_address }
+      ];
+
+      planningItems.forEach(item => {
+        if (item.time || item.location) {
+          let text = `• ${item.label}`;
+          if (item.time) text += ` : ${item.time}`;
+          if (item.location) text += ` - ${item.location}`;
+          addText(text, { indent: 15, size: 10 });
+        }
+      });
+    }
+
+    // Options et services additionnels
+    if (args.selected_options?.length || args.extras?.length) {
+      yPos -= 10;
+      addText("Services inclus :", { font: bold });
+      
+      args.selected_options?.forEach(option => {
+        addText(`• ${option}`, { indent: 15, size: 10 });
+      });
+      
+      args.extras?.forEach(extra => {
+        addText(`• ${extra.label} - ${extra.price} €`, { indent: 15, size: 10 });
+      });
+    }
+
+    // Demandes particulières
+    if (args.special_requests) {
+      yPos -= 10;
+      addText("Demandes particulières :", { font: bold });
+      addParagraph(args.special_requests, { indent: 15, size: 10 });
+    }
+
+    if (args.schedule) {
+      yPos -= 10;
+      addText("Déroulement détaillé :", { font: bold });
+      addParagraph(args.schedule, { indent: 15, size: 10 });
+    }
+
+    // ========== TARIFICATION ==========
+    checkSpace(120);
+    addSectionHeader("TARIFICATION ET MODALITÉS DE PAIEMENT", rgb(1, 0.9, 0.8));
+    
+    // Tableau des prix
+    const priceData = [
+      { label: "Total de la prestation", value: `${args.total_eur.toLocaleString('fr-FR')} €`, bold: true },
+      { label: "Acompte à la signature", value: `${(args.deposit_amount || 0).toLocaleString('fr-FR')} €` },
+      { label: "Solde à régler le jour J", value: `${(args.remaining_amount || 0).toLocaleString('fr-FR')} €` }
+    ];
+
+    priceData.forEach((item, index) => {
+      checkSpace(20);
+      
+      // Fond alterné
+      if (index % 2 === 0) {
+        currentPage.drawRectangle({
+          x: MARGIN - 5,
+          y: yPos - 5,
+          width: PAGE_WIDTH - 2 * MARGIN + 10,
+          height: 18,
+          color: rgb(0.98, 0.98, 0.98)
+        });
+      }
+      
+      addText(item.label, {
+        font: item.bold ? bold : regular,
+        size: item.bold ? 12 : 11
+      });
+      
+      currentPage.drawText(clean(item.value), {
+        x: PAGE_WIDTH - MARGIN - 80,
+        y: yPos + LINE_HEIGHT,
+        size: item.bold ? 12 : 11,
+        font: bold,
+        color: item.bold ? brandColor : blackColor
+      });
+    });
+
+    yPos -= 15;
+    
+    addParagraph(
+      "L'acompte de 15% du montant total est exigible à la signature du présent contrat " +
+      "pour confirmer la réservation de la date. Le solde sera réglé le jour de la " +
+      "prestation, avant le début de celle-ci, par virement bancaire ou en espèces."
+    );
+
+    // ========== CONDITIONS GÉNÉRALES (nouvelle page) ==========
+    newPage();
+    console.log("📄 [CONTRACT] Page 2 - Conditions générales...");
+    
+    addText("CONDITIONS GÉNÉRALES DE PRESTATION", {
+      size: 16,
+      font: bold,
+      color: brandColor,
+      spacing: 30
+    });
+
+    // Article 1
+    addText("ARTICLE 1 - PRESTATIONS", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "1.1. Les prestations comprennent la prise de vue photographique et/ou vidéographique " +
+      "selon la formule choisie, le traitement et la retouche des images, et la livraison " +
+      "des supports finalisés dans les délais convenus.",
+      { size: 10 }
+    );
+    addParagraph(
+      "1.2. Les prestations sont personnalisées selon les besoins exprimés par le client " +
+      "et définis dans le présent contrat.",
+      { size: 10 }
+    );
+    addParagraph(
+      "1.3. Le prestataire s'engage à mettre en œuvre tous les moyens techniques et " +
+      "artistiques nécessaires pour assurer la qualité de la prestation.",
+      { size: 10 }
+    );
+
+    yPos -= 10;
+
+    // Article 2
+    addText("ARTICLE 2 - TARIFS ET MODALITÉS DE PAIEMENT", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "2.1. Les tarifs sont exprimés en euros TTC. Un acompte représentant 15% du montant " +
+      "total est exigible à la signature du contrat pour confirmer la réservation.",
+      { size: 10 }
+    );
+    addParagraph(
+      "2.2. Le solde est payable le jour de la prestation, avant le début de celle-ci. " +
+      "En cas de retard de paiement, des pénalités de 3% par mois de retard pourront être appliquées.",
+      { size: 10 }
+    );
+    addParagraph(
+      "2.3. Le défaut de paiement de l'acompte entraîne l'annulation automatique du contrat " +
+      "sans préjudice des autres recours du prestataire.",
+      { size: 10 }
+    );
+
+    yPos -= 10;
+
+    // Article 3
+    addText("ARTICLE 3 - ANNULATION ET REPORT", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "3.1. En cas d'annulation par le client :",
+      { size: 10, font: bold }
+    );
+    addText("• Plus de 90 jours avant l'événement : remboursement de 50% de l'acompte", 
+      { size: 10, indent: 20 });
+    addText("• Entre 30 et 90 jours : remboursement de 25% de l'acompte", 
+      { size: 10, indent: 20 });
+    addText("• Moins de 30 jours : aucun remboursement", 
+      { size: 10, indent: 20 });
+    
+    addParagraph(
+      "3.2. Un report de date reste possible sous réserve de disponibilité, sans frais " +
+      "supplémentaires si demandé plus de 60 jours avant l'événement.",
+      { size: 10 }
+    );
+    addParagraph(
+      "3.3. En cas de force majeure, les deux parties conviennent d'un report sans pénalité " +
+      "ou d'un remboursement intégral si le report s'avère impossible.",
+      { size: 10 }
+    );
+
+    checkSpace(150); // Vérifier qu'on a assez de place pour la suite
+
+    // Article 4
+    addText("ARTICLE 4 - DROITS D'AUTEUR ET UTILISATION", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "4.1. IRZZEN PRODUCTIONS conserve l'entière propriété intellectuelle des œuvres créées. " +
+      "Le client obtient un droit d'usage personnel et familial non exclusif des images/vidéos.",
+      { size: 10 }
+    );
+    addParagraph(
+      "4.2. Les clients s'engagent à mentionner le crédit 'IRZZEN PRODUCTIONS' lors de toute " +
+      "diffusion publique des œuvres (réseaux sociaux, publications, etc.).",
+      { size: 10 }
+    );
+    addParagraph(
+      "4.3. IRZZEN PRODUCTIONS se réserve le droit d'utiliser les œuvres à des fins " +
+      "promotionnelles et commerciales, sauf opposition écrite des clients dans un délai de 30 jours.",
+      { size: 10 }
+    );
+
+    yPos -= 10;
+
+    // Article 5
+    addText("ARTICLE 5 - LIVRAISON", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "5.1. Les supports finalisés seront livrés dans un délai maximum de 8 semaines après " +
+      "l'événement, sauf mention contraire dans la formule sélectionnée.",
+      { size: 10 }
+    );
+    addParagraph(
+      "5.2. La livraison s'effectue par galerie en ligne privée ou support physique selon " +
+      "la formule choisie. Les identifiants d'accès sont transmis par email.",
+      { size: 10 }
+    );
+    addParagraph(
+      "5.3. Il appartient aux clients de sauvegarder les fichiers reçus. IRZZEN PRODUCTIONS " +
+      "conserve les fichiers pendant 12 mois après livraison, sans garantie au-delà.",
+      { size: 10 }
+    );
+
+    // Nouvelle page pour la suite
+    newPage();
+    console.log("📄 [CONTRACT] Page 3 - Suite conditions...");
+
+    // Article 6
+    addText("ARTICLE 6 - RESPONSABILITÉ", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "6.1. IRZZEN PRODUCTIONS met en œuvre tous les moyens nécessaires pour assurer la " +
+      "qualité de la prestation. Cependant, sa responsabilité ne saurait être engagée en " +
+      "cas de vol, perte ou détérioration du matériel due à des causes extérieures.",
+      { size: 10 }
+    );
+    addParagraph(
+      "6.2. La responsabilité du prestataire est limitée au montant de la prestation. " +
+      "En aucun cas, elle ne pourra excéder ce montant.",
+      { size: 10 }
+    );
+    addParagraph(
+      "6.3. Le prestataire ne saurait être tenu responsable des conditions météorologiques " +
+      "ou d'événements indépendants de sa volonté affectant la prestation.",
+      { size: 10 }
+    );
+
+    yPos -= 10;
+
+    // Article 7
+    addText("ARTICLE 7 - DONNÉES PERSONNELLES", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "7.1. Les données personnelles collectées sont utilisées uniquement pour l'exécution " +
+      "du contrat et la communication relative à la prestation.",
+      { size: 10 }
+    );
+    addParagraph(
+      "7.2. Conformément au RGPD, le client dispose d'un droit d'accès, de rectification " +
+      "et de suppression de ses données en contactant contact@irzzenproductions.fr.",
+      { size: 10 }
+    );
+    addParagraph(
+      "7.3. Les données sont conservées pendant la durée nécessaire à l'exécution du " +
+      "contrat plus 3 ans pour les besoins de la gestion commerciale et comptable.",
+      { size: 10 }
+    );
+
+    yPos -= 10;
+
+    // Article 8
+    addText("ARTICLE 8 - DROIT APPLICABLE ET LITIGES", { font: bold, size: 12, spacing: 20 });
+    addParagraph(
+      "8.1. Le présent contrat est soumis au droit français. En cas de litige, les parties " +
+      "s'engagent à rechercher une solution amiable avant tout recours judiciaire.",
+      { size: 10 }
+    );
+    addParagraph(
+      "8.2. À défaut d'accord amiable, les tribunaux compétents sont ceux du ressort du " +
+      "siège social d'IRZZEN PRODUCTIONS.",
+      { size: 10 }
+    );
+
+    yPos -= 20;
+
+    // ========== ACCEPTATION ET SIGNATURES ==========
+    addSectionHeader("ACCEPTATION DU CONTRAT", rgb(1, 0.9, 0.8));
+    
+    addParagraph(
+      "En signant le présent contrat, les parties reconnaissent avoir pris connaissance " +
+      "de l'ensemble de ses clauses et les accepter sans réserve. Ce contrat annule et " +
+      "remplace tout accord antérieur relatif au même objet.",
+      { font: bold, size: 11 }
+    );
+
+    yPos -= 20;
+
+    // Zone de signatures
+    checkSpace(120);
+    
+    // Cadre pour signatures
+    currentPage.drawRectangle({
+      x: MARGIN - 10,
+      y: yPos - 80,
+      width: PAGE_WIDTH - 2 * MARGIN + 20,
+      height: 100,
+      color: rgb(0.98, 0.98, 0.98),
+      borderColor: grayColor,
+      borderWidth: 1
+    });
+
+    addText("SIGNATURES", { font: bold, size: 12, color: brandColor });
+    
+    yPos -= 20;
+
+    // Deux colonnes pour signatures
+    currentPage.drawText("Le Client", {
+      x: MARGIN + 30,
+      y: yPos,
+      size: 11,
+      font: bold,
+      color: blackColor
+    });
+
+    currentPage.drawText("IRZZEN PRODUCTIONS", {
+      x: PAGE_WIDTH - MARGIN - 150,
+      y: yPos,
+      size: 11,
+      font: bold,
+      color: blackColor
+    });
+
+    currentPage.drawText("Lu et approuvé", {
+      x: MARGIN + 30,
+      y: yPos - 15,
       size: 9,
-      font: f,
-      color: C_MUTED,
+      font: regular,
+      color: grayColor
     });
-  }
 
-  return await pdf.save();
+    currentPage.drawText("Le prestataire", {
+      x: PAGE_WIDTH - MARGIN - 150,
+      y: yPos - 15,
+      size: 9,
+      font: regular,
+      color: grayColor
+    });
+
+    // Lignes pour signatures
+    currentPage.drawLine({
+      start: { x: MARGIN + 30, y: yPos - 45 },
+      end: { x: MARGIN + 170, y: yPos - 45 },
+      thickness: 0.5,
+      color: grayColor
+    });
+
+    currentPage.drawLine({
+      start: { x: PAGE_WIDTH - MARGIN - 150, y: yPos - 45 },
+      end: { x: PAGE_WIDTH - MARGIN - 10, y: yPos - 45 },
+      thickness: 0.5,
+      color: grayColor
+    });
+
+    // Footer final
+    currentPage.drawText(`© ${new Date().getFullYear()} IRZZEN PRODUCTIONS - Tous droits réservés`, {
+      x: MARGIN,
+      y: 40,
+      size: 8,
+      font: regular,
+      color: grayColor
+    });
+
+    currentPage.drawText("contact@irzzenproductions.fr", {
+      x: PAGE_WIDTH - MARGIN - 120,
+      y: 40,
+      size: 8,
+      font: regular,
+      color: grayColor
+    });
+
+    console.log(`✅ [CONTRACT] Contrat professionnel généré - ${pageNum} pages`);
+    const pdfBytes = await pdf.save();
+    
+    return pdfBytes;
+    
+  } catch (error) {
+    console.error("❌ [CONTRACT] Erreur:", error);
+    throw error;
+  }
 }

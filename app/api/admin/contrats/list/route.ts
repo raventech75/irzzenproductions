@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // Essaye de lister à la racine et dans "contrats/" pour couvrir les 2 conventions
 async function listAt(prefix: string) {
-  const { data, error } = await supabaseAdmin.storage.from("contrats").list(prefix, {
+  const { data, error } = await supabaseAdmin.storage.from("contracts").list(prefix, {
     limit: 1000,
     offset: 0,
     sortBy: { column: "created_at", order: "desc" },
