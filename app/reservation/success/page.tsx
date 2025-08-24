@@ -61,11 +61,12 @@ function pdfFileName(data: ReservationData) {
 }
 
 // --------------------------------------
-// PDF PRO — propre & lisible
+// PDF PRO - propre & lisible
 // --------------------------------------
 function generateContractPDF(data: ReservationData): { blob: Blob; fileName: string } {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const marginX = 48;
   let y = 72;
 
@@ -76,167 +77,234 @@ function generateContractPDF(data: ReservationData): { blob: Blob; fileName: str
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text("Contrat – Reportage Photo Mariage", marginX, 56);
+  doc.text("Contrat - Reportage Photo Mariage", marginX, 56);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text("IRZZEN Productions — Soin & professionnalisme", marginX, 80);
+  doc.text("Irzen Productions", marginX, 85);
 
-  // Carte d’infos client
-  y = 140;
-  const cardTop = y;
-  doc.setFillColor(255, 244, 236); // LIGHT_ORANGE
-  doc.roundedRect(marginX, y, pageWidth - marginX * 2, 120, 8, 8, "F");
+  y = 160;
 
-  y += 28;
+  // Reset text color for body
   doc.setTextColor(55, 65, 81); // GRAY_TEXT
+
+  // Date du contrat
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(`Contrat établi le : ${dayjs().format("DD MMMM YYYY")}`, pageWidth - marginX - 150, y);
+  y += 30;
+
+  // Section Informations des mariés
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("Informations du couple", marginX + 16, y);
-
-  y += 18;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-
-  const line = (label: string, value?: string) => {
-    const val = safe(value) || "—";
-    doc.setTextColor(55, 65, 81);
-    doc.text(`${label}:`, marginX + 16, y);
-    doc.setTextColor(107, 114, 128);
-    doc.text(val, marginX + 140, y);
-    y += 18;
-  };
-
-  line("Mariée (prénom/nom)", `${safe(data.bride_first_name)} ${safe(data.bride_last_name)}`);
-  line("Marié (prénom/nom)", `${safe(data.groom_first_name)} ${safe(data.groom_last_name)}`);
-  line("Email contact", data.contact_email);
-  line("Email couple", data.couple_email);
-  line("Téléphone", data.phone);
-
-  // Infos mariage
-  y += 10;
-  doc.setDrawColor(234, 88, 12);
-  doc.line(marginX + 16, y, pageWidth - marginX - 16, y);
+  doc.text("INFORMATIONS DU COUPLE", marginX, y);
   y += 20;
 
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(55, 65, 81);
-  doc.text("Détails du mariage", marginX + 16, y);
-  y += 18;
-
   doc.setFont("helvetica", "normal");
-  line("Date", safe(data.wedding_date) ? dayjs(data.wedding_date).format("dddd D MMMM YYYY") : "—");
-  line("Lieu cérémonie", data.ceremony_location);
-  line("Lieu réception", data.reception_location);
-  line("Adresses", data.addresses);
-  line("Horaires", data.schedule);
-  line("Nombre d'invités", data.guests_count);
-
-  // Formule & options
-  y += 10;
-  doc.setDrawColor(234, 88, 12);
-  doc.line(marginX + 16, y, pageWidth - marginX - 16, y);
-  y += 20;
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(55, 65, 81);
-  doc.text("Formule & options", marginX + 16, y);
-  y += 18;
-
-  doc.setFont("helvetica", "normal");
-  line("Formule", data.package_name);
-  line("Options / demandes spéciales", data.options);
-  line("Prix total", data.total_price);
-  line("Acompte", data.deposit_amount);
-
-  // Notes
-  y += 10;
-  doc.setDrawColor(234, 88, 12);
-  doc.line(marginX + 16, y, pageWidth - marginX - 16, y);
-  y += 20;
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(55, 65, 81);
-  doc.text("Notes", marginX + 16, y);
-  y += 18;
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(107, 114, 128);
-  const notes = doc.splitTextToSize(safe(data.notes) || "—", pageWidth - marginX * 2 - 32);
-  doc.text(notes, marginX + 16, y);
-  y += (Array.isArray(notes) ? notes.length : 1) * 14 + 8;
-
-  // Mentions spéciales Mariage
-  y += 10;
-  doc.setDrawColor(234, 88, 12);
-  doc.line(marginX + 16, y, pageWidth - marginX - 16, y);
-  y += 20;
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(55, 65, 81);
-  doc.text("Mentions spéciales", marginX + 16, y);
-  y += 18;
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(107, 114, 128);
-  const mentions =
-    "• Les délais de livraison des photos sont indiqués contractuellement.\n" +
-    "• Droit à l'image : l'autorisation de diffusion (site / réseaux sociaux) peut être consentie ou refusée par le couple.\n" +
-    "• L'acompte valide la date et n'est pas remboursable, sauf cas de force majeure spécifiés au contrat.\n" +
-    "• Les horaires dépassant la plage prévue seront facturés selon les conditions établies.\n" +
-    "• Toute demande spécifique (lieux, poses, invités) doit être intégrée au brief en amont.";
-  const mentionsWrapped = doc.splitTextToSize(mentions, pageWidth - marginX * 2 - 32);
-  doc.text(mentionsWrapped, marginX + 16, y);
-
-  const fileName = pdfFileName(data);
-  const blob = doc.output("blob") as Blob;
-  return { blob, fileName };
-}
-
-// --------------------------------------
-// Envoi vers votre API (facultatif)
-// --------------------------------------
-async function sendContract(data: ReservationData, pdfBlob: Blob) {
-  // ⚠️ Remplacez l’URL si votre endpoint diffère.
-  const url = "/api/send-contract";
-
-  // Encodage PDF en base64 pour envoi JSON
-  const pdfBuffer = await pdfBlob.arrayBuffer();
-  const pdfBase64 = btoa(
-    new Uint8Array(pdfBuffer).reduce((acc, b) => acc + String.fromCharCode(b), "")
-  );
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      data,
-      pdfBase64,
-      fileName: pdfFileName(data),
-
-      // 👇 IMPORTANT : l’email de contact reçoit systématiquement le mail
-      // Ajoutez ici d'autres destinataires si souhaité (couple, etc.)
-      recipients: [safe(data.contact_email), safe(data.couple_email)].filter(Boolean),
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`Échec envoi contrat (${res.status}) ${txt}`);
+  doc.setFontSize(11);
+  
+  const brideFullName = `${safe(data.bride_first_name)} ${safe(data.bride_last_name)}`.trim();
+  const groomFullName = `${safe(data.groom_first_name)} ${safe(data.groom_last_name)}`.trim();
+  
+  if (brideFullName) {
+    doc.text(`Mariée : ${brideFullName}`, marginX, y);
+    y += 16;
   }
+  
+  if (groomFullName) {
+    doc.text(`Marié : ${groomFullName}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.contact_email)) {
+    doc.text(`Email de contact : ${safe(data.contact_email)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.couple_email)) {
+    doc.text(`Email du couple : ${safe(data.couple_email)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.phone)) {
+    doc.text(`Téléphone : ${safe(data.phone)}`, marginX, y);
+    y += 16;
+  }
+
+  y += 20;
+
+  // Section Détails du mariage
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("DÉTAILS DU MARIAGE", marginX, y);
+  y += 20;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  if (safe(data.wedding_date)) {
+    const formattedDate = dayjs(data.wedding_date).format("dddd DD MMMM YYYY");
+    doc.text(`Date du mariage : ${formattedDate}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.ceremony_location)) {
+    doc.text(`Lieu de cérémonie : ${safe(data.ceremony_location)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.reception_location)) {
+    doc.text(`Lieu de réception : ${safe(data.reception_location)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.addresses)) {
+    const lines = safe(data.addresses).split('\n');
+    doc.text("Adresses :", marginX, y);
+    y += 16;
+    lines.forEach(line => {
+      if (line.trim()) {
+        doc.text(`  ${line.trim()}`, marginX + 20, y);
+        y += 14;
+      }
+    });
+    y += 6;
+  }
+
+  if (safe(data.schedule)) {
+    doc.text(`Planning : ${safe(data.schedule)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.guests_count)) {
+    doc.text(`Nombre d'invités : ${safe(data.guests_count)}`, marginX, y);
+    y += 16;
+  }
+
+  y += 20;
+
+  // Check if we need a new page
+  if (y > pageHeight - 150) {
+    doc.addPage();
+    y = 72;
+  }
+
+  // Section Prestation
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("PRESTATION", marginX, y);
+  y += 20;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  if (safe(data.package_name)) {
+    doc.text(`Formule choisie : ${safe(data.package_name)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.options)) {
+    const lines = safe(data.options).split('\n');
+    doc.text("Options et demandes spéciales :", marginX, y);
+    y += 16;
+    lines.forEach(line => {
+      if (line.trim()) {
+        doc.text(`  ${line.trim()}`, marginX + 20, y);
+        y += 14;
+      }
+    });
+    y += 6;
+  }
+
+  y += 20;
+
+  // Section Financière
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("ASPECTS FINANCIERS", marginX, y);
+  y += 20;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  if (safe(data.total_price)) {
+    doc.text(`Prix total : ${safe(data.total_price)}`, marginX, y);
+    y += 16;
+  }
+
+  if (safe(data.deposit_amount)) {
+    doc.text(`Acompte : ${safe(data.deposit_amount)}`, marginX, y);
+    y += 16;
+  }
+
+  y += 20;
+
+  // Notes supplémentaires
+  if (safe(data.notes)) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("NOTES SUPPLÉMENTAIRES", marginX, y);
+    y += 20;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    const noteLines = safe(data.notes).split('\n');
+    noteLines.forEach(line => {
+      if (line.trim()) {
+        doc.text(line.trim(), marginX, y);
+        y += 14;
+      }
+    });
+    y += 20;
+  }
+
+  // Check if we need a new page for signatures
+  if (y > pageHeight - 200) {
+    doc.addPage();
+    y = 72;
+  }
+
+  // Section Signatures
+  y += 30;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("SIGNATURES", marginX, y);
+  y += 40;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  
+  const leftSignX = marginX;
+  const rightSignX = pageWidth - marginX - 150;
+  
+  doc.text("Le Photographe", leftSignX, y);
+  doc.text("Les Clients", rightSignX, y);
+  
+  y += 20;
+  doc.text("Date : _______________", leftSignX, y);
+  doc.text("Date : _______________", rightSignX, y);
+  
+  y += 40;
+  doc.text("Signature :", leftSignX, y);
+  doc.text("Signature :", rightSignX, y);
+
+  // Pied de page
+  y = pageHeight - 60;
+  doc.setTextColor(107, 114, 128); // LIGHT_GRAY
+  doc.setFontSize(9);
+  doc.text("Irzen Productions - Reportage Photo Mariage", marginX, y);
+
+  const pdfBlob = new Blob([doc.output("blob")], { type: "application/pdf" });
+  const fileName = pdfFileName(data);
+
+  return { blob: pdfBlob, fileName };
 }
 
 // --------------------------------------
-// UI
+// Composant principal
 // --------------------------------------
 export default function ReservationPage() {
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const today = useMemo(() => dayjs().format("YYYY-MM-DD"), []);
-
-  const [form, setForm] = useState<ReservationData>({
+  const [formData, setFormData] = useState<ReservationData>({
     bride_first_name: "",
     bride_last_name: "",
     groom_first_name: "",
@@ -257,338 +325,434 @@ export default function ReservationPage() {
     notes: "",
   });
 
-  function update<K extends keyof ReservationData>(key: K, val: ReservationData[K]) {
-    setForm((prev) => ({ ...prev, [key]: val }));
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
 
-  async function onSubmit(e: React.FormEvent) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setMessage(null);
-    setSending(true);
-    try {
-      // 1) Générer le PDF
-      const { blob, fileName } = generateContractPDF(form);
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
 
-      // 2) Sauvegarde locale immédiate (téléchargement)
-      //    -> si vous ne voulez pas télécharger côté client, commentez ce bloc.
+    try {
+      // Générer le PDF
+      const { blob, fileName } = generateContractPDF(formData);
+      
+      // Télécharger le PDF automatiquement
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // 3) Envoi au(x) destinataire(s) (si votre API existe)
-      try {
-        await sendContract(form, blob);
-        setMessage("Contrat envoyé par email avec succès ✅");
-      } catch (err: any) {
-        // On n’empêche pas la réussite globale : le PDF a été généré/téléchargé.
-        console.error(err);
-        setMessage("PDF généré. L’envoi email a échoué (vérifiez l’API).");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err?.message || "Une erreur est survenue.");
+      // Simulation d'envoi (remplacez par votre logique d'envoi réelle)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setSubmitStatus("success");
+    } catch (error) {
+      console.error("Erreur lors du traitement:", error);
+      setSubmitStatus("error");
     } finally {
-      setSending(false);
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const isFormValid = useMemo(() => {
+    return (
+      formData.bride_first_name.trim() &&
+      formData.bride_last_name.trim() &&
+      formData.groom_first_name.trim() &&
+      formData.groom_last_name.trim() &&
+      formData.contact_email.trim() &&
+      formData.wedding_date.trim()
+    );
+  }, [formData]);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="w-full border-b border-gray-100 bg-gradient-to-b from-orange-50 to-white">
-        <div className="mx-auto max-w-5xl px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                IRZZEN Productions
-              </h1>
-              <p className="text-sm text-gray-500">
-                Reportage Photo Mariage — soin & professionnalisme
-              </p>
-            </div>
-            <div className="hidden md:block rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-orange-700">
-              {dayjs().format("dddd D MMMM YYYY")}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Contenu */}
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <div className="mb-8 rounded-2xl border border-orange-100 bg-orange-50 p-5">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Contrat & Informations — Mariage
-          </h2>
-          <p className="text-sm text-gray-600">
-            Remplissez les champs ci-dessous. À l’envoi, un PDF propre sera
-            généré et renommé automatiquement{" "}
-            <span className="font-semibold">
-              (prénoms + date du mariage)
-            </span>
-            . L’email de contact renseigné recevra également le contrat.
-          </p>
-        </div>
-
-        <form onSubmit={onSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Carte Couple */}
-          <section className="lg:col-span-2 rounded-2xl border border-gray-200 p-6">
-            <h3 className="mb-4 text-base font-semibold text-gray-800">
-              Le couple
-            </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                label="Prénom mariée"
-                placeholder="Ex: Justine"
-                value={form.bride_first_name}
-                onChange={(v) => update("bride_first_name", v)}
-              />
-              <Input
-                label="Nom mariée"
-                placeholder="Ex: Dupont"
-                value={form.bride_last_name}
-                onChange={(v) => update("bride_last_name", v)}
-              />
-              <Input
-                label="Prénom marié"
-                placeholder="Ex: Valentin"
-                value={form.groom_first_name}
-                onChange={(v) => update("groom_first_name", v)}
-              />
-              <Input
-                label="Nom marié"
-                placeholder="Ex: Martin"
-                value={form.groom_last_name}
-                onChange={(v) => update("groom_last_name", v)}
-              />
-              <Input
-                type="email"
-                label="Email (contact)"
-                placeholder="contact@irzzenproductions.fr"
-                required
-                value={form.contact_email}
-                onChange={(v) => update("contact_email", v)}
-              />
-              <Input
-                type="email"
-                label="Email (couple) — optionnel"
-                placeholder="justine.valentin@email.com"
-                value={form.couple_email}
-                onChange={(v) => update("couple_email", v)}
-              />
-              <Input
-                label="Téléphone"
-                placeholder="+33 6 12 34 56 78"
-                value={form.phone}
-                onChange={(v) => update("phone", v)}
-              />
-            </div>
-          </section>
-
-          {/* Carte Mariage */}
-          <section className="rounded-2xl border border-gray-200 p-6">
-            <h3 className="mb-4 text-base font-semibold text-gray-800">
-              Détails du mariage
-            </h3>
-            <div className="grid grid-cols-1 gap-4">
-              <Input
-                type="date"
-                label="Date"
-                min={today}
-                value={form.wedding_date}
-                onChange={(v) => update("wedding_date", v)}
-              />
-              <Input
-                label="Lieu cérémonie"
-                placeholder="Ex: Église Saint-Pierre, Nantes"
-                value={form.ceremony_location}
-                onChange={(v) => update("ceremony_location", v)}
-              />
-              <Input
-                label="Lieu réception"
-                placeholder="Ex: Château de la Trinité"
-                value={form.reception_location}
-                onChange={(v) => update("reception_location", v)}
-              />
-              <Textarea
-                label="Adresses"
-                placeholder="Adresses détaillées des lieux"
-                value={form.addresses}
-                onChange={(v) => update("addresses", v)}
-              />
-              <Textarea
-                label="Horaires du jour J"
-                placeholder="Ex: Préparatifs 9h, Cérémonie 14h, Cocktail 17h..."
-                value={form.schedule}
-                onChange={(v) => update("schedule", v)}
-              />
-              <Input
-                label="Nombre d'invités"
-                placeholder="Ex: 120"
-                value={form.guests_count}
-                onChange={(v) => update("guests_count", v)}
-              />
-            </div>
-          </section>
-
-          {/* Carte Formule */}
-          <section className="lg:col-span-2 rounded-2xl border border-gray-200 p-6">
-            <h3 className="mb-4 text-base font-semibold text-gray-800">
-              Formule & options
-            </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                label="Formule choisie"
-                placeholder="Ex: Formule Or (12h de couverture)"
-                value={form.package_name}
-                onChange={(v) => update("package_name", v)}
-              />
-              <Input
-                label="Acompte"
-                placeholder="Ex: 500 €"
-                value={form.deposit_amount}
-                onChange={(v) => update("deposit_amount", v)}
-              />
-              <Input
-                label="Prix total"
-                placeholder="Ex: 2 200 €"
-                value={form.total_price}
-                onChange={(v) => update("total_price", v)}
-              />
-              <Textarea
-                className="sm:col-span-2"
-                label="Options / demandes spéciales"
-                placeholder="Préparatifs, séance couple, drone, livre photo, etc."
-                value={form.options}
-                onChange={(v) => update("options", v)}
-              />
-            </div>
-          </section>
-
-          {/* Carte Notes */}
-          <section className="rounded-2xl border border-gray-200 p-6">
-            <h3 className="mb-4 text-base font-semibold text-gray-800">
-              Notes supplémentaires
-            </h3>
-            <Textarea
-              label="Notes"
-              placeholder="Précisions utiles, contraintes, consignes..."
-              value={form.notes}
-              onChange={(v) => update("notes", v)}
-            />
-          </section>
-
-          {/* Actions — bouton centré et pro */}
-          <div className="lg:col-span-3">
-            {error && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-            {message && (
-              <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {message}
-              </div>
-            )}
-            <div className="flex items-center justify-center">
-              <button
-                type="submit"
-                disabled={sending || !form.contact_email}
-                className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {sending ? (
-                  <span className="animate-pulse">Génération & envoi…</span>
-                ) : (
-                  <>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 8H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Envoyer le contrat
-                  </>
-                )}
-              </button>
-            </div>
-            <p className="mt-3 text-center text-xs text-gray-500">
-              Le contact renseigné recevra automatiquement le contrat par email
-              (si l’API est configurée). Le PDF est aussi téléchargé localement.
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              Réservation Reportage Photo
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Créez votre contrat personnalisé
             </p>
           </div>
-        </form>
-      </main>
 
-      {/* Footer */}
-      <footer className="mt-10 border-t border-gray-100">
-        <div className="mx-auto max-w-5xl px-6 py-8 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} IRZZEN Productions — Tous droits réservés.
+          {/* Success/Error Messages */}
+          {submitStatus === "success" && (
+            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+              ✅ Contrat généré avec succès ! Le fichier PDF a été téléchargé.
+            </div>
+          )}
+
+          {submitStatus === "error" && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              ❌ Une erreur s'est produite. Veuillez réessayer.
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+            {/* Informations du couple */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                👰🤵 Informations du couple
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prénom de la mariée *
+                  </label>
+                  <input
+                    type="text"
+                    name="bride_first_name"
+                    value={formData.bride_first_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom de la mariée *
+                  </label>
+                  <input
+                    type="text"
+                    name="bride_last_name"
+                    value={formData.bride_last_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prénom du marié *
+                  </label>
+                  <input
+                    type="text"
+                    name="groom_first_name"
+                    value={formData.groom_first_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom du marié *
+                  </label>
+                  <input
+                    type="text"
+                    name="groom_last_name"
+                    value={formData.groom_last_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                📧 Contact
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email de contact *
+                  </label>
+                  <input
+                    type="email"
+                    name="contact_email"
+                    value={formData.contact_email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email du couple (optionnel)
+                  </label>
+                  <input
+                    type="email"
+                    name="couple_email"
+                    value={formData.couple_email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Détails du mariage */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                💒 Détails du mariage
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date du mariage *
+                  </label>
+                  <input
+                    type="date"
+                    name="wedding_date"
+                    value={formData.wedding_date}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre d'invités
+                  </label>
+                  <input
+                    type="text"
+                    name="guests_count"
+                    value={formData.guests_count}
+                    onChange={handleInputChange}
+                    placeholder="ex: 80 personnes"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lieu de cérémonie
+                  </label>
+                  <input
+                    type="text"
+                    name="ceremony_location"
+                    value={formData.ceremony_location}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lieu de réception
+                  </label>
+                  <input
+                    type="text"
+                    name="reception_location"
+                    value={formData.reception_location}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Adresses complètes
+                  </label>
+                  <textarea
+                    name="addresses"
+                    value={formData.addresses}
+                    onChange={handleInputChange}
+                    rows={3}
+                    placeholder="Adresses détaillées des lieux"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Planning de la journée
+                  </label>
+                  <textarea
+                    name="schedule"
+                    value={formData.schedule}
+                    onChange={handleInputChange}
+                    rows={3}
+                    placeholder="ex: 14h30 - Préparatifs, 16h00 - Cérémonie, 18h00 - Cocktail..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Prestation */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                📸 Prestation
+              </h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Formule choisie
+                  </label>
+                  <select
+                    name="package_name"
+                    value={formData.package_name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    <option value="">Sélectionnez une formule</option>
+                    <option value="Essentiel">Formule Essentiel</option>
+                    <option value="Complète">Formule Complète</option>
+                    <option value="Premium">Formule Premium</option>
+                    <option value="Sur mesure">Formule sur mesure</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Options et demandes spéciales
+                  </label>
+                  <textarea
+                    name="options"
+                    value={formData.options}
+                    onChange={handleInputChange}
+                    rows={4}
+                    placeholder="Décrivez vos options et demandes particulières..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Aspects financiers */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                💰 Aspects financiers
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prix total
+                  </label>
+                  <input
+                    type="text"
+                    name="total_price"
+                    value={formData.total_price}
+                    onChange={handleInputChange}
+                    placeholder="ex: 1500€"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Acompte
+                  </label>
+                  <input
+                    type="text"
+                    name="deposit_amount"
+                    value={formData.deposit_amount}
+                    onChange={handleInputChange}
+                    placeholder="ex: 500€"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-orange-200">
+                📝 Notes supplémentaires
+              </h2>
+              
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                rows={4}
+                placeholder="Ajoutez ici toute information complémentaire..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="text-center">
+              <button
+                type="submit"
+                disabled={!isFormValid || isSubmitting}
+                className={`
+                  px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200
+                  ${isFormValid && !isSubmitting
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }
+                `}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Génération en cours...
+                  </span>
+                ) : (
+                  "🎯 Générer le contrat PDF"
+                )}
+              </button>
+              
+              {!isFormValid && (
+                <p className="text-red-500 text-sm mt-2">
+                  Veuillez remplir tous les champs obligatoires (*)
+                </p>
+              )}
+            </div>
+          </form>
         </div>
-      </footer>
-    </div>
-  );
-}
-
-// --------------------------------------
-// Composants UI minimalistes
-// --------------------------------------
-function Input(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  required?: boolean;
-  min?: string;
-  className?: string;
-}) {
-  const { label, value, onChange, placeholder, type = "text", required, min, className } = props;
-  return (
-    <div className={className}>
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        min={min}
-        required={required}
-        className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
-      />
-    </div>
-  );
-}
-
-function Textarea(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rows?: number;
-  className?: string;
-}) {
-  const { label, value, onChange, placeholder, rows = 4, className } = props;
-  return (
-    <div className={className}>
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
-      />
+      </div>
     </div>
   );
 }
