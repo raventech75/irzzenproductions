@@ -46,6 +46,24 @@ type Questionnaire = {
   specialRequests: string;
 };
 
+/** Données formation */
+type FormationData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  age: string;
+  currentLevel: string;
+  experience: string;
+  expectations: string;
+  availability: string;
+  equipment: string;
+};
+
 type ReservationData = {
   bride_first_name: string;
   bride_last_name: string;
@@ -92,6 +110,23 @@ const initialQ: Questionnaire = {
   receptionTime: "",
   schedule: "",
   specialRequests: "",
+};
+
+const initialFormation: FormationData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address: "",
+  postalCode: "",
+  city: "",
+  country: "",
+  age: "",
+  currentLevel: "",
+  experience: "",
+  expectations: "",
+  availability: "",
+  equipment: "",
 };
 
 const ORANGE = "#ea580c"; // Tailwind orange-600
@@ -408,6 +443,9 @@ function convertToReservationData(q: Questionnaire, currentFormula: FormulaDetai
 export default function Reservation() {
   const router = useRouter();
 
+  // ——————————— Mode principal ———————————
+  const [currentMode, setCurrentMode] = useState<'wedding' | 'formation'>('wedding');
+
   // ——————————— Sélection formule / options ———————————
   const [formulaId, setFormulaId] = useState<string>(FORMULAS_DETAILED[0].id);
   const currentFormula: FormulaDetailed = FORMULAS_DETAILED.find((f) => f.id === formulaId) || {
@@ -431,6 +469,10 @@ export default function Reservation() {
   // ——————————— Questionnaire ———————————
   const [q, setQ] = useState<Questionnaire>(initialQ);
   const onQ = (k: keyof Questionnaire, v: string) => setQ((prev) => ({ ...prev, [k]: v }));
+
+  // ——————————— Formation ———————————
+  const [formation, setFormation] = useState<FormationData>(initialFormation);
+  const onFormation = (k: keyof FormationData, v: string) => setFormation((prev) => ({ ...prev, [k]: v }));
 
   const base = useMemo(() => {
     if (formulaId === "custom") {
@@ -486,6 +528,46 @@ export default function Reservation() {
     } catch (error) {
       console.error("Erreur lors de la génération du PDF:", error);
       alert("Erreur lors de la génération du contrat PDF. Veuillez réessayer.");
+    }
+  };
+
+  // Fonction pour soumettre la demande de formation
+  const submitFormation = async () => {
+    setLoading(true);
+    
+    try {
+      // Validation des champs requis côté client
+      if (!formation.firstName || !formation.lastName || !formation.email || !formation.currentLevel) {
+        alert("Veuillez remplir au minimum : prénom, nom, email et niveau actuel.");
+        setLoading(false);
+        return;
+      }
+
+      // Appel API pour envoyer la demande de formation
+      const response = await fetch("/api/formation", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify(formation)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Erreur ${response.status}`);
+      }
+      
+      alert("Votre demande de formation a été envoyée avec succès ! Nous vous recontacterons bientôt pour un entretien.");
+      
+      // Réinitialiser le formulaire
+      setFormation(initialFormation);
+      
+    } catch (error: any) {
+      console.error("Erreur lors de l'envoi de la demande:", error);
+      alert(`Erreur: ${error.message || "Une erreur s'est produite"}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -548,626 +630,249 @@ export default function Reservation() {
   // Validation pour le mode contrat
   const isValidForContract = q.brideFirstName && q.brideLastName && q.groomFirstName && q.groomLastName && q.weddingDate;
 
+  // Validation pour la formation
+  const isValidForFormation = formation.firstName && formation.lastName && formation.email && formation.currentLevel;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      {/* Barre d'actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Barre de navigation principale */}
+      <div className="flex items-center justify-center mb-8">
+        <div className="bg-gray-100 p-1 rounded-xl flex">
           <button
-            onClick={() => setContractMode(!contractMode)}
-            className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-              contractMode 
-                ? 'border-orange-500 bg-orange-50 text-orange-700' 
-                : 'border-gray-300 text-gray-600 hover:border-orange-300 hover:text-orange-600'
+            onClick={() => setCurrentMode('wedding')}
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              currentMode === 'wedding'
+                ? 'bg-white shadow-sm text-orange-600'
+                : 'text-gray-600 hover:text-gray-800'
             }`}
           >
-            📄 {contractMode ? 'Mode Paiement' : 'Mode Contrat'}
+            💒 Mariage
+          </button>
+          <button
+            onClick={() => setCurrentMode('formation')}
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              currentMode === 'formation'
+                ? 'bg-white shadow-sm text-orange-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            🎓 Formation
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="/rib"
-            className="rounded-xl border border-orange-300 px-3 py-2 text-orange-700 hover:bg-orange-50"
-          >
-            RIB / Virement
-          </a>
-        </div>
       </div>
 
-      {/* Titre */}
-      <div className="flex items-center justify-center">
-        <h1 className="font-serif text-4xl">
-          {contractMode ? 'Générer votre contrat' : 'Configurez votre prestation'}
-        </h1>
-      </div>
+      {/* Contenu de l'onglet Formation */}
+      {currentMode === 'formation' && (
+        <>
+          {/* Titre Formation */}
+          <div className="text-center">
+            <h1 className="font-serif text-4xl mb-4">Formation Montage Vidéo Mariage</h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Apprenez à créer des films de mariage émouvants et professionnels. 
+              Formation dédiée aux femmes souhaitant se lancer dans ce domaine passionnant.
+            </p>
+          </div>
 
-      {/* Message d'information pour le mode contrat */}
-      {contractMode && (
-        <Card className="p-4 bg-orange-50 border-orange-200">
-          <div className="flex items-center gap-3">
-            <span className="text-orange-600 text-xl">📋</span>
-            <div>
-              <h3 className="font-semibold text-orange-800">Mode Contrat PDF</h3>
-              <p className="text-sm text-orange-700">
-                Remplissez les informations ci-dessous pour générer un contrat professionnel en PDF. 
-                Les champs marqués d'un astérisque (*) sont requis pour le contrat.
+          {/* Informations sur la formation */}
+          <Card className="p-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xl font-semibold mb-4 text-orange-600">🎯 Objectifs de la formation</h3>
+                <ul className="space-y-2 text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">✓</span>
+                    <span>Maîtriser les bases du montage vidéo</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">✓</span>
+                    <span>Créer des films de mariage émouvants</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">✓</span>
+                    <span>Développer votre style artistique</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">✓</span>
+                    <span>Optimiser votre workflow de production</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold mb-4 text-orange-600">📚 Programme inclus</h3>
+                <ul className="space-y-2 text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">•</span>
+                    <span>Logiciels de montage professionnels</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">•</span>
+                    <span>Techniques de narration visuelle</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">•</span>
+                    <span>Color grading et étalonnage</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-1">•</span>
+                    <span>Synchronisation audio/musique</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+
+          {/* Formulaire d'inscription formation */}
+          <Card className="p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold mb-2">Candidature à la formation</h2>
+              <p className="text-gray-600">
+                Remplissez ce formulaire pour postuler à notre formation en montage vidéo de mariage.
               </p>
             </div>
-          </div>
-        </Card>
-      )}
 
-      {/* ——— Formules ——— */}
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-2">Choisissez votre formule</h2>
-        <p className="text-gray-600 mb-6">Sélectionnez la formule qui correspond le mieux à vos besoins</p>
-        
-        <div className="grid lg:grid-cols-2 gap-6">
-          {FORMULAS_DETAILED.map((f) => (
-            <div
-              key={f.id}
-              className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
-                formulaId === f.id 
-                  ? "border-orange-500 bg-orange-50 shadow-lg transform scale-[1.02]" 
-                  : "border-gray-200 hover:border-orange-300"
-              }`}
-              onClick={() => setFormulaId(f.id)}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-bold text-xl mb-2">{f.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{f.description}</p>
-                  
-                  <div className="grid grid-cols-1 gap-2 mb-4 text-sm">
-                    {f.duration && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-600">⏱️</span>
-                        <span className="font-medium">Durée:</span>
-                        <span className="text-gray-600">{f.duration}</span>
-                      </div>
-                    )}
-                    {f.deliverables && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-600">📦</span>
-                        <span className="font-medium">Livrables:</span>
-                        <span className="text-gray-600">{f.deliverables}</span>
-                      </div>
-                    )}
-                    {f.deliveryTime && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-600">🚚</span>
-                        <span className="font-medium">Livraison:</span>
-                        <span className="text-gray-600">{f.deliveryTime}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {f.idealFor && (
-                    <div className="bg-white/60 rounded-lg p-3 mb-4 border border-orange-200">
-                      <span className="text-sm font-medium text-orange-800">💡 Idéal pour:</span>
-                      <p className="text-sm text-orange-700 mt-1">{f.idealFor}</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-right ml-4">
-                  <div className="text-2xl font-bold text-orange-600 mb-2">
-                    {euros(f.price)}
-                  </div>
-                  <input
-                    type="radio"
-                    checked={formulaId === f.id}
-                    onChange={() => setFormulaId(f.id)}
-                    className="w-5 h-5 text-orange-600"
-                  />
-                </div>
-              </div>
-
-              {f.highlights && f.highlights.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm font-semibold text-gray-700 mb-2">✨ Points forts:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {f.highlights.map((highlight, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
-                      >
-                        {highlight}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {f.features && f.features.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold text-gray-700 mb-2">📋 Inclus:</div>
-                  <div className="space-y-1">
-                    {f.features.map((feature, idx) => (
-                      <div key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-orange-500 mt-0.5">✓</span>
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Devis personnalisé */}
-          <div
-            className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
-              formulaId === "custom" 
-                ? "border-orange-500 bg-orange-50 shadow-lg transform scale-[1.02]" 
-                : "border-gray-200 hover:border-orange-300"
-            }`}
-            onClick={() => setFormulaId("custom")}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="font-bold text-xl mb-2">💼 Devis personnalisé</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Vous avez déjà reçu un devis sur mesure ? Saisissez le montant convenu.
-                </p>
-              </div>
-              <input
-                type="radio"
-                checked={formulaId === "custom"}
-                onChange={() => setFormulaId("custom")}
-                className="w-5 h-5 text-orange-600 mt-2"
-              />
-            </div>
-            
-            {formulaId === "custom" && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Montant de votre devis personnalisé
-                </label>
-                <div className="relative">
-                  <input
-                    className="border rounded-xl px-3 py-3 w-full text-lg font-semibold focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                    type="number"
-                    min={0}
-                    placeholder="1500"
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <span className="absolute right-3 top-3 text-gray-500 font-medium">€</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* ——— Questionnaire ——— */}
-      <Card className="p-6">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold">
-            Informations du mariage {contractMode && <span className="text-red-500">*</span>}
-          </h2>
-          <p className="text-gray-600 text-sm mt-1">
-            {contractMode 
-              ? "Ces informations sont requises pour générer le contrat PDF" 
-              : "Informations facultatives pour personnaliser votre devis"
-            }
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input
-            className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-              contractMode && !q.brideFirstName ? 'border-red-300 bg-red-50' : ''
-            }`}
-            placeholder={`Prénom de la mariée${contractMode ? ' *' : ''}`}
-            value={q.brideFirstName}
-            onChange={(e) => onQ("brideFirstName", e.target.value)}
-            required={contractMode}
-          />
-          <input
-            className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-              contractMode && !q.brideLastName ? 'border-red-300 bg-red-50' : ''
-            }`}
-            placeholder={`Nom de la mariée${contractMode ? ' *' : ''}`}
-            value={q.brideLastName}
-            onChange={(e) => onQ("brideLastName", e.target.value)}
-            required={contractMode}
-          />
-          <input
-            className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-              contractMode && !q.groomFirstName ? 'border-red-300 bg-red-50' : ''
-            }`}
-            placeholder={`Prénom du marié${contractMode ? ' *' : ''}`}
-            value={q.groomFirstName}
-            onChange={(e) => onQ("groomFirstName", e.target.value)}
-            required={contractMode}
-          />
-          <input
-            className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-              contractMode && !q.groomLastName ? 'border-red-300 bg-red-50' : ''
-            }`}
-            placeholder={`Nom du marié${contractMode ? ' *' : ''}`}
-            value={q.groomLastName}
-            onChange={(e) => onQ("groomLastName", e.target.value)}
-            required={contractMode}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="email"
-            placeholder="Email de contact"
-            value={q.email}
-            onChange={(e) => onQ("email", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="tel"
-            placeholder="Téléphone"
-            value={q.phone}
-            onChange={(e) => onQ("phone", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Adresse postale"
-            value={q.address}
-            onChange={(e) => onQ("address", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Code postal"
-            value={q.postalCode}
-            onChange={(e) => onQ("postalCode", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Ville"
-            value={q.city}
-            onChange={(e) => onQ("city", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Pays"
-            value={q.country}
-            onChange={(e) => onQ("country", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-              contractMode && !q.weddingDate ? 'border-red-300 bg-red-50' : ''
-            }`}
-            type="date"
-            placeholder="Date du mariage"
-            value={q.weddingDate}
-            onChange={(e) => onQ("weddingDate", e.target.value)}
-            required={contractMode}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="number"
-            min={0}
-            placeholder="Nombre d'invités"
-            value={q.guests}
-            onChange={(e) => onQ("guests", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Lieu préparatifs"
-            value={q.prepLocation}
-            onChange={(e) => onQ("prepLocation", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="time"
-            placeholder="Heure préparatifs"
-            value={q.prepTime}
-            onChange={(e) => onQ("prepTime", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Adresse mairie"
-            value={q.mairieLocation}
-            onChange={(e) => onQ("mairieLocation", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="time"
-            placeholder="Heure mairie"
-            value={q.mairieTime}
-            onChange={(e) => onQ("mairieTime", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Lieu cérémonie (église/laïque)"
-            value={q.ceremonyLocation}
-            onChange={(e) => onQ("ceremonyLocation", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="time"
-            placeholder="Heure cérémonie"
-            value={q.ceremonyTime}
-            onChange={(e) => onQ("ceremonyTime", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Lieu du shooting"
-            value={q.shootingLocation}
-            onChange={(e) => onQ("shootingLocation", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="time"
-            placeholder="Heure shooting"
-            value={q.shootingTime}
-            onChange={(e) => onQ("shootingTime", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            placeholder="Lieu cocktail / soirée"
-            value={q.receptionLocation}
-            onChange={(e) => onQ("receptionLocation", e.target.value)}
-          />
-          <input
-            className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-            type="time"
-            placeholder="Heure début réception"
-            value={q.receptionTime}
-            onChange={(e) => onQ("receptionTime", e.target.value)}
-          />
-        </div>
-
-        <textarea
-          className="border rounded-xl px-3 py-2 w-full mt-4 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-          placeholder="Déroulement de la journée (horaires, moments clés...)"
-          rows={4}
-          value={q.schedule}
-          onChange={(e) => onQ("schedule", e.target.value)}
-        />
-
-        <textarea
-          className="border rounded-xl px-3 py-2 w-full mt-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-          placeholder="Demandes particulières (style, préférences, surprises...)"
-          rows={4}
-          value={q.specialRequests}
-          onChange={(e) => onQ("specialRequests", e.target.value)}
-        />
-      </Card>
-
-      {/* ——— Options ——— */}
-      <Card className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-1">Personnalisez votre prestation</h2>
-          <p className="text-gray-600">Ajoutez des options pour enrichir votre expérience</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-6 border-b">
-          <button
-            onClick={() => setActiveCategory("popular")}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
-              activeCategory === "popular"
-                ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            ⭐ Populaires
-          </button>
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setActiveCategory(key)}
-              className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                activeCategory === key
-                  ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(activeCategory === "popular" 
-            ? popularOptions 
-            : optionsByCategory[activeCategory as keyof typeof optionsByCategory] || []
-          ).map((option) => (
-            <label
-              key={option.id}
-              className={`rounded-2xl border-2 px-5 py-4 flex flex-col cursor-pointer transition-all duration-200 ${
-                selected.includes(option.id) 
-                  ? "border-orange-500 bg-orange-50 shadow-md" 
-                  : "border-gray-200 hover:border-orange-300"
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{option.icon}</span>
-                    <span className="font-semibold text-gray-800">{option.label}</span>
-                    {option.popular && (
-                      <span className="bg-orange-200 text-orange-800 text-xs px-2 py-1 rounded-full">
-                        Populaire
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">{option.description}</div>
-                  <div className="font-bold text-orange-600">
-                    <Money value={option.price} />
-                  </div>
-                </div>
+            <div className="space-y-4">
+              {/* Informations personnelles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
-                  type="checkbox"
-                  checked={selected.includes(option.id)}
-                  onChange={() => toggleOption(option.id)}
-                  className="w-5 h-5 text-orange-600 rounded mt-1"
+                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                    !formation.firstName ? 'border-red-300 bg-red-50' : ''
+                  }`}
+                  placeholder="Prénom *"
+                  value={formation.firstName}
+                  onChange={(e) => onFormation("firstName", e.target.value)}
+                  required
+                />
+                <input
+                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                    !formation.lastName ? 'border-red-300 bg-red-50' : ''
+                  }`}
+                  placeholder="Nom *"
+                  value={formation.lastName}
+                  onChange={(e) => onFormation("lastName", e.target.value)}
+                  required
                 />
               </div>
-            </label>
-          ))}
-        </div>
 
-        {/* Extras personnalisés */}
-        <div className="mt-8 border-t pt-6">
-          <div className="mb-4">
-            <h3 className="font-semibold text-lg mb-2">➕ Ajouter un extra sur mesure</h3>
-            <p className="text-sm text-gray-600">
-              Besoin de quelque chose de spécifique ? Ajoutez vos propres options personnalisées.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-[1fr_160px_140px] gap-3 mb-4">
-            <input
-              className="border rounded-2xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-              placeholder="Intitulé (ex: heure supplémentaire...)"
-              value={extraLabel}
-              onChange={(e) => setExtraLabel(e.target.value)}
-            />
-            <div className="relative">
-              <input
-                className="border rounded-2xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                type="number"
-                min={1}
-                placeholder="Prix"
-                value={extraPrice}
-                onChange={(e) => setExtraPrice(e.target.value === "" ? "" : Number(e.target.value))}
-              />
-              <span className="absolute right-3 top-3 text-gray-500">€</span>
-            </div>
-            <SecondaryButton onClick={addExtra} className="h-12">
-              Ajouter
-            </SecondaryButton>
-          </div>
-          
-          {extras.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-700">Vos extras personnalisés:</h4>
-              {extras.map((extra, i) => (
-                <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border">
-                  <div className="flex items-center gap-3">
-                    <span className="text-orange-600">🎯</span>
-                    <span className="font-medium">{extra.label}</span>
-                    <span className="text-gray-500">—</span>
-                    <span className="font-bold text-orange-600">{euros(extra.price)}</span>
-                  </div>
-                  <button
-                    onClick={() => removeExtra(i)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-2 transition-colors"
-                    title="Supprimer cet extra"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                    !formation.email ? 'border-red-300 bg-red-50' : ''
+                  }`}
+                  type="email"
+                  placeholder="Email *"
+                  value={formation.email}
+                  onChange={(e) => onFormation("email", e.target.value)}
+                  required
+                />
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  type="tel"
+                  placeholder="Téléphone"
+                  value={formation.phone}
+                  onChange={(e) => onFormation("phone", e.target.value)}
+                />
+              </div>
 
-      {/* ——— Récapitulatif ——— */}
-      <div className="lg:sticky lg:bottom-4 z-10">
-        <Card className="p-4 bg-white shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Récapitulatif</h3>
-            <div className="flex items-center gap-3">
-              {(selected.length + extras.length) > 0 && (
-                <div className="text-xs text-gray-500">
-                  {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}
-                </div>
-              )}
-              <button
-                onClick={() => setSummaryCollapsed(!summaryCollapsed)}
-                className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
-                title={summaryCollapsed ? "Afficher le détail" : "Réduire le récapitulatif"}
-              >
-                <svg 
-                  className={`w-4 h-4 text-gray-600 transition-transform ${summaryCollapsed ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Adresse"
+                  value={formation.address}
+                  onChange={(e) => onFormation("address", e.target.value)}
+                />
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Code postal"
+                  value={formation.postalCode}
+                  onChange={(e) => onFormation("postalCode", e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Ville"
+                  value={formation.city}
+                  onChange={(e) => onFormation("city", e.target.value)}
+                />
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Pays"
+                  value={formation.country}
+                  onChange={(e) => onFormation("country", e.target.value)}
+                />
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  type="number"
+                  min="18"
+                  max="99"
+                  placeholder="Âge"
+                  value={formation.age}
+                  onChange={(e) => onFormation("age", e.target.value)}
+                />
+              </div>
+
+              {/* Niveau et expérience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select
+                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                    !formation.currentLevel ? 'border-red-300 bg-red-50' : ''
+                  }`}
+                  value={formation.currentLevel}
+                  onChange={(e) => onFormation("currentLevel", e.target.value)}
+                  required
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className={`${summaryCollapsed ? 'hidden md:hidden' : ''}`}>
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between">
-                <span>Total estimé</span>
-                <span className="font-bold text-orange-600">
-                  <Money value={totals.total} />
-                </span>
+                  <option value="">Niveau actuel en montage vidéo *</option>
+                  <option value="debutant">Débutant (jamais fait de montage)</option>
+                  <option value="initie">Initié (quelques notions de base)</option>
+                  <option value="intermediate">Intermédiaire (je sais faire du montage simple)</option>
+                  <option value="avance">Avancé (je maîtrise bien mais souhaite me spécialiser)</option>
+                </select>
+                
+                <input
+                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Matériel disponible (logiciels, ordinateur...)"
+                  value={formation.equipment}
+                  onChange={(e) => onFormation("equipment", e.target.value)}
+                />
               </div>
-              <div className="flex justify-between text-orange-700">
-                <span>Acompte à régler</span>
-                <span className="font-semibold">
-                  <Money value={totals.depositSuggested} />
-                </span>
-              </div>
-              <div className="flex justify-between text-gray-500 text-xs">
-                <span>Solde restant</span>
-                <span><Money value={totals.remainingDayJ} /></span>
-              </div>
-            </div>
-            
-            <p className="text-xs text-gray-600 mb-4">
-              {contractMode 
-                ? "Générez votre contrat PDF personnalisé" 
-                : "Acompte de 15% requis pour confirmer votre réservation"
-              }
-            </p>
-          </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            {contractMode ? (
-              <Button 
-                onClick={generateContract} 
-                className="flex-1 py-3"
-                disabled={!isValidForContract}
-              >
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Télécharger le contrat PDF
-                </span>
-              </Button>
-            ) : (
-              <>
+              <textarea
+                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Votre expérience actuelle (projets réalisés, formations suivies...)"
+                rows={3}
+                value={formation.experience}
+                onChange={(e) => onFormation("experience", e.target.value)}
+              />
+
+              <textarea
+                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Vos attentes pour cette formation (objectifs, projets futurs...)"
+                rows={3}
+                value={formation.expectations}
+                onChange={(e) => onFormation("expectations", e.target.value)}
+              />
+
+              <textarea
+                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Disponibilités (horaires préférés, jours de la semaine...)"
+                rows={3}
+                value={formation.availability}
+                onChange={(e) => onFormation("availability", e.target.value)}
+              />
+            </div>
+
+            {/* Bouton soumission formation */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600">
+                  <span className="text-red-500">*</span> Champs obligatoires
+                </div>
                 <Button 
-                  onClick={goCheckout} 
-                  className="flex-1 py-3"
-                  disabled={loading}
+                  onClick={submitFormation} 
+                  className="w-full sm:w-auto px-8 py-3"
+                  disabled={loading || !isValidForFormation}
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
@@ -1175,71 +880,740 @@ export default function Reservation() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                       </svg>
-                      Redirection...
+                      Envoi en cours...
                     </span>
                   ) : (
-                    <span>
-                      {summaryCollapsed ? `Régler ${euros(totals.depositSuggested)}` : 'Régler par carte'}
-                    </span>
+                    "Envoyer ma candidature"
                   )}
                 </Button>
-                <a
-                  href="/rib"
-                  className="flex-1 text-center rounded-xl border border-orange-300 px-3 py-3 text-orange-700 hover:bg-orange-50 text-sm transition-colors"
-                >
-                  Virement
-                </a>
-              </>
-            )}
-          </div>
-
-          {contractMode && !isValidForContract && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700 font-medium">
-                ⚠️ Informations requises manquantes
-              </p>
-              <p className="text-xs text-red-600 mt-1">
-                Pour générer le contrat, veuillez remplir : noms des mariés et date du mariage.
-              </p>
+              </div>
+              
+              {!isValidForFormation && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700 font-medium">
+                    Informations requises manquantes
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    Veuillez remplir au minimum : prénom, nom, email et niveau actuel.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </Card>
 
-          {summaryCollapsed && (
-            <div className="hidden md:block mt-2 pt-2 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
-                  {currentFormula.name}
-                  {(selected.length + extras.length) > 0 && (
-                    <span className="text-orange-600"> + {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}</span>
-                  )}
-                </span>
-                <span className="font-bold text-orange-600">
-                  <Money value={totals.total} />
-                </span>
+          {/* Message d'information formation */}
+          <Card className="p-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="flex items-start gap-3 p-4">
+                <span className="text-2xl">💡</span>
+                <div>
+                  <h4 className="font-semibold text-blue-800 mb-1">Processus de sélection</h4>
+                  <p className="text-sm text-blue-700">
+                    Après réception de votre candidature, nous vous recontacterons pour un entretien téléphonique 
+                    afin de mieux comprendre vos objectifs et adapter la formation à votre profil.
+                  </p>
+                </div>
               </div>
             </div>
-          )}
-        </Card>
-      </div>
+          </Card>
+        </>
+      )}
 
-      {/* Message d'invitation à utiliser le chat */}
-      <Card className="p-6">
-        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
-          <div className="flex items-start gap-3 p-4">
-            <span className="text-2xl">💬</span>
-            <div>
-              <h4 className="font-semibold text-orange-800 mb-1">Des questions ?</h4>
-              <p className="text-sm text-orange-700">
-                N'hésitez pas à utiliser le chat en bas à droite pour me poser directement vos questions ! 
-                Je suis là pour vous aider à choisir la formule parfaite. 😊
-              </p>
+      {/* Contenu de l'onglet Mariage (code existant) */}
+      {currentMode === 'wedding' && (
+        <>
+          {/* Barre d'actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setContractMode(!contractMode)}
+                className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                  contractMode 
+                    ? 'border-orange-500 bg-orange-50 text-orange-700' 
+                    : 'border-gray-300 text-gray-600 hover:border-orange-300 hover:text-orange-600'
+                }`}
+              >
+                📄 {contractMode ? 'Mode Paiement' : 'Mode Contrat'}
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href="/rib"
+                className="rounded-xl border border-orange-300 px-3 py-2 text-orange-700 hover:bg-orange-50"
+              >
+                RIB / Virement
+              </a>
             </div>
           </div>
-        </div>
-      </Card>
 
-      {/* Chat contextuel avec données utilisateur */}
-      <CrispChat {...crispUserData} />
+          {/* Titre */}
+          <div className="flex items-center justify-center">
+            <h1 className="font-serif text-4xl">
+              {contractMode ? 'Générez votre contrat' : 'Configurez votre prestation'}
+            </h1>
+          </div>
+
+          {/* Message d'information pour le mode contrat */}
+          {contractMode && (
+            <Card className="p-4 bg-orange-50 border-orange-200">
+              <div className="flex items-center gap-3">
+                <span className="text-orange-600 text-xl">📋</span>
+                <div>
+                  <h3 className="font-semibold text-orange-800">Mode Contrat PDF</h3>
+                  <p className="text-sm text-orange-700">
+                    Remplissez les informations ci-dessous pour générer un contrat professionnel en PDF. 
+                    Les champs marqués d'un astérisque (*) sont requis pour le contrat.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* ——— Formules ——— */}
+          <Card className="p-6">
+            <h2 className="text-2xl font-semibold mb-2">Choisissez votre formule</h2>
+            <p className="text-gray-600 mb-6">Sélectionnez la formule qui correspond le mieux à vos besoins</p>
+            
+            <div className="grid lg:grid-cols-2 gap-6">
+              {FORMULAS_DETAILED.map((f) => (
+                <div
+                  key={f.id}
+                  className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
+                    formulaId === f.id 
+                      ? "border-orange-500 bg-orange-50 shadow-lg transform scale-[1.02]" 
+                      : "border-gray-200 hover:border-orange-300"
+                  }`}
+                  onClick={() => setFormulaId(f.id)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-xl mb-2">{f.name}</h3>
+                      <p className="text-gray-600 text-sm mb-3">{f.description}</p>
+                      
+                      <div className="grid grid-cols-1 gap-2 mb-4 text-sm">
+                        {f.duration && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-600">⏱️</span>
+                            <span className="font-medium">Durée:</span>
+                            <span className="text-gray-600">{f.duration}</span>
+                          </div>
+                        )}
+                        {f.deliverables && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-600">📦</span>
+                            <span className="font-medium">Livrables:</span>
+                            <span className="text-gray-600">{f.deliverables}</span>
+                          </div>
+                        )}
+                        {f.deliveryTime && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-600">🚚</span>
+                            <span className="font-medium">Livraison:</span>
+                            <span className="text-gray-600">{f.deliveryTime}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {f.idealFor && (
+                        <div className="bg-white/60 rounded-lg p-3 mb-4 border border-orange-200">
+                          <span className="text-sm font-medium text-orange-800">💡 Idéal pour:</span>
+                          <p className="text-sm text-orange-700 mt-1">{f.idealFor}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-right ml-4">
+                      <div className="text-2xl font-bold text-orange-600 mb-2">
+                        {euros(f.price)}
+                      </div>
+                      <input
+                        type="radio"
+                        checked={formulaId === f.id}
+                        onChange={() => setFormulaId(f.id)}
+                        className="w-5 h-5 text-orange-600"
+                      />
+                    </div>
+                  </div>
+
+                  {f.highlights && f.highlights.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm font-semibold text-gray-700 mb-2">✨ Points forts:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {f.highlights.map((highlight, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {highlight}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {f.features && f.features.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold text-gray-700 mb-2">📋 Inclus:</div>
+                      <div className="space-y-1">
+                        {f.features.map((feature, idx) => (
+                          <div key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                            <span className="text-orange-500 mt-0.5">✓</span>
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Devis personnalisé */}
+              <div
+                className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
+                  formulaId === "custom" 
+                    ? "border-orange-500 bg-orange-50 shadow-lg transform scale-[1.02]" 
+                    : "border-gray-200 hover:border-orange-300"
+                }`}
+                onClick={() => setFormulaId("custom")}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-xl mb-2">💼 Devis personnalisé</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Vous avez déjà reçu un devis sur mesure ? Saisissez le montant convenu.
+                    </p>
+                  </div>
+                  <input
+                    type="radio"
+                    checked={formulaId === "custom"}
+                    onChange={() => setFormulaId("custom")}
+                    className="w-5 h-5 text-orange-600 mt-2"
+                  />
+                </div>
+                
+                {formulaId === "custom" && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Montant de votre devis personnalisé
+                    </label>
+                    <div className="relative">
+                      <input
+                        className="border rounded-xl px-3 py-3 w-full text-lg font-semibold focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                        type="number"
+                        min={0}
+                        placeholder="1500"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="absolute right-3 top-3 text-gray-500 font-medium">€</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* ——— Questionnaire ——— */}
+          <Card className="p-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-semibold">
+                Informations du mariage {contractMode && <span className="text-red-500">*</span>}
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                {contractMode 
+                  ? "Ces informations sont requises pour générer le contrat PDF" 
+                  : "Informations facultatives pour personnaliser votre devis"
+                }
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                  contractMode && !q.brideFirstName ? 'border-red-300 bg-red-50' : ''
+                }`}
+                placeholder={`Prénom de la mariée${contractMode ? ' *' : ''}`}
+                value={q.brideFirstName}
+                onChange={(e) => onQ("brideFirstName", e.target.value)}
+                required={contractMode}
+              />
+              <input
+                className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                  contractMode && !q.brideLastName ? 'border-red-300 bg-red-50' : ''
+                }`}
+                placeholder={`Nom de la mariée${contractMode ? ' *' : ''}`}
+                value={q.brideLastName}
+                onChange={(e) => onQ("brideLastName", e.target.value)}
+                required={contractMode}
+              />
+              <input
+                className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                  contractMode && !q.groomFirstName ? 'border-red-300 bg-red-50' : ''
+                }`}
+                placeholder={`Prénom du marié${contractMode ? ' *' : ''}`}
+                value={q.groomFirstName}
+                onChange={(e) => onQ("groomFirstName", e.target.value)}
+                required={contractMode}
+              />
+              <input
+                className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                  contractMode && !q.groomLastName ? 'border-red-300 bg-red-50' : ''
+                }`}
+                placeholder={`Nom du marié${contractMode ? ' *' : ''}`}
+                value={q.groomLastName}
+                onChange={(e) => onQ("groomLastName", e.target.value)}
+                required={contractMode}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="email"
+                placeholder="Email de contact"
+                value={q.email}
+                onChange={(e) => onQ("email", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="tel"
+                placeholder="Téléphone"
+                value={q.phone}
+                onChange={(e) => onQ("phone", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Adresse postale"
+                value={q.address}
+                onChange={(e) => onQ("address", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Code postal"
+                value={q.postalCode}
+                onChange={(e) => onQ("postalCode", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Ville"
+                value={q.city}
+                onChange={(e) => onQ("city", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Pays"
+                value={q.country}
+                onChange={(e) => onQ("country", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className={`border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                  contractMode && !q.weddingDate ? 'border-red-300 bg-red-50' : ''
+                }`}
+                type="date"
+                placeholder="Date du mariage"
+                value={q.weddingDate}
+                onChange={(e) => onQ("weddingDate", e.target.value)}
+                required={contractMode}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="number"
+                min={0}
+                placeholder="Nombre d'invités"
+                value={q.guests}
+                onChange={(e) => onQ("guests", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Lieu préparatifs"
+                value={q.prepLocation}
+                onChange={(e) => onQ("prepLocation", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="time"
+                placeholder="Heure préparatifs"
+                value={q.prepTime}
+                onChange={(e) => onQ("prepTime", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Adresse mairie"
+                value={q.mairieLocation}
+                onChange={(e) => onQ("mairieLocation", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="time"
+                placeholder="Heure mairie"
+                value={q.mairieTime}
+                onChange={(e) => onQ("mairieTime", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Lieu cérémonie (église/laïque)"
+                value={q.ceremonyLocation}
+                onChange={(e) => onQ("ceremonyLocation", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="time"
+                placeholder="Heure cérémonie"
+                value={q.ceremonyTime}
+                onChange={(e) => onQ("ceremonyTime", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Lieu du shooting"
+                value={q.shootingLocation}
+                onChange={(e) => onQ("shootingLocation", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="time"
+                placeholder="Heure shooting"
+                value={q.shootingTime}
+                onChange={(e) => onQ("shootingTime", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                placeholder="Lieu cocktail / soirée"
+                value={q.receptionLocation}
+                onChange={(e) => onQ("receptionLocation", e.target.value)}
+              />
+              <input
+                className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                type="time"
+                placeholder="Heure début réception"
+                value={q.receptionTime}
+                onChange={(e) => onQ("receptionTime", e.target.value)}
+              />
+            </div>
+
+            <textarea
+              className="border rounded-xl px-3 py-2 w-full mt-4 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+              placeholder="Déroulement de la journée (horaires, moments clés...)"
+              rows={4}
+              value={q.schedule}
+              onChange={(e) => onQ("schedule", e.target.value)}
+            />
+
+            <textarea
+              className="border rounded-xl px-3 py-2 w-full mt-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+              placeholder="Demandes particulières (style, préférences, surprises...)"
+              rows={4}
+              value={q.specialRequests}
+              onChange={(e) => onQ("specialRequests", e.target.value)}
+            />
+          </Card>
+
+          {/* ——— Options ——— */}
+          <Card className="p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold mb-1">Personnalisez votre prestation</h2>
+              <p className="text-gray-600">Ajoutez des options pour enrichir votre expérience</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-6 border-b">
+              <button
+                onClick={() => setActiveCategory("popular")}
+                className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                  activeCategory === "popular"
+                    ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                ⭐ Populaires
+              </button>
+              {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveCategory(key)}
+                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                    activeCategory === key
+                      ? "bg-orange-100 text-orange-700 border-b-2 border-orange-500"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(activeCategory === "popular" 
+                ? popularOptions 
+                : optionsByCategory[activeCategory as keyof typeof optionsByCategory] || []
+              ).map((option) => (
+                <label
+                  key={option.id}
+                  className={`rounded-2xl border-2 px-5 py-4 flex flex-col cursor-pointer transition-all duration-200 ${
+                    selected.includes(option.id) 
+                      ? "border-orange-500 bg-orange-50 shadow-md" 
+                      : "border-gray-200 hover:border-orange-300"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{option.icon}</span>
+                        <span className="font-semibold text-gray-800">{option.label}</span>
+                        {option.popular && (
+                          <span className="bg-orange-200 text-orange-800 text-xs px-2 py-1 rounded-full">
+                            Populaire
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 mb-2">{option.description}</div>
+                      <div className="font-bold text-orange-600">
+                        <Money value={option.price} />
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(option.id)}
+                      onChange={() => toggleOption(option.id)}
+                      className="w-5 h-5 text-orange-600 rounded mt-1"
+                    />
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Extras personnalisés */}
+            <div className="mt-8 border-t pt-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-lg mb-2">➕ Ajouter un extra sur mesure</h3>
+                <p className="text-sm text-gray-600">
+                  Besoin de quelque chose de spécifique ? Ajoutez vos propres options personnalisées.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-[1fr_160px_140px] gap-3 mb-4">
+                <input
+                  className="border rounded-2xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  placeholder="Intitulé (ex: heure supplémentaire...)"
+                  value={extraLabel}
+                  onChange={(e) => setExtraLabel(e.target.value)}
+                />
+                <div className="relative">
+                  <input
+                    className="border rounded-2xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    type="number"
+                    min={1}
+                    placeholder="Prix"
+                    value={extraPrice}
+                    onChange={(e) => setExtraPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                  />
+                  <span className="absolute right-3 top-3 text-gray-500">€</span>
+                </div>
+                <SecondaryButton onClick={addExtra} className="h-12">
+                  Ajouter
+                </SecondaryButton>
+              </div>
+              
+              {extras.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-700">Vos extras personnalisés:</h4>
+                  {extras.map((extra, i) => (
+                    <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border">
+                      <div className="flex items-center gap-3">
+                        <span className="text-orange-600">🎯</span>
+                        <span className="font-medium">{extra.label}</span>
+                        <span className="text-gray-500">—</span>
+                        <span className="font-bold text-orange-600">{euros(extra.price)}</span>
+                      </div>
+                      <button
+                        onClick={() => removeExtra(i)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-2 transition-colors"
+                        title="Supprimer cet extra"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* ——— Récapitulatif ——— */}
+          <div className="lg:sticky lg:bottom-4 z-10">
+            <Card className="p-4 bg-white shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Récapitulatif</h3>
+                <div className="flex items-center gap-3">
+                  {(selected.length + extras.length) > 0 && (
+                    <div className="text-xs text-gray-500">
+                      {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setSummaryCollapsed(!summaryCollapsed)}
+                    className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+                    title={summaryCollapsed ? "Afficher le détail" : "Réduire le récapitulatif"}
+                  >
+                    <svg 
+                      className={`w-4 h-4 text-gray-600 transition-transform ${summaryCollapsed ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className={`${summaryCollapsed ? 'hidden md:hidden' : ''}`}>
+                <div className="space-y-2 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span>Total estimé</span>
+                    <span className="font-bold text-orange-600">
+                      <Money value={totals.total} />
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-orange-700">
+                    <span>Acompte à régler</span>
+                    <span className="font-semibold">
+                      <Money value={totals.depositSuggested} />
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>Solde restant</span>
+                    <span><Money value={totals.remainingDayJ} /></span>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-600 mb-4">
+                  {contractMode 
+                    ? "Générez votre contrat PDF personnalisé" 
+                    : "Acompte de 15% requis pour confirmer votre réservation"
+                  }
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                {contractMode ? (
+                  <Button 
+                    onClick={generateContract} 
+                    className="flex-1 py-3"
+                    disabled={!isValidForContract}
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Télécharger le contrat PDF
+                    </span>
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={goCheckout} 
+                      className="flex-1 py-3"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                          </svg>
+                          Redirection...
+                        </span>
+                      ) : (
+                        <span>
+                          {summaryCollapsed ? `Régler ${euros(totals.depositSuggested)}` : 'Régler par carte'}
+                        </span>
+                      )}
+                    </Button>
+                    <a
+                      href="/rib"
+                      className="flex-1 text-center rounded-xl border border-orange-300 px-3 py-3 text-orange-700 hover:bg-orange-50 text-sm transition-colors"
+                    >
+                      Virement
+                    </a>
+                  </>
+                )}
+              </div>
+
+              {contractMode && !isValidForContract && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700 font-medium">
+                    ⚠️ Informations requises manquantes
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    Pour générer le contrat, veuillez remplir : noms des mariés et date du mariage.
+                  </p>
+                </div>
+              )}
+
+              {summaryCollapsed && (
+                <div className="hidden md:block mt-2 pt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      {currentFormula.name}
+                      {(selected.length + extras.length) > 0 && (
+                        <span className="text-orange-600"> + {selected.length + extras.length} option{selected.length + extras.length > 1 ? 's' : ''}</span>
+                      )}
+                    </span>
+                    <span className="font-bold text-orange-600">
+                      <Money value={totals.total} />
+                    </span>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Message d'invitation à utiliser le chat */}
+          <Card className="p-6">
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
+              <div className="flex items-start gap-3 p-4">
+                <span className="text-2xl">💬</span>
+                <div>
+                  <h4 className="font-semibold text-orange-800 mb-1">Des questions ?</h4>
+                  <p className="text-sm text-orange-700">
+                    N'hésitez pas à utiliser le chat en bas à droite pour me poser directement vos questions ! 
+                    Je suis là pour vous aider à choisir la formule parfaite. 😊
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Chat contextuel avec données utilisateur */}
+          <CrispChat {...crispUserData} />
+        </>
+      )}
     </div>
   );
 }
