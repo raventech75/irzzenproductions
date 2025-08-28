@@ -473,6 +473,7 @@ export default function Reservation() {
   // ——————————— Formation ———————————
   const [formation, setFormation] = useState<FormationData>(initialFormation);
   const onFormation = (k: keyof FormationData, v: string) => setFormation((prev) => ({ ...prev, [k]: v }));
+  const [formationSent, setFormationSent] = useState(false);
 
   const base = useMemo(() => {
     if (formulaId === "custom") {
@@ -558,10 +559,13 @@ export default function Reservation() {
         throw new Error(data.error || `Erreur ${response.status}`);
       }
       
-      alert("Votre demande de formation a été envoyée avec succès ! Nous vous recontacterons bientôt pour un entretien.");
+      // Marquer comme envoyé avec succès
+      setFormationSent(true);
       
-      // Réinitialiser le formulaire
-      setFormation(initialFormation);
+      // Optionnel: redirection après quelques secondes
+      setTimeout(() => {
+        window.location.href = '/'; // ou vers une page de confirmation dédiée
+      }, 15000);
       
     } catch (error: any) {
       console.error("Erreur lors de l'envoi de la demande:", error);
@@ -569,6 +573,12 @@ export default function Reservation() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fonction pour recommencer (nouveau formulaire)
+  const resetFormation = () => {
+    setFormation(initialFormation);
+    setFormationSent(false);
   };
 
   const goCheckout = async () => {
@@ -722,183 +732,228 @@ export default function Reservation() {
             </div>
           </Card>
 
-          {/* Formulaire d'inscription formation */}
+          {/* Formulaire d'inscription formation ou message de succès */}
           <Card className="p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-2">Candidature à la formation</h2>
-              <p className="text-gray-600">
-                Remplissez ce formulaire pour postuler à notre formation en montage vidéo de mariage.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Informations personnelles */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-                    !formation.firstName ? 'border-red-300 bg-red-50' : ''
-                  }`}
-                  placeholder="Prénom *"
-                  value={formation.firstName}
-                  onChange={(e) => onFormation("firstName", e.target.value)}
-                  required
-                />
-                <input
-                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-                    !formation.lastName ? 'border-red-300 bg-red-50' : ''
-                  }`}
-                  placeholder="Nom *"
-                  value={formation.lastName}
-                  onChange={(e) => onFormation("lastName", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-                    !formation.email ? 'border-red-300 bg-red-50' : ''
-                  }`}
-                  type="email"
-                  placeholder="Email *"
-                  value={formation.email}
-                  onChange={(e) => onFormation("email", e.target.value)}
-                  required
-                />
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  type="tel"
-                  placeholder="Téléphone"
-                  value={formation.phone}
-                  onChange={(e) => onFormation("phone", e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  placeholder="Adresse"
-                  value={formation.address}
-                  onChange={(e) => onFormation("address", e.target.value)}
-                />
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  placeholder="Code postal"
-                  value={formation.postalCode}
-                  onChange={(e) => onFormation("postalCode", e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  placeholder="Ville"
-                  value={formation.city}
-                  onChange={(e) => onFormation("city", e.target.value)}
-                />
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  placeholder="Pays"
-                  value={formation.country}
-                  onChange={(e) => onFormation("country", e.target.value)}
-                />
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  type="number"
-                  min="18"
-                  max="99"
-                  placeholder="Âge"
-                  value={formation.age}
-                  onChange={(e) => onFormation("age", e.target.value)}
-                />
-              </div>
-
-              {/* Niveau et expérience */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select
-                  className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
-                    !formation.currentLevel ? 'border-red-300 bg-red-50' : ''
-                  }`}
-                  value={formation.currentLevel}
-                  onChange={(e) => onFormation("currentLevel", e.target.value)}
-                  required
-                >
-                  <option value="">Niveau actuel en montage vidéo *</option>
-                  <option value="debutant">Débutant (jamais fait de montage)</option>
-                  <option value="initie">Initié (quelques notions de base)</option>
-                  <option value="intermediate">Intermédiaire (je sais faire du montage simple)</option>
-                  <option value="avance">Avancé (je maîtrise bien mais souhaite me spécialiser)</option>
-                </select>
+            {formationSent ? (
+              /* Message de confirmation après envoi */
+              <div className="text-center py-8">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-semibold text-green-800 mb-2">Demande envoyée avec succès !</h3>
+                  <p className="text-gray-600 max-w-md mx-auto mb-6">
+                    Votre candidature pour la formation en montage vidéo de mariage a été reçue. 
+                    Nous vous recontacterons dans les plus brefs délais pour planifier un entretien.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-blue-800 mb-2">Prochaines étapes</h4>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <p>✓ Votre demande est en cours d'examen</p>
+                      <p>✓ Nous vous contacterons sous 48h par email ou téléphone</p>
+                      <p>✓ Un entretien sera planifié pour mieux cerner vos besoins</p>
+                    </div>
+                  </div>
+                </div>
                 
-                <input
-                  className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  placeholder="Matériel disponible (logiciels, ordinateur...)"
-                  value={formation.equipment}
-                  onChange={(e) => onFormation("equipment", e.target.value)}
-                />
-              </div>
-
-              <textarea
-                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                placeholder="Votre expérience actuelle (projets réalisés, formations suivies...)"
-                rows={3}
-                value={formation.experience}
-                onChange={(e) => onFormation("experience", e.target.value)}
-              />
-
-              <textarea
-                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                placeholder="Vos attentes pour cette formation (objectifs, projets futurs...)"
-                rows={3}
-                value={formation.expectations}
-                onChange={(e) => onFormation("expectations", e.target.value)}
-              />
-
-              <textarea
-                className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                placeholder="Disponibilités (horaires préférés, jours de la semaine...)"
-                rows={3}
-                value={formation.availability}
-                onChange={(e) => onFormation("availability", e.target.value)}
-              />
-            </div>
-
-            {/* Bouton soumission formation */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-600">
-                  <span className="text-red-500">*</span> Champs obligatoires
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button onClick={resetFormation} className="px-6 py-3">
+                    Envoyer une nouvelle candidature
+                  </Button>
+                  <SecondaryButton onClick={() => setCurrentMode('wedding')} className="px-6 py-3">
+                    Voir nos prestations mariage
+                  </SecondaryButton>
+                  <SecondaryButton onClick={() => window.location.href = '/'} className="px-6 py-3">
+                    Retour à l'accueil
+                  </SecondaryButton>
                 </div>
-                <Button 
-                  onClick={submitFormation} 
-                  className="w-full sm:w-auto px-8 py-3"
-                  disabled={loading || !isValidForFormation}
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                      </svg>
-                      Envoi en cours...
-                    </span>
-                  ) : (
-                    "Envoyer ma candidature"
+                
+                <p className="text-xs text-gray-500 mt-6">
+                  Redirection automatique vers l'accueil dans quelques secondes...
+                </p>
+              </div>
+            ) : (
+              /* Formulaire normal */
+              <>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-semibold mb-2">Candidature à la formation</h2>
+                  <p className="text-gray-600">
+                    Remplissez ce formulaire pour postuler à notre formation en montage vidéo de mariage.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Informations personnelles */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                        !formation.firstName ? 'border-red-300 bg-red-50' : ''
+                      }`}
+                      placeholder="Prénom *"
+                      value={formation.firstName}
+                      onChange={(e) => onFormation("firstName", e.target.value)}
+                      required
+                    />
+                    <input
+                      className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                        !formation.lastName ? 'border-red-300 bg-red-50' : ''
+                      }`}
+                      placeholder="Nom *"
+                      value={formation.lastName}
+                      onChange={(e) => onFormation("lastName", e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                        !formation.email ? 'border-red-300 bg-red-50' : ''
+                      }`}
+                      type="email"
+                      placeholder="Email *"
+                      value={formation.email}
+                      onChange={(e) => onFormation("email", e.target.value)}
+                      required
+                    />
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      type="tel"
+                      placeholder="Téléphone"
+                      value={formation.phone}
+                      onChange={(e) => onFormation("phone", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      placeholder="Adresse"
+                      value={formation.address}
+                      onChange={(e) => onFormation("address", e.target.value)}
+                    />
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      placeholder="Code postal"
+                      value={formation.postalCode}
+                      onChange={(e) => onFormation("postalCode", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      placeholder="Ville"
+                      value={formation.city}
+                      onChange={(e) => onFormation("city", e.target.value)}
+                    />
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      placeholder="Pays"
+                      value={formation.country}
+                      onChange={(e) => onFormation("country", e.target.value)}
+                    />
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      type="number"
+                      min="18"
+                      max="99"
+                      placeholder="Âge"
+                      value={formation.age}
+                      onChange={(e) => onFormation("age", e.target.value)}
+                    />
+                  </div>
+
+                  {/* Niveau et expérience */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <select
+                      className={`border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                        !formation.currentLevel ? 'border-red-300 bg-red-50' : ''
+                      }`}
+                      value={formation.currentLevel}
+                      onChange={(e) => onFormation("currentLevel", e.target.value)}
+                      required
+                    >
+                      <option value="">Niveau actuel en montage vidéo *</option>
+                      <option value="debutant">Débutant (jamais fait de montage)</option>
+                      <option value="initie">Initié (quelques notions de base)</option>
+                      <option value="intermediate">Intermédiaire (je sais faire du montage simple)</option>
+                      <option value="avance">Avancé (je maîtrise bien mais souhaite me spécialiser)</option>
+                    </select>
+                    
+                    <input
+                      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      placeholder="Matériel disponible (logiciels, ordinateur...)"
+                      value={formation.equipment}
+                      onChange={(e) => onFormation("equipment", e.target.value)}
+                    />
+                  </div>
+
+                  <textarea
+                    className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    placeholder="Votre expérience actuelle (projets réalisés, formations suivies...)"
+                    rows={3}
+                    value={formation.experience}
+                    onChange={(e) => onFormation("experience", e.target.value)}
+                  />
+
+                  <textarea
+                    className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    placeholder="Vos attentes pour cette formation (objectifs, projets futurs...)"
+                    rows={3}
+                    value={formation.expectations}
+                    onChange={(e) => onFormation("expectations", e.target.value)}
+                  />
+
+                  <textarea
+                    className="border rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    placeholder="Disponibilités (horaires préférés, jours de la semaine...)"
+                    rows={3}
+                    value={formation.availability}
+                    onChange={(e) => onFormation("availability", e.target.value)}
+                  />
+                </div>
+
+                {/* Bouton soumission formation */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-sm text-gray-600">
+                      <span className="text-red-500">*</span> Champs obligatoires
+                    </div>
+                    <Button 
+                      onClick={submitFormation} 
+                      className="w-full sm:w-auto px-8 py-3"
+                      disabled={loading || !isValidForFormation}
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                          </svg>
+                          Envoi en cours...
+                        </span>
+                      ) : (
+                        "Envoyer ma candidature"
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {!isValidForFormation && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-700 font-medium">
+                        Informations requises manquantes
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Veuillez remplir au minimum : prénom, nom, email et niveau actuel.
+                      </p>
+                    </div>
                   )}
-                </Button>
-              </div>
-              
-              {!isValidForFormation && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-700 font-medium">
-                    Informations requises manquantes
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    Veuillez remplir au minimum : prénom, nom, email et niveau actuel.
-                  </p>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </Card>
 
           {/* Message d'information formation */}

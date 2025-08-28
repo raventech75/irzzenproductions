@@ -34,8 +34,8 @@ declare namespace __next_route_internal_types__ {
     | `/api/admin/contrats`
     | `/api/admin/contrats/by-looking`
     | `/api/admin/contrats/delete`
-    | `/api/admin/contrats/email`
     | `/api/admin/contrats/download`
+    | `/api/admin/contrats/email`
     | `/api/admin/contrats/list`
     | `/api/admin/contrats/send`
     | `/api/admin/contrats/signed-url`

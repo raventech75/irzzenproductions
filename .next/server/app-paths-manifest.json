@@ -1,5 +1,6 @@
 {
   "/page": "app/page.js",
-  "/reservation/page": "app/reservation/page.js",
-  "/api/formation/route": "app/api/formation/route.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/formation/route": "app/api/formation/route.js",
+  "/reservation/page": "app/reservation/page.js"
 }
