@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "À propos — Notre équipe",
-  description:
-    "15 ans d'expérience, 12 professionnels passionnés. Découvrez l'histoire et l'équipe d'Irzzen Productions, photographes et vidéastes mariage.",
+  description: "15 ans d'expérience, 12 professionnels passionnés. Découvrez l'histoire d'Irzzen Productions.",
 };
 
 const valeurs = [
@@ -17,101 +15,85 @@ const valeurs = [
 
 export default function AProposPage() {
   return (
-    <div className="min-h-screen bg-[#F7F3EF] pt-24">
+    <div style={{ minHeight: "100vh", background: "#F9F6F2", paddingTop: 72 }}>
+
       {/* Hero */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section style={{ padding: "80px 40px 0", maxWidth: 1380, margin: "0 auto" }}>
+        <p className="label" style={{ marginBottom: 20 }}>Notre histoire</p>
+        <h1
+          className="serif"
+          style={{
+            fontSize: "clamp(40px, 6vw, 88px)",
+            fontWeight: 700,
+            color: "#111010",
+            lineHeight: 0.95,
+            letterSpacing: "-0.025em",
+            marginBottom: 48,
+            maxWidth: 800,
+          }}
+        >
+          Une passion,<br />
+          <span style={{ color: "#9E8A94" }}>15 ans de maîtrise.</span>
+        </h1>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start", paddingBottom: 80, borderBottom: "1px solid rgba(17,16,16,0.08)" }}>
           <div>
-            <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-              Notre histoire
+            <p style={{ fontSize: 15, color: "rgba(17,16,16,0.5)", lineHeight: 1.8, fontWeight: 300, marginBottom: 20 }}>
+              Irzzen Productions est né d&apos;une conviction simple : chaque mariage mérite d&apos;être immortalisé avec l&apos;attention et l&apos;art qu&apos;il mérite.
             </p>
-            <h1
-              className="text-5xl md:text-7xl font-bold text-[#1A1520] leading-tight mb-8"
-              style={{ fontFamily: "var(--font-playfair)" }}
-            >
-              Une passion,{" "}
-              <span className="text-gradient-gold italic">15 ans</span>
-              {" "}de maîtrise
-            </h1>
-            <p className="text-[#1A1520]/50 text-lg leading-relaxed mb-6 font-light">
-              Irzzen Productions est né d&apos;une conviction simple : chaque
-              mariage mérite d&apos;être immortalisé avec l&apos;attention et
-              l&apos;art qu&apos;il mérite.
+            <p style={{ fontSize: 15, color: "rgba(17,16,16,0.5)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40 }}>
+              Depuis 15 ans, notre équipe de 12 professionnels capture des histoires d&apos;amour à travers toute la France et au-delà. Chaque couple repart avec des souvenirs qui traverseront le temps.
             </p>
-            <p className="text-[#1A1520]/50 text-lg leading-relaxed mb-12 font-light">
-              Depuis 15 ans, notre équipe de 12 professionnels capture des
-              histoires d&apos;amour à travers toute la France et au-delà.
-              Chaque couple repart avec des souvenirs qui traverseront le temps.
-            </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors gold-glow"
-            >
-              Travailler avec nous <ArrowRight size={14} />
+            <Link href="/contact" className="btn-dark" style={{ textDecoration: "none" }}>
+              Travailler avec nous
             </Link>
           </div>
-          <div className="aspect-square bg-[#FAFAF8] border border-[#C4A5B5]/10 flex items-center justify-center text-[#C4A5B5]/20">
-            <span className="text-xs tracking-widest uppercase">Photo équipe</span>
+          <div style={{ aspectRatio: "4/5", background: "#E8E4DF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="label" style={{ color: "rgba(17,16,16,0.2)" }}>Photo équipe</span>
           </div>
         </div>
       </section>
 
       {/* Chiffres */}
-      <section className="py-20 px-6 bg-[#FAF8F5]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: "15+", label: "Ans d'expérience" },
-              { value: "12", label: "Professionnels" },
-              { value: "500+", label: "Mariages" },
-              { value: "4.9★", label: "Note moyenne" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center glass p-8">
-                <div
-                  className="text-5xl font-bold text-gradient-gold mb-3"
-                  style={{ fontFamily: "var(--font-playfair)" }}
-                >
-                  {stat.value}
-                </div>
-                <div className="text-xs tracking-[0.3em] uppercase text-[#1A1520]/40">
-                  {stat.label}
-                </div>
+      <section style={{ background: "#111010", padding: "80px 40px" }}>
+        <div style={{ maxWidth: 1380, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+          {[
+            { value: "15+", label: "Ans d'expérience" },
+            { value: "12", label: "Professionnels" },
+            { value: "500+", label: "Mariages" },
+            { value: "4.9", label: "Note moyenne" },
+          ].map((stat) => (
+            <div key={stat.label} style={{ padding: "40px 32px", borderTop: "1px solid rgba(249,246,242,0.07)", textAlign: "center" }}>
+              <div className="serif" style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 700, color: "#F9F6F2", marginBottom: 12, letterSpacing: "-0.02em" }}>
+                {stat.value}
               </div>
-            ))}
-          </div>
+              <div className="label" style={{ color: "rgba(249,246,242,0.2)" }}>{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Valeurs */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">Ce qui nous guide</p>
-            <h2
-              className="text-4xl md:text-5xl font-bold text-[#1A1520]"
-              style={{ fontFamily: "var(--font-playfair)" }}
-            >
-              Nos <span className="text-gradient-gold italic">valeurs</span>
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {valeurs.map((v) => (
-              <div key={v.titre} className="glass p-8 flex gap-6">
-                <div className="w-px bg-gradient-to-b from-[#C4A5B5] to-transparent flex-shrink-0" />
-                <div>
-                  <h3
-                    className="text-xl font-bold text-[#1A1520] mb-3"
-                    style={{ fontFamily: "var(--font-playfair)" }}
-                  >
-                    {v.titre}
-                  </h3>
-                  <p className="text-sm text-[#1A1520]/50 leading-relaxed">{v.texte}</p>
-                </div>
+      <section style={{ padding: "80px 40px", maxWidth: 1380, margin: "0 auto" }}>
+        <p className="label" style={{ marginBottom: 16 }}>Ce qui nous guide</p>
+        <h2 className="serif" style={{ fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "#111010", letterSpacing: "-0.02em", marginBottom: 56 }}>
+          Nos valeurs
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+          {valeurs.map((v) => (
+            <div key={v.titre} style={{ padding: "40px 0", borderTop: "1px solid rgba(17,16,16,0.08)", display: "flex", gap: 32, alignItems: "start" }}>
+              <span style={{ display: "block", width: 1, height: 48, background: "#9E8A94", flexShrink: 0, marginTop: 4 }} />
+              <div>
+                <h3 className="serif" style={{ fontSize: 22, fontWeight: 700, color: "#111010", marginBottom: 12, letterSpacing: "-0.01em" }}>
+                  {v.titre}
+                </h3>
+                <p style={{ fontSize: 14, color: "rgba(17,16,16,0.45)", lineHeight: 1.75, fontWeight: 300 }}>{v.texte}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
+
     </div>
   );
 }

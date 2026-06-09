@@ -1,67 +1,83 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 
 const photos = [
-  { src: "/photos/1L9A7763.JPG",                              alt: "Couple", col: "col-span-1 row-span-2" },
-  { src: "/photos/1L9A7557.JPG",                              alt: "Château", col: "col-span-2 row-span-1" },
-  { src: encodeURI("/photos/Zineb & Fares - 00381.jpg"),      alt: "Couple jardin", col: "col-span-1 row-span-1" },
-  { src: "/photos/1L9A7155.JPG",                              alt: "Préparatifs", col: "col-span-1 row-span-1" },
-  { src: "/photos/1L9A7115.JPG",                              alt: "Décoration", col: "col-span-1 row-span-1" },
+  { src: "/photos/1L9A7763.JPG",                              alt: "Mariage", span: "row-span-2" },
+  { src: encodeURI("/photos/Zineb & Fares - 00471.jpg"),      alt: "Couple", span: "" },
+  { src: "/photos/1L9A7557.JPG",                              alt: "Château", span: "" },
+  { src: encodeURI("/photos/Ines & Umit- 0040.jpg"),          alt: "Couple", span: "" },
+  { src: "/photos/1L9A7115.JPG",                              alt: "Décoration", span: "" },
 ];
 
 export function GalerieApercu() {
   return (
-    <section className="bg-[#F6F2EE] py-32">
-      <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
+    <section style={{ background: "#F9F6F2", padding: "120px 0" }}>
+      <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
 
-        <div className="flex items-end justify-between mb-16 border-b border-[#0E0C10]/10 pb-8">
-          <div className="flex items-baseline gap-6">
-            <span
-              className="text-[clamp(48px,7vw,96px)] font-bold leading-none text-[#0E0C10]/6"
-              style={{ fontFamily: "var(--font-playfair)" }}
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 48 }}>
+          <div>
+            <p className="label" style={{ marginBottom: 12 }}>Portfolio</p>
+            <h2
+              className="serif"
+              style={{
+                fontSize: "clamp(32px, 4vw, 56px)",
+                fontWeight: 700,
+                color: "#111010",
+                lineHeight: 1.05,
+                letterSpacing: "-0.02em",
+              }}
             >
-              02
-            </span>
-            <div>
-              <p className="text-[10px] tracking-[0.5em] uppercase text-[#A8919E] mb-2">Portfolio</p>
-              <h2
-                className="text-3xl md:text-5xl font-bold text-[#0E0C10] leading-tight"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                Des instants <em className="not-italic text-gradient-gold">uniques</em>
-              </h2>
-            </div>
+              Nos plus belles histoires
+            </h2>
           </div>
           <Link
             href="/galerie"
-            className="hidden md:flex items-center gap-3 text-[11px] tracking-[0.35em] uppercase text-[#0E0C10]/40 hover:text-[#0E0C10] transition-colors group"
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              color: "rgba(17,16,16,0.4)",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
           >
             Voir tout
-            <span className="block w-6 h-px bg-current group-hover:w-12 transition-all duration-300" />
+            <span style={{ display: "block", width: 32, height: 1, background: "currentColor" }} />
           </Link>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-2 gap-2 h-[70vh] min-h-[500px] max-h-[750px]">
-          {photos.map((p, i) => (
-            <div key={i} className={`relative overflow-hidden group ${p.col}`}>
-              <Image
-                src={p.src}
-                alt={p.alt}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                quality={80}
-                className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-700"
+        {/* Grille */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateRows: "320px 320px",
+          gap: 6,
+        }}>
+          {/* Grande photo gauche */}
+          <div style={{ gridRow: "1 / 3", position: "relative", overflow: "hidden" }}>
+            <Image src={photos[0].src} alt={photos[0].alt} fill sizes="33vw" quality={80}
+              style={{ objectFit: "cover", transition: "transform 0.7s" }}
+              onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
+              onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+            />
+          </div>
+          {/* 4 photos droite */}
+          {photos.slice(1).map((p, i) => (
+            <div key={i} style={{ position: "relative", overflow: "hidden" }}>
+              <Image src={p.src} alt={p.alt} fill sizes="22vw" quality={80}
+                style={{ objectFit: "cover", transition: "transform 0.7s" }}
+                onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
+                onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
               />
-              <div className="absolute inset-0 bg-[#0E0C10]/0 group-hover:bg-[#0E0C10]/15 transition-all duration-500" />
             </div>
           ))}
         </div>
 
-        <div className="mt-8 md:hidden text-center">
-          <Link href="/galerie" className="text-[11px] tracking-[0.35em] uppercase text-[#0E0C10]/40">
-            Voir toute la galerie →
-          </Link>
-        </div>
       </div>
     </section>
   );

@@ -3,15 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 
 const navLinks = [
   { href: "/mariage", label: "Mariage" },
-  { href: "/formations", label: "Formations" },
   { href: "/galerie", label: "Galerie" },
+  { href: "/tarifs", label: "Tarifs" },
   { href: "/a-propos", label: "À propos" },
-  { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -19,145 +17,183 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const isHero = pathname === "/";
+  const isHome = pathname === "/";
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const lightMode = isHero && !scrolled;
+  const transparent = isHome && !scrolled;
 
   return (
     <>
-      <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-700",
-        scrolled || !isHero
-          ? "bg-[#F6F2EE]/96 backdrop-blur-xl border-b border-[#0E0C10]/8"
-          : "bg-transparent"
-      )}>
-        <div className="max-w-[1400px] mx-auto px-8 lg:px-12 flex items-center justify-between h-16 lg:h-20">
+      <header
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          transition: "background 0.5s, border-color 0.5s",
+          background: transparent ? "transparent" : "rgba(249,246,242,0.97)",
+          borderBottom: transparent ? "1px solid transparent" : "1px solid rgba(17,16,16,0.08)",
+          backdropFilter: transparent ? "none" : "blur(12px)",
+        }}
+      >
+        <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 
           {/* Logo */}
-          <Link href="/" className="flex items-baseline gap-3 group">
+          <Link href="/" style={{ textDecoration: "none" }}>
             <span
-              className={cn(
-                "text-xl font-bold tracking-[0.2em] uppercase transition-colors duration-500",
-                lightMode ? "text-[#F6F2EE]" : "text-[#0E0C10]"
-              )}
-              style={{ fontFamily: "var(--font-playfair)" }}
+              className="serif"
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                color: transparent ? "#F9F6F2" : "#111010",
+                transition: "color 0.5s",
+              }}
             >
               Irzzen
             </span>
-            <span className={cn(
-              "hidden sm:block text-[9px] tracking-[0.5em] uppercase font-light transition-colors duration-500",
-              lightMode ? "text-[#F6F2EE]/40" : "text-[#0E0C10]/30"
-            )}>
+            <span
+              style={{
+                fontSize: 9,
+                letterSpacing: "0.45em",
+                textTransform: "uppercase",
+                marginLeft: 8,
+                color: transparent ? "rgba(249,246,242,0.4)" : "rgba(17,16,16,0.3)",
+                transition: "color 0.5s",
+                fontWeight: 300,
+              }}
+            >
               Productions
             </span>
           </Link>
 
           {/* Nav desktop */}
-          <nav className="hidden lg:flex items-center gap-10">
+          <nav style={{ display: "flex", gap: 40 }} className="hidden lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={cn(
-                  "text-[11px] tracking-[0.35em] uppercase font-light transition-all duration-300 relative group",
-                  lightMode ? "text-[#F6F2EE]/70 hover:text-[#F6F2EE]" : "text-[#0E0C10]/50 hover:text-[#0E0C10]"
-                )}
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "0.3em",
+                  textTransform: "uppercase",
+                  fontWeight: 400,
+                  textDecoration: "none",
+                  color: transparent ? "rgba(249,246,242,0.7)" : "rgba(17,16,16,0.55)",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = transparent ? "#F9F6F2" : "#111010")}
+                onMouseLeave={e => (e.currentTarget.style.color = transparent ? "rgba(249,246,242,0.7)" : "rgba(17,16,16,0.55)")}
               >
                 {link.label}
-                <span className={cn(
-                  "absolute -bottom-1 left-0 h-px w-0 group-hover:w-full transition-all duration-300",
-                  lightMode ? "bg-[#F6F2EE]" : "bg-[#A8919E]"
-                )} />
               </Link>
             ))}
           </nav>
 
-          {/* Droite */}
-          <div className="hidden lg:flex items-center gap-6">
+          {/* CTA desktop */}
+          <div className="hidden lg:flex" style={{ alignItems: "center", gap: 28 }}>
             <Link
               href="/client/dashboard"
-              className={cn(
-                "text-[11px] tracking-[0.35em] uppercase font-light transition-colors duration-300",
-                lightMode ? "text-[#F6F2EE]/50 hover:text-[#F6F2EE]" : "text-[#0E0C10]/40 hover:text-[#0E0C10]"
-              )}
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                textDecoration: "none",
+                color: transparent ? "rgba(249,246,242,0.45)" : "rgba(17,16,16,0.35)",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = transparent ? "#F9F6F2" : "#111010")}
+              onMouseLeave={e => (e.currentTarget.style.color = transparent ? "rgba(249,246,242,0.45)" : "rgba(17,16,16,0.35)")}
             >
               Espace client
             </Link>
             <Link
-              href="/tarifs"
-              className={cn(
-                "px-5 py-2 text-[11px] tracking-[0.3em] uppercase font-semibold transition-all duration-300 gold-glow",
-                lightMode
-                  ? "bg-[#F6F2EE] text-[#0E0C10] hover:bg-white"
-                  : "bg-[#0E0C10] text-[#F6F2EE] hover:bg-[#2A2028]"
-              )}
+              href="/contact"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                textDecoration: "none",
+                padding: "10px 24px",
+                border: `1px solid ${transparent ? "rgba(249,246,242,0.4)" : "rgba(17,16,16,0.2)"}`,
+                color: transparent ? "#F9F6F2" : "#111010",
+                transition: "all 0.2s",
+              }}
             >
               Réserver
             </Link>
           </div>
 
-          {/* Burger */}
+          {/* Burger mobile */}
           <button
-            className={cn("lg:hidden transition-colors", lightMode ? "text-[#F6F2EE]" : "text-[#0E0C10]")}
+            className="lg:hidden"
             onClick={() => setOpen(!open)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: transparent ? "#F9F6F2" : "#111010" }}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-
-        {/* Ligne architecturale */}
-        {scrolled && <div className="h-px bg-[#0E0C10]/8" />}
       </header>
 
       {/* Menu mobile */}
-      <div className={cn(
-        "fixed inset-0 z-40 bg-[#0E0C10] flex flex-col justify-between p-10 transition-all duration-500",
-        open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      )}>
-        <button
-          className="self-end text-[#F6F2EE]/60 hover:text-[#F6F2EE]"
-          onClick={() => setOpen(false)}
-        >
-          <X size={24} />
-        </button>
-
-        <nav className="flex flex-col gap-6">
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 99,
+        background: "#111010",
+        display: "flex",
+        flexDirection: "column",
+        padding: "100px 40px 60px",
+        transition: "opacity 0.4s, transform 0.4s",
+        opacity: open ? 1 : 0,
+        transform: open ? "translateY(0)" : "translateY(-8px)",
+        pointerEvents: open ? "auto" : "none",
+      }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {navLinks.map((link, i) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="flex items-baseline gap-4 group"
+              style={{ textDecoration: "none", display: "flex", alignItems: "baseline", gap: 20 }}
             >
-              <span className="text-[10px] text-[#A8919E]/50 tracking-widest w-6">
+              <span style={{ fontSize: 10, color: "rgba(249,246,242,0.25)", letterSpacing: "0.3em", width: 24 }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span
-                className="text-4xl font-bold text-[#F6F2EE] group-hover:text-[#A8919E] transition-colors"
-                style={{ fontFamily: "var(--font-playfair)" }}
+                className="serif"
+                style={{ fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 700, color: "#F9F6F2", lineHeight: 1.1 }}
               >
                 {link.label}
               </span>
             </Link>
           ))}
         </nav>
-
-        <div className="flex flex-col gap-4">
-          <Link href="/client/dashboard" onClick={() => setOpen(false)} className="text-[11px] tracking-widest uppercase text-[#F6F2EE]/30">
-            Espace client
-          </Link>
+        <div style={{ marginTop: "auto" }}>
           <Link
-            href="/tarifs"
+            href="/contact"
             onClick={() => setOpen(false)}
-            className="px-6 py-3 bg-[#A8919E] text-[#0E0C10] text-[11px] tracking-widest uppercase font-semibold text-center"
+            style={{
+              display: "inline-block",
+              padding: "14px 32px",
+              background: "#F9F6F2",
+              color: "#111010",
+              fontSize: 11,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
           >
-            Réserver notre équipe
+            Réserver
           </Link>
         </div>
       </div>

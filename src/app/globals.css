@@ -1,32 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --mauve: #A8919E;
-  --mauve-light: #C4AFBB;
-  --mauve-dark: #7A6672;
-  --sage: #8AA690;
-  --encre: #0E0C10;
-  --creme: #F6F2EE;
-  --creme-fonce: #EDE7E0;
-  --blanc: #FFFFFF;
-
-  /* Alias legacy */
-  --gold: #A8919E;
-  --gold-light: #C4AFBB;
-  --gold-dark: #7A6672;
-  --noir: #F6F2EE;
-  --gris-fonce: #EDE7E0;
-  --gris-moyen: #E5DDD5;
-  --gris-clair: #DDD5CC;
-  --blanc-texte: #0E0C10;
+  --encre: #111010;
+  --creme: #F9F6F2;
+  --mauve: #9E8A94;
+  --mauve-light: #C2B0BA;
+  --or: #B8A99A;
 }
 
 @theme inline {
-  --color-gold: var(--gold);
   --color-encre: var(--encre);
-  --color-mauve: var(--mauve);
-  --color-sage: var(--sage);
   --color-creme: var(--creme);
+  --color-mauve: var(--mauve);
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
 }
@@ -48,46 +33,36 @@ body {
 
 ::selection { background: var(--encre); color: var(--creme); }
 
-/* ── Gradient éditorial ── */
-.text-gradient-gold {
-  background: linear-gradient(135deg, var(--mauve) 0%, var(--mauve-dark) 60%, var(--sage) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.serif { font-family: var(--font-playfair); }
+
+.label {
+  font-size: 10px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--mauve);
 }
 
-/* ── Ligne architecturale ── */
-.arch-line {
-  display: block;
-  height: 1px;
+.btn-dark {
+  display: inline-block;
+  padding: 14px 36px;
   background: var(--encre);
-  width: 100%;
+  color: var(--creme);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+  transition: opacity 0.2s;
 }
+.btn-dark:hover { opacity: 0.75; }
 
-/* ── Card verre ── */
-.glass {
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(168,145,158,0.12);
-}
-
-/* ── Ombre bouton ── */
-.gold-glow {
-  box-shadow: 3px 3px 0px var(--encre);
-}
-
-/* ── Numéro éditorial ── */
-.editorial-num {
-  font-family: var(--font-playfair);
-  font-size: clamp(80px, 12vw, 160px);
-  font-weight: 700;
-  line-height: 0.85;
-  letter-spacing: -0.04em;
+.btn-outline {
+  display: inline-block;
+  padding: 13px 35px;
+  border: 1px solid rgba(17,16,16,0.25);
   color: var(--encre);
-  opacity: 0.06;
-  position: absolute;
-  top: -0.1em;
-  right: -0.05em;
-  pointer-events: none;
-  user-select: none;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  transition: border-color 0.2s, color 0.2s;
 }
+.btn-outline:hover { border-color: var(--encre); }

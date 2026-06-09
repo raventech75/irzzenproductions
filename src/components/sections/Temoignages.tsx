@@ -1,91 +1,93 @@
-import { Star } from "lucide-react";
-
 const temoignages = [
   {
     name: "Sophie & Karim",
     date: "Juillet 2024",
-    note: 5,
-    texte:
-      "Une équipe exceptionnelle qui a su saisir chaque émotion de notre mariage. Les photos sont d'une beauté à couper le souffle. Nous recommandons Irzzen Productions les yeux fermés.",
+    texte: "Une équipe exceptionnelle qui a su saisir chaque émotion de notre mariage. Les photos sont d'une beauté à couper le souffle. Nous recommandons Irzzen Productions les yeux fermés.",
     formule: "Formule Prestige",
   },
   {
     name: "Marie & Thomas",
     date: "Mai 2024",
-    note: 5,
-    texte:
-      "Le film de notre mariage nous a fait pleurer de joie. Un travail cinématographique remarquable, une équipe professionnelle et chaleureuse. Merci infiniment.",
+    texte: "Le film de notre mariage nous a fait pleurer de joie. Un travail cinématographique remarquable, une équipe professionnelle et chaleureuse. Merci infiniment.",
     formule: "Formule Premium",
   },
   {
     name: "Leïla & Youssef",
     date: "Juin 2024",
-    note: 5,
-    texte:
-      "Parfait du début à la fin. La galerie privée pour partager les photos avec nos proches est une excellente idée. Un service vraiment premium.",
+    texte: "Parfait du début à la fin. La galerie privée pour partager les photos avec nos proches est une excellente idée. Un service vraiment premium.",
     formule: "Formule Complète",
   },
 ];
 
 export function Temoignages() {
   return (
-    <section className="py-32 px-6 bg-[#F7F3EF]">
-      <div className="max-w-7xl mx-auto">
+    <section style={{ background: "#111010", padding: "120px 0" }}>
+      <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
+
         {/* Header */}
-        <div className="text-center mb-20">
-          <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
+        <div style={{ marginBottom: 72 }}>
+          <p className="label" style={{ marginBottom: 16, color: "rgba(249,246,242,0.35)" }}>
             Témoignages
           </p>
           <h2
-            className="text-4xl md:text-6xl font-bold text-[#1A1520] leading-tight"
-            style={{ fontFamily: "var(--font-playfair)" }}
+            className="serif"
+            style={{
+              fontSize: "clamp(32px, 4vw, 56px)",
+              fontWeight: 700,
+              color: "#F9F6F2",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.05,
+            }}
           >
-            Ce que disent{" "}
-            <span className="text-gradient-gold italic">nos mariés</span>
+            Ce que disent nos mariés
           </h2>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Témoignages */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
           {temoignages.map((t) => (
-            <div key={t.name} className="glass p-8 flex flex-col">
-              {/* Stars */}
-              <div className="flex gap-1 mb-6">
-                {Array.from({ length: t.note }).map((_, i) => (
-                  <Star key={i} size={14} className="fill-[#C4A5B5] text-[#C4A5B5]" />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <p className="text-[#1A1520]/60 text-sm leading-relaxed flex-1 mb-8 italic">
+            <div
+              key={t.name}
+              style={{
+                padding: "48px 40px",
+                borderTop: "1px solid rgba(249,246,242,0.08)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <p
+                className="serif"
+                style={{
+                  fontSize: 16,
+                  color: "rgba(249,246,242,0.55)",
+                  fontStyle: "italic",
+                  lineHeight: 1.75,
+                  flex: 1,
+                  marginBottom: 40,
+                }}
+              >
                 &ldquo;{t.texte}&rdquo;
               </p>
-
-              {/* Author */}
-              <div className="border-t border-[#C4A5B5]/15 pt-6 flex items-center justify-between">
+              <div style={{ borderTop: "1px solid rgba(249,246,242,0.08)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                 <div>
-                  <div className="text-[#1A1520] font-medium text-sm">{t.name}</div>
-                  <div className="text-[#1A1520]/30 text-xs mt-0.5">{t.date}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#F9F6F2", marginBottom: 4 }}>{t.name}</div>
+                  <div style={{ fontSize: 11, color: "rgba(249,246,242,0.25)", letterSpacing: "0.05em" }}>{t.date}</div>
                 </div>
-                <div className="text-xs text-[#C4A5B5]/60 tracking-wide">{t.formule}</div>
+                <div style={{ fontSize: 10, color: "#9E8A94", letterSpacing: "0.3em", textTransform: "uppercase" }}>
+                  {t.formule}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Note globale */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-4 glass px-8 py-4">
-            <div className="flex gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} size={16} className="fill-[#C4A5B5] text-[#C4A5B5]" />
-              ))}
-            </div>
-            <span className="text-[#1A1520]/60 text-sm">
-              <strong className="text-[#1A1520]">4.9/5</strong> basé sur 200+ avis
-            </span>
-          </div>
+        {/* Note */}
+        <div style={{ marginTop: 64, display: "flex", alignItems: "center", gap: 16, borderTop: "1px solid rgba(249,246,242,0.06)", paddingTop: 40 }}>
+          <span style={{ fontSize: 13, color: "rgba(249,246,242,0.35)" }}>Note moyenne</span>
+          <span className="serif" style={{ fontSize: 24, fontWeight: 700, color: "#F9F6F2" }}>4.9 / 5</span>
+          <span style={{ fontSize: 11, color: "rgba(249,246,242,0.2)", letterSpacing: "0.2em" }}>— 200+ avis vérifiés</span>
         </div>
+
       </div>
     </section>
   );
