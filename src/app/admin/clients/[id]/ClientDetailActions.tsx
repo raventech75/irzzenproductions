@@ -38,12 +38,12 @@ export function ClientDetailActions({
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-[#FAFAFA]/30 tracking-wide">Statut :</span>
+        <span className="text-xs text-[#1A1520]/30 tracking-wide">Statut :</span>
         <select
           value={statut}
           onChange={(e) => handleStatutChange(e.target.value)}
           disabled={saving}
-          className="bg-[#111111] border border-[#C9A84C]/30 text-[#FAFAFA]/80 text-xs px-3 py-2 focus:outline-none focus:border-[#C9A84C]/60 transition-colors disabled:opacity-50"
+          className="bg-[#FAFAF8] border border-[#C4A5B5]/30 text-[#1A1520]/80 text-xs px-3 py-2 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors disabled:opacity-50"
         >
           {statuts.map((s) => (
             <option key={s} value={s}>{statutLabels[s]}</option>

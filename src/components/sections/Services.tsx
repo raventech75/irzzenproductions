@@ -1,30 +1,29 @@
 import Link from "next/link";
-import { Camera, Film, GraduationCap, ArrowRight } from "lucide-react";
 
 const services = [
   {
-    icon: Camera,
-    title: "Photographie Mariage",
-    description:
-      "Un reportage photo complet de votre jour J. Chaque regard, chaque larme, chaque sourire capturés avec une sensibilité artistique unique.",
-    features: ["De 200 à photos illimitées", "Livraison sous 4 semaines", "Retouche professionnelle"],
+    num: "01",
+    title: "Photographie",
+    sub: "Mariage",
+    description: "Un reportage photo complet de votre jour J. Chaque regard, chaque larme, chaque sourire capturés avec une sensibilité artistique unique.",
+    features: ["200 à photos illimitées", "Livraison 4 semaines", "Retouche professionnelle"],
     href: "/mariage#photo",
-    tag: "Dès 890€",
+    tag: "Dès 890 €",
   },
   {
-    icon: Film,
-    title: "Vidéographie Mariage",
-    description:
-      "Un film cinématographique de votre mariage. Teaser, film complet, drone — votre histoire racontée comme au cinéma.",
+    num: "02",
+    title: "Vidéographie",
+    sub: "Cinématique",
+    description: "Un film cinématographique de votre mariage. Teaser, long métrage, drone — votre histoire racontée comme au cinéma.",
     features: ["Film court & long métrage", "Drone inclus", "Montage cinématographique"],
     href: "/mariage#video",
-    tag: "Inclus dès 1490€",
+    tag: "Inclus dès 1 490 €",
   },
   {
-    icon: GraduationCap,
+    num: "03",
     title: "Formations",
-    description:
-      "Apprenez les secrets du reportage mariage avec nos photographes expérimentés. Formations pratiques et théoriques adaptées à tous niveaux.",
+    sub: "Professionnelles",
+    description: "Apprenez les secrets du reportage mariage avec nos photographes. Formations pratiques et théoriques adaptées à tous niveaux.",
     features: ["Petits groupes", "Matériel fourni", "Certification"],
     href: "/formations",
     tag: "Sur inscription",
@@ -33,72 +32,74 @@ const services = [
 
 export function Services() {
   return (
-    <section className="py-32 px-6 bg-[#0A0A0A]">
-      <div className="max-w-7xl mx-auto">
+    <section className="bg-[#F6F2EE] py-32">
+      <div className="max-w-[1400px] mx-auto px-8 lg:px-12">
+
         {/* Header */}
-        <div className="text-center mb-20">
-          <p className="text-xs tracking-[0.5em] uppercase text-[#C9A84C] mb-4">
-            Nos prestations
-          </p>
-          <h2
-            className="text-4xl md:text-6xl font-bold text-[#FAFAFA] leading-tight"
+        <div className="flex items-baseline gap-6 mb-20 border-b border-[#0E0C10]/10 pb-8">
+          <span
+            className="text-[clamp(48px,7vw,96px)] font-bold leading-none text-[#0E0C10]/6"
             style={{ fontFamily: "var(--font-playfair)" }}
           >
-            Un service{" "}
-            <span className="text-gradient-gold italic">complet</span>
-            <br />
-            pour votre mariage
-          </h2>
+            03
+          </span>
+          <div>
+            <p className="text-[10px] tracking-[0.5em] uppercase text-[#A8919E] mb-2">Nos prestations</p>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-[#0E0C10]"
+              style={{ fontFamily: "var(--font-playfair)" }}
+            >
+              Un service <em className="not-italic text-gradient-gold">complet</em>
+            </h2>
+          </div>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              className="glass p-8 group hover:border-[#C9A84C]/40 transition-all duration-500 flex flex-col"
-            >
-              {/* Tag */}
-              <div className="text-xs tracking-widest uppercase text-[#C9A84C] mb-6 font-medium">
-                {service.tag}
+        {/* Services — liste éditoriale */}
+        <div className="divide-y divide-[#0E0C10]/8">
+          {services.map((s) => (
+            <div key={s.num} className="group py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start hover:bg-[#0E0C10]/[0.015] transition-colors -mx-8 px-8">
+
+              {/* Numéro */}
+              <div className="lg:col-span-1">
+                <span className="text-[11px] tracking-[0.4em] text-[#A8919E]/60">{s.num}</span>
               </div>
 
-              {/* Icon */}
-              <div className="w-12 h-12 border border-[#C9A84C]/30 flex items-center justify-center text-[#C9A84C] mb-6 group-hover:bg-[#C9A84C]/10 transition-colors">
-                <service.icon size={20} />
+              {/* Titre */}
+              <div className="lg:col-span-3">
+                <h3
+                  className="text-2xl lg:text-3xl font-bold text-[#0E0C10] leading-tight"
+                  style={{ fontFamily: "var(--font-playfair)" }}
+                >
+                  {s.title}
+                  <br />
+                  <span className="text-gradient-gold italic">{s.sub}</span>
+                </h3>
+                <div className="mt-3 text-xs tracking-[0.2em] uppercase text-[#A8919E] font-medium">{s.tag}</div>
               </div>
-
-              {/* Title */}
-              <h3
-                className="text-2xl font-bold text-[#FAFAFA] mb-4"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                {service.title}
-              </h3>
 
               {/* Description */}
-              <p className="text-[#FAFAFA]/50 text-sm leading-relaxed mb-6 flex-1">
-                {service.description}
-              </p>
-
-              {/* Features */}
-              <ul className="space-y-2 mb-8">
-                {service.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[#FAFAFA]/40">
-                    <div className="w-1 h-1 bg-[#C9A84C] rounded-full flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+              <div className="lg:col-span-5">
+                <p className="text-[#0E0C10]/50 text-sm leading-relaxed font-light mb-6">{s.description}</p>
+                <ul className="flex flex-wrap gap-x-6 gap-y-2">
+                  {s.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-xs text-[#0E0C10]/35">
+                      <span className="w-3 h-px bg-[#A8919E]" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {/* CTA */}
-              <Link
-                href={service.href}
-                className="flex items-center gap-2 text-sm text-[#C9A84C] tracking-widest uppercase font-medium group-hover:gap-4 transition-all duration-300"
-              >
-                En savoir plus
-                <ArrowRight size={14} />
-              </Link>
+              <div className="lg:col-span-3 lg:text-right">
+                <Link
+                  href={s.href}
+                  className="inline-flex items-center gap-3 text-[11px] tracking-[0.35em] uppercase text-[#0E0C10]/40 group-hover:text-[#0E0C10] transition-colors"
+                >
+                  Découvrir
+                  <span className="block w-6 h-px bg-current group-hover:w-10 transition-all duration-300" />
+                </Link>
+              </div>
             </div>
           ))}
         </div>

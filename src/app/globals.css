@@ -1,67 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --gold: #C9A84C;
-  --gold-light: #E8C96A;
-  --gold-dark: #9A7B35;
-  --noir: #0A0A0A;
-  --gris-fonce: #111111;
-  --gris-moyen: #1C1C1C;
-  --gris-clair: #2A2A2A;
-  --blanc: #FAFAFA;
-  --blanc-casse: #F0EDE8;
+  --mauve: #A8919E;
+  --mauve-light: #C4AFBB;
+  --mauve-dark: #7A6672;
+  --sage: #8AA690;
+  --encre: #0E0C10;
+  --creme: #F6F2EE;
+  --creme-fonce: #EDE7E0;
+  --blanc: #FFFFFF;
+
+  /* Alias legacy */
+  --gold: #A8919E;
+  --gold-light: #C4AFBB;
+  --gold-dark: #7A6672;
+  --noir: #F6F2EE;
+  --gris-fonce: #EDE7E0;
+  --gris-moyen: #E5DDD5;
+  --gris-clair: #DDD5CC;
+  --blanc-texte: #0E0C10;
 }
 
 @theme inline {
   --color-gold: var(--gold);
-  --color-gold-light: var(--gold-light);
-  --color-gold-dark: var(--gold-dark);
-  --color-noir: var(--noir);
-  --color-gris-fonce: var(--gris-fonce);
-  --color-gris-moyen: var(--gris-moyen);
-  --color-gris-clair: var(--gris-clair);
-  --color-blanc: var(--blanc);
-  --color-blanc-casse: var(--blanc-casse);
+  --color-encre: var(--encre);
+  --color-mauve: var(--mauve);
+  --color-sage: var(--sage);
+  --color-creme: var(--creme);
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
 body {
-  background-color: var(--noir);
-  color: var(--blanc);
+  background-color: var(--creme);
+  color: var(--encre);
   font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-weight: 300;
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--noir); }
-::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-track { background: var(--creme); }
+::-webkit-scrollbar-thumb { background: var(--encre); }
 
-::selection { background: var(--gold); color: var(--noir); }
+::selection { background: var(--encre); color: var(--creme); }
 
+/* ── Gradient éditorial ── */
 .text-gradient-gold {
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  background: linear-gradient(135deg, var(--mauve) 0%, var(--mauve-dark) 60%, var(--sage) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(201, 168, 76, 0.15);
+/* ── Ligne architecturale ── */
+.arch-line {
+  display: block;
+  height: 1px;
+  background: var(--encre);
+  width: 100%;
 }
 
+/* ── Card verre ── */
+.glass {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(168,145,158,0.12);
+}
+
+/* ── Ombre bouton ── */
 .gold-glow {
-  box-shadow: 0 0 40px rgba(201, 168, 76, 0.15), 0 0 80px rgba(201, 168, 76, 0.05);
+  box-shadow: 3px 3px 0px var(--encre);
+}
+
+/* ── Numéro éditorial ── */
+.editorial-num {
+  font-family: var(--font-playfair);
+  font-size: clamp(80px, 12vw, 160px);
+  font-weight: 700;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: var(--encre);
+  opacity: 0.06;
+  position: absolute;
+  top: -0.1em;
+  right: -0.05em;
+  pointer-events: none;
+  user-select: none;
 }

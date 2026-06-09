@@ -27,14 +27,14 @@ export default async function ContratPage() {
   return (
     <ClientShell clientNom={nomClient}>
       <div className="mb-10">
-        <p className="text-xs tracking-[0.4em] uppercase text-[#C9A84C]/60 mb-2">Espace Client</p>
+        <p className="text-xs tracking-[0.4em] uppercase text-[#C4A5B5]/60 mb-2">Espace Client</p>
         <h1
-          className="text-3xl md:text-4xl font-bold text-[#FAFAFA]"
+          className="text-3xl md:text-4xl font-bold text-[#1A1520]"
           style={{ fontFamily: "var(--font-playfair)" }}
         >
           Mon <span className="text-gradient-gold">contrat</span>
         </h1>
-        <p className="text-[#FAFAFA]/40 text-sm mt-2">
+        <p className="text-[#1A1520]/40 text-sm mt-2">
           Signez et consultez votre contrat de prestation
         </p>
       </div>

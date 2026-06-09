@@ -48,7 +48,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           >
             Irzzen
           </span>
-          <span className="text-[9px] tracking-[0.35em] uppercase text-[#C9A84C]/40 mt-0.5">
+          <span className="text-[9px] tracking-[0.35em] uppercase text-[#C4A5B5]/40 mt-0.5">
             Back-office
           </span>
         </div>
@@ -65,8 +65,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 rounded-sm",
                   active
-                    ? "bg-[#C9A84C]/15 text-[#C9A84C]"
-                    : "text-[#FAFAFA]/40 hover:text-[#FAFAFA]/70 hover:bg-[#FAFAFA]/5"
+                    ? "bg-[#C4A5B5]/15 text-[#C4A5B5]"
+                    : "text-[#1A1520]/40 hover:text-[#1A1520]/70 hover:bg-[#F0EBE8]/5"
                 )}
               >
                 <item.icon size={15} className="flex-shrink-0" />
@@ -78,16 +78,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         })}
       </ul>
 
-      <div className="border-t border-[#C9A84C]/10 pt-4 space-y-1 mt-4">
+      <div className="border-t border-[#C4A5B5]/10 pt-4 space-y-1 mt-4">
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2 text-xs text-[#FAFAFA]/25 hover:text-[#C9A84C]/50 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 text-xs text-[#1A1520]/25 hover:text-[#C4A5B5]/50 transition-colors"
         >
           <ExternalLink size={12} /> Voir le site
         </Link>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 text-xs text-[#FAFAFA]/25 hover:text-red-400 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 text-xs text-[#1A1520]/25 hover:text-red-400 transition-colors"
         >
           <LogOut size={12} /> Déconnexion
         </button>
@@ -98,7 +98,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#070707] flex">
       {/* Sidebar desktop */}
-      <aside className="hidden lg:flex flex-col w-56 bg-[#060606] border-r border-[#C9A84C]/10 fixed top-0 left-0 h-full z-30">
+      <aside className="hidden lg:flex flex-col w-56 bg-[#060606] border-r border-[#C4A5B5]/10 fixed top-0 left-0 h-full z-30">
         <Sidebar />
       </aside>
 
@@ -107,7 +107,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="lg:hidden fixed inset-0 z-40 bg-black/70" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        "lg:hidden fixed top-0 left-0 h-full w-56 bg-[#060606] border-r border-[#C9A84C]/10 z-50 transition-transform duration-300",
+        "lg:hidden fixed top-0 left-0 h-full w-56 bg-[#060606] border-r border-[#C4A5B5]/10 z-50 transition-transform duration-300",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <Sidebar />
@@ -115,8 +115,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
         {/* Top bar mobile */}
-        <header className="lg:hidden flex items-center gap-4 px-5 py-3 border-b border-[#C9A84C]/10 bg-[#060606]">
-          <button onClick={() => setSidebarOpen(true)} className="text-[#FAFAFA]/50">
+        <header className="lg:hidden flex items-center gap-4 px-5 py-3 border-b border-[#C4A5B5]/10 bg-[#060606]">
+          <button onClick={() => setSidebarOpen(true)} className="text-[#1A1520]/50">
             <Menu size={20} />
           </button>
           <span className="text-sm font-bold tracking-widest uppercase text-gradient-gold" style={{ fontFamily: "var(--font-playfair)" }}>

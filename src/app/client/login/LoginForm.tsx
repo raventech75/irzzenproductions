@@ -37,10 +37,10 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="glass p-8 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-[#FAFAFA] mb-1" style={{ fontFamily: "var(--font-playfair)" }}>
+        <h2 className="text-xl font-bold text-[#1A1520] mb-1" style={{ fontFamily: "var(--font-playfair)" }}>
           Connexion
         </h2>
-        <p className="text-xs text-[#FAFAFA]/40">
+        <p className="text-xs text-[#1A1520]/40">
           Accédez à vos photos et vidéos de mariage
         </p>
       </div>
@@ -53,7 +53,7 @@ export function LoginForm() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-xs tracking-[0.2em] uppercase text-[#C9A84C]/60 mb-2">
+          <label className="block text-xs tracking-[0.2em] uppercase text-[#C4A5B5]/60 mb-2">
             Adresse email
           </label>
           <input
@@ -62,12 +62,12 @@ export function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="sophie.karim@email.com"
-            className="w-full bg-[#111111] border border-[#C9A84C]/20 text-[#FAFAFA] text-sm px-4 py-3 placeholder-[#FAFAFA]/20 focus:outline-none focus:border-[#C9A84C]/60 transition-colors"
+            className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors"
           />
         </div>
 
         <div>
-          <label className="block text-xs tracking-[0.2em] uppercase text-[#C9A84C]/60 mb-2">
+          <label className="block text-xs tracking-[0.2em] uppercase text-[#C4A5B5]/60 mb-2">
             Mot de passe
           </label>
           <div className="relative">
@@ -77,12 +77,12 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full bg-[#111111] border border-[#C9A84C]/20 text-[#FAFAFA] text-sm px-4 py-3 pr-12 placeholder-[#FAFAFA]/20 focus:outline-none focus:border-[#C9A84C]/60 transition-colors"
+              className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 pr-12 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FAFAFA]/30 hover:text-[#C9A84C]/60 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1520]/30 hover:text-[#C4A5B5]/60 transition-colors"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -93,10 +93,10 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-4 bg-[#C9A84C] text-[#0A0A0A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#E8C96A] transition-colors disabled:opacity-60 disabled:cursor-not-allowed gold-glow"
+        className="w-full flex items-center justify-center gap-2 py-4 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed gold-glow"
       >
         {loading ? (
-          <span className="w-4 h-4 border-2 border-[#0A0A0A]/30 border-t-[#0A0A0A] rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-[#13111A]/30 border-t-[#13111A] rounded-full animate-spin" />
         ) : (
           <>
             Se connecter <LogIn size={14} />
@@ -107,7 +107,7 @@ export function LoginForm() {
       <div className="text-center">
         <a
           href="/client/reset-password"
-          className="text-xs text-[#FAFAFA]/30 hover:text-[#C9A84C]/60 transition-colors"
+          className="text-xs text-[#1A1520]/30 hover:text-[#C4A5B5]/60 transition-colors"
         >
           Mot de passe oublié ?
         </a>

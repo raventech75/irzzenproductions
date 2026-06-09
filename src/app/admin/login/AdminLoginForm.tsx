@@ -46,7 +46,7 @@ export function AdminLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="glass p-8 space-y-5">
-      <h2 className="text-lg font-bold text-[#FAFAFA]" style={{ fontFamily: "var(--font-playfair)" }}>
+      <h2 className="text-lg font-bold text-[#1A1520]" style={{ fontFamily: "var(--font-playfair)" }}>
         Connexion administrateur
       </h2>
 
@@ -57,34 +57,34 @@ export function AdminLoginForm() {
       )}
 
       <div>
-        <label className="block text-xs tracking-[0.2em] uppercase text-[#C9A84C]/60 mb-2">Email</label>
+        <label className="block text-xs tracking-[0.2em] uppercase text-[#C4A5B5]/60 mb-2">Email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full bg-[#111111] border border-[#C9A84C]/20 text-[#FAFAFA] text-sm px-4 py-3 placeholder-[#FAFAFA]/20 focus:outline-none focus:border-[#C9A84C]/60 transition-colors"
+          className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors"
         />
       </div>
 
       <div>
-        <label className="block text-xs tracking-[0.2em] uppercase text-[#C9A84C]/60 mb-2">Mot de passe</label>
+        <label className="block text-xs tracking-[0.2em] uppercase text-[#C4A5B5]/60 mb-2">Mot de passe</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full bg-[#111111] border border-[#C9A84C]/20 text-[#FAFAFA] text-sm px-4 py-3 placeholder-[#FAFAFA]/20 focus:outline-none focus:border-[#C9A84C]/60 transition-colors"
+          className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3 bg-[#C9A84C] text-[#0A0A0A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#E8C96A] transition-colors disabled:opacity-60"
+        className="w-full flex items-center justify-center gap-2 py-3 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors disabled:opacity-60"
       >
         {loading ? (
-          <span className="w-4 h-4 border-2 border-[#0A0A0A]/30 border-t-[#0A0A0A] rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-[#13111A]/30 border-t-[#13111A] rounded-full animate-spin" />
         ) : (
           <><LogIn size={14} /> Accéder</>
         )}
