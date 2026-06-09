@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? "placeholder");
+}
 
 const FROM = "Irzzen Productions <contact@irzzenproductions.fr>";
 const ADMIN_EMAIL = "contact@irzzenproductions.fr";
@@ -19,7 +21,7 @@ export async function sendConfirmationContact({
   formule?: string;
   total?: number;
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Nous avons bien reçu votre demande — Irzzen Productions",
@@ -47,7 +49,7 @@ export async function sendNotificationAdmin({
   total?: number;
   message?: string;
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: ADMIN_EMAIL,
     subject: `🔔 Nouvelle demande — ${nomClient}`,
@@ -67,7 +69,7 @@ export async function sendGalerieDisponible({
   nomGalerie: string;
   nbPhotos: number;
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Vos photos sont prêtes ! 📸 — Irzzen Productions",
@@ -85,7 +87,7 @@ export async function sendContratASigner({
   email: string;
   titreContrat: string;
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Votre contrat est prêt à signer — Irzzen Productions",
