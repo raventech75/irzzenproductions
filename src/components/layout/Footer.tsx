@@ -1,48 +1,45 @@
-"use client";
-
 import Link from "next/link";
 import { Mail } from "lucide-react";
 
 const nav = [
-  { href: "/mariage", label: "Mariage" },
-  { href: "/galerie", label: "Galerie" },
-  { href: "/tarifs", label: "Tarifs" },
-  { href: "/a-propos", label: "À propos" },
+  { href: "/mariage",    label: "Mariage" },
+  { href: "/galerie",    label: "Galerie" },
+  { href: "/tarifs",     label: "Tarifs" },
+  { href: "/a-propos",   label: "À propos" },
   { href: "/formations", label: "Formations" },
-  { href: "/blog", label: "Blog" },
-  { href: "/contact", label: "Contact" },
+  { href: "/blog",       label: "Blog" },
+  { href: "/contact",    label: "Contact" },
 ];
 
 export function Footer() {
   return (
-    <footer className="gradient-bg" style={{ borderTop: "1px solid rgba(232,174,184,0.2)", padding: "72px 0 36px" }}>
-      <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
+    <footer className="g-bg border-t border-[rgba(38,30,20,0.06)]">
+      <div className="wrap pt-16 pb-10">
 
-        {/* Barre déco */}
-        <div className="gradient-bar" style={{ height: 2, width: 60, marginBottom: 56 }} />
-
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 60, paddingBottom: 52, borderBottom: "1px solid rgba(44,36,22,0.08)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-14 pb-14 border-b border-[rgba(38,30,20,0.07)]">
 
           {/* Marque */}
           <div>
-            <div className="serif" style={{ fontSize: 32, fontWeight: 700, color: "#2C2416", marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
+            <p className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] leading-tight mb-4"
+              style={{ fontSize: "clamp(26px,3vw,38px)" }}>
               Irzzen<br />
-              <span className="gradient-text">Productions</span>
-            </div>
-            <p style={{ fontSize: 13, color: "rgba(44,36,22,0.45)", lineHeight: 1.7, maxWidth: 260, fontWeight: 300, marginBottom: 24 }}>
-              Photographes & vidéastes spécialisés dans le mariage haut de gamme.
+              <span className="g-text">Productions</span>
             </p>
-            <Link href="/contact" className="btn-primary">Réserver</Link>
+            <p className="text-[13px] text-[rgba(38,30,20,0.45)] leading-[1.7] font-light max-w-[240px] mb-6">
+              Photographes &amp; vidéastes spécialisés dans le mariage haut de gamme.
+            </p>
+            <Link href="/contact" className="btn-fill text-[10px] py-[10px] px-5">Réserver</Link>
           </div>
 
-          {/* Nav */}
+          {/* Navigation */}
           <div>
-            <p className="label" style={{ marginBottom: 22 }}>Navigation</p>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-              {nav.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} style={{ fontSize: 13, color: "rgba(44,36,22,0.5)", textDecoration: "none", fontWeight: 300, transition: "color 0.2s" }}>
-                    {link.label}
+            <p className="label-tag mb-5">Navigation</p>
+            <ul className="space-y-3 list-none">
+              {nav.map(l => (
+                <li key={l.href}>
+                  <Link href={l.href}
+                    className="text-[13px] text-[rgba(38,30,20,0.48)] hover:text-[#261E14] transition-colors no-underline font-light">
+                    {l.label}
                   </Link>
                 </li>
               ))}
@@ -51,18 +48,22 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <p className="label" style={{ marginBottom: 22 }}>Contact</p>
-            <a href="mailto:contact@irzzenproductions.fr" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "rgba(44,36,22,0.5)", textDecoration: "none", marginBottom: 24, fontWeight: 300 }}>
-              <Mail size={13} style={{ color: "var(--rose)" }} />
+            <p className="label-tag mb-5">Contact</p>
+            <a href="mailto:contact@irzzenproductions.fr"
+              className="flex items-center gap-3 text-[13px] text-[rgba(38,30,20,0.48)] hover:text-[#261E14] transition-colors no-underline font-light mb-6">
+              <Mail size={13} className="text-[#DFA0AE]" />
               contact@irzzenproductions.fr
             </a>
-            <div style={{ display: "flex", gap: 10 }}>
+
+            <div className="flex gap-2">
+              {/* Instagram */}
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
-                style={{ width: 36, height: 36, border: "1px solid rgba(44,36,22,0.15)", background: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(44,36,22,0.45)" }}>
+                className="w-9 h-9 bg-white/60 border border-[rgba(38,30,20,0.1)] flex items-center justify-center text-[rgba(38,30,20,0.4)] hover:text-[#DFA0AE] hover:border-[#DFA0AE] transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
+              {/* YouTube */}
               <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
-                style={{ width: 36, height: 36, border: "1px solid rgba(44,36,22,0.15)", background: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(44,36,22,0.45)" }}>
+                className="w-9 h-9 bg-white/60 border border-[rgba(38,30,20,0.1)] flex items-center justify-center text-[rgba(38,30,20,0.4)] hover:text-[#DFA0AE] hover:border-[#DFA0AE] transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
               </a>
             </div>
@@ -70,14 +71,22 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div style={{ paddingTop: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <p style={{ fontSize: 11, color: "rgba(44,36,22,0.3)", letterSpacing: "0.1em" }}>© 2025 Irzzen Productions</p>
-          <div style={{ display: "flex", gap: 28 }}>
-            {[{ href: "/mentions-legales", label: "Mentions légales" }, { href: "/cgv", label: "CGV" }, { href: "/confidentialite", label: "Confidentialité" }].map((l) => (
-              <Link key={l.href} href={l.href} style={{ fontSize: 11, color: "rgba(44,36,22,0.3)", textDecoration: "none" }}>{l.label}</Link>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-6">
+          <p className="text-[11px] text-[rgba(38,30,20,0.28)] tracking-wide">© 2025 Irzzen Productions</p>
+          <div className="flex gap-7">
+            {[
+              { href: "/mentions-legales", label: "Mentions légales" },
+              { href: "/cgv",              label: "CGV" },
+              { href: "/confidentialite",  label: "Confidentialité" },
+            ].map(l => (
+              <Link key={l.href} href={l.href}
+                className="text-[11px] text-[rgba(38,30,20,0.28)] no-underline hover:text-[rgba(38,30,20,0.6)] transition-colors">
+                {l.label}
+              </Link>
             ))}
           </div>
         </div>
+
       </div>
     </footer>
   );

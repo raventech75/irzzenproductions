@@ -1,77 +1,92 @@
-"use client";
-
 import Link from "next/link";
 
 const services = [
   {
     num: "01",
     title: "Photographie",
-    description: "Un reportage photo complet de votre jour J. Chaque regard, chaque larme, chaque sourire capturés avec une sensibilité artistique unique.",
-    prix: "Dès 890 €",
-    href: "/mariage",
-    accent: "var(--orange)",
+    desc:  "Un reportage photo complet de votre jour J. Chaque regard, chaque larme, chaque sourire capturés avec une sensibilité artistique unique.",
+    prix:  "Dès 890 €",
+    href:  "/mariage",
+    dot:   "bg-[#E8A87C]",
+    price_color: "text-[#E8A87C]",
   },
   {
     num: "02",
     title: "Vidéographie",
-    description: "Un film cinématographique de votre mariage. Teaser, long métrage, drone — votre histoire racontée comme au cinéma.",
-    prix: "Dès 1 490 €",
-    href: "/mariage",
-    accent: "var(--rose)",
+    desc:  "Un film cinématographique de votre mariage. Teaser, long métrage, drone — votre histoire racontée comme au cinéma.",
+    prix:  "Dès 1 490 €",
+    href:  "/mariage",
+    dot:   "bg-[#DFA0AE]",
+    price_color: "text-[#DFA0AE]",
   },
   {
     num: "03",
     title: "Formule Complète",
-    description: "Photo et vidéo réunis pour immortaliser chaque instant sous toutes ses formes. La solution la plus complète pour votre mariage.",
-    prix: "Dès 2 190 €",
-    href: "/tarifs",
-    accent: "var(--olive)",
+    desc:  "Photo et vidéo réunis pour immortaliser chaque instant. La solution la plus complète pour votre mariage.",
+    prix:  "Dès 2 190 €",
+    href:  "/tarifs",
+    dot:   "bg-[#8FAF78]",
+    price_color: "text-[#8FAF78]",
   },
 ];
 
 export function Services() {
   return (
-    <section style={{ background: "var(--fond)", padding: "100px 0", borderTop: "1px solid rgba(44,36,22,0.06)" }}>
-      <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
+    <section className="bg-[#FDFAF7] py-28">
+      <div className="wrap">
 
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 32, marginBottom: 56, paddingBottom: 40, borderBottom: "1px solid rgba(44,36,22,0.07)" }}>
+        {/* En-tête */}
+        <div className="flex items-end justify-between pb-10 mb-0 border-b border-[rgba(38,30,20,0.07)]">
           <div>
-            <p className="label" style={{ marginBottom: 12 }}>Prestations</p>
-            <h2 className="serif" style={{ fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "#2C2416", letterSpacing: "-0.02em" }}>
+            <p className="label-tag mb-3">Nos prestations</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight"
+              style={{ fontSize: "clamp(28px,3.5vw,48px)" }}>
               Ce que nous offrons
             </h2>
           </div>
+          <Link href="/tarifs" className="hidden md:flex btn-ghost text-[10px] py-[10px] px-5">
+            Voir les formules
+          </Link>
         </div>
 
-        {services.map((s) => (
-          <Link key={s.num} href={s.href} style={{
-            display: "grid",
-            gridTemplateColumns: "56px 1fr 1fr 120px",
-            gap: 24, alignItems: "center",
-            padding: "36px 0",
-            borderBottom: "1px solid rgba(44,36,22,0.06)",
-            textDecoration: "none",
-            transition: "background 0.2s",
-            margin: "0 -40px", padding: "36px 40px",
-          }}>
-            <span style={{ fontSize: 11, letterSpacing: "0.3em", color: s.accent, fontWeight: 500 }}>{s.num}</span>
-            <h3 className="serif" style={{ fontSize: "clamp(20px, 2.2vw, 28px)", fontWeight: 700, color: "#2C2416", letterSpacing: "-0.01em" }}>
+        {/* Liste */}
+        {services.map(s => (
+          <Link
+            key={s.num}
+            href={s.href}
+            className="group flex items-center gap-6 py-9 border-b border-[rgba(38,30,20,0.07)] no-underline hover:bg-[rgba(38,30,20,0.015)] transition-colors -mx-12 px-12"
+          >
+            {/* Numéro */}
+            <span className="hidden md:block text-[11px] tracking-[0.35em] text-[rgba(38,30,20,0.28)] w-10 shrink-0">
+              {s.num}
+            </span>
+
+            {/* Dot couleur */}
+            <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+
+            {/* Titre */}
+            <h3 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] w-52 shrink-0"
+              style={{ fontSize: "clamp(18px,2.2vw,26px)" }}>
               {s.title}
             </h3>
-            <p style={{ fontSize: 14, color: "rgba(44,36,22,0.45)", fontWeight: 300, lineHeight: 1.65, maxWidth: 420 }}>
-              {s.description}
+
+            {/* Description */}
+            <p className="flex-1 text-[14px] text-[rgba(38,30,20,0.45)] font-light leading-[1.65] hidden md:block">
+              {s.desc}
             </p>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 13, color: s.accent, marginBottom: 6 }}>{s.prix}</div>
-              <span style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(44,36,22,0.3)", display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
-                Découvrir <span style={{ display: "block", width: 16, height: 1, background: s.accent }} />
-              </span>
+
+            {/* Prix + flèche */}
+            <div className="ml-auto text-right shrink-0">
+              <div className={`text-[13px] font-medium mb-1 ${s.price_color}`}>{s.prix}</div>
+              <div className="text-[10px] tracking-[0.3em] uppercase text-[rgba(38,30,20,0.3)] group-hover:text-[#261E14] transition-colors">
+                Découvrir →
+              </div>
             </div>
           </Link>
         ))}
 
-        <div style={{ paddingTop: 44 }}>
-          <Link href="/tarifs" className="btn-primary">Voir toutes les formules</Link>
+        <div className="pt-10">
+          <Link href="/tarifs" className="btn-fill">Voir toutes les formules</Link>
         </div>
       </div>
     </section>

@@ -1,51 +1,56 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 
 const photos = [
-  { src: "/photos/1L9A7763.JPG", alt: "Mariage" },
-  { src: encodeURI("/photos/Zineb & Fares - 00471.jpg"), alt: "Couple" },
-  { src: "/photos/1L9A7557.JPG", alt: "Château" },
-  { src: encodeURI("/photos/Ines & Umit- 0040.jpg"), alt: "Couple" },
-  { src: "/photos/1L9A7115.JPG", alt: "Décoration" },
+  { src: "/photos/1L9A7763.JPG",                                      alt: "Couple" },
+  { src: encodeURI("/photos/Zineb & Fares - 00471.jpg"),              alt: "Zineb & Farès" },
+  { src: "/photos/1L9A7557.JPG",                                      alt: "Château" },
+  { src: encodeURI("/photos/Ines & Umit- 0040.jpg"),                  alt: "Inès & Ümit" },
+  { src: encodeURI("/photos/Basak & Oguzhan - dugun - 0169.jpg"),     alt: "Başak & Oğuzhan" },
 ];
 
 export function GalerieApercu() {
   return (
-    <section style={{ background: "var(--fond)", padding: "100px 0" }}>
-      <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
+    <section className="bg-[#FDFAF7] pb-28">
+      <div className="wrap">
 
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 40 }}>
+        {/* En-tête */}
+        <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="label" style={{ marginBottom: 12 }}>Portfolio</p>
-            <h2 className="serif" style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 700, color: "#2C2416", letterSpacing: "-0.02em", lineHeight: 1.05 }}>
+            <p className="label-tag mb-3">Portfolio</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight"
+              style={{ fontSize: "clamp(26px,3.5vw,48px)" }}>
               Nos plus belles histoires
             </h2>
           </div>
-          <Link href="/galerie" style={{ fontSize: 11, letterSpacing: "0.35em", textTransform: "uppercase", color: "var(--rose)", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-            Voir tout <span style={{ display: "block", width: 24, height: 1, background: "var(--rose)" }} />
+          <Link href="/galerie"
+            className="hidden md:flex items-center gap-3 text-[11px] tracking-[0.32em] uppercase text-[#DFA0AE] no-underline hover:opacity-70 transition-opacity">
+            Voir tout <span className="block w-6 h-px bg-[#DFA0AE]" />
           </Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "300px 300px", gap: 8 }}>
-          {/* Grande photo gauche */}
-          <div style={{ gridRow: "1 / 3", position: "relative", overflow: "hidden" }}>
+        {/* Grille asymétrique */}
+        <div className="grid grid-cols-3 gap-2" style={{ gridTemplateRows: "280px 280px" }}>
+
+          {/* Grande image gauche : 2 rangées */}
+          <div className="row-span-2 relative overflow-hidden rounded-sm">
             <Image src={photos[0].src} alt={photos[0].alt} fill sizes="33vw" quality={80}
-              style={{ objectFit: "cover", transition: "transform 0.8s ease" }}
-              className="hover:scale-105"
-            />
+              className="object-cover hover:scale-105 transition-transform duration-700" />
           </div>
+
+          {/* 4 petites images à droite */}
           {photos.slice(1).map((p, i) => (
-            <div key={i} style={{ position: "relative", overflow: "hidden" }}>
+            <div key={i} className="relative overflow-hidden rounded-sm">
               <Image src={p.src} alt={p.alt} fill sizes="22vw" quality={80}
-                style={{ objectFit: "cover", transition: "transform 0.8s ease" }}
-                className="hover:scale-105"
-              />
+                className="object-cover hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
         </div>
 
+        {/* Lien mobile */}
+        <div className="mt-6 md:hidden text-center">
+          <Link href="/galerie" className="label-tag">Voir toute la galerie →</Link>
+        </div>
       </div>
     </section>
   );

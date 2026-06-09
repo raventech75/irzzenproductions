@@ -5,127 +5,122 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
-const navLinks = [
-  { href: "/mariage", label: "Mariage" },
-  { href: "/galerie", label: "Galerie" },
-  { href: "/tarifs", label: "Tarifs" },
-  { href: "/a-propos", label: "À propos" },
-  { href: "/contact", label: "Contact" },
+const links = [
+  { href: "/mariage",   label: "Mariage" },
+  { href: "/galerie",   label: "Galerie" },
+  { href: "/tarifs",    label: "Tarifs" },
+  { href: "/a-propos",  label: "À propos" },
+  { href: "/contact",   label: "Contact" },
 ];
 
 export function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled]   = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const onHome   = pathname === "/";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const fn = () => setScrolled(window.scrollY > 48);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const transparent = isHome && !scrolled;
+  /* transparent only on homepage before scroll */
+  const solid = scrolled || !onHome;
 
   return (
     <>
-      <header style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0,
-        zIndex: 100,
-        transition: "background 0.5s, border-color 0.5s",
-        background: transparent ? "rgba(253,250,247,0)" : "rgba(253,250,247,0.96)",
-        borderBottom: transparent ? "1px solid transparent" : "1px solid rgba(44,36,22,0.07)",
-        backdropFilter: transparent ? "none" : "blur(12px)",
-      }}>
-        <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* ── Bar principale ── */}
+      <header
+        className={[
+          "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+          solid
+            ? "bg-[#FDFAF7]/95 backdrop-blur-md border-b border-[rgba(38,30,20,0.07)]"
+            : "bg-transparent border-b border-transparent",
+        ].join(" ")}
+      >
+        <div className="wrap flex items-center justify-between h-[70px]">
 
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span className="serif" style={{
-              fontSize: 18, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase",
-              color: transparent ? "#FDFAF7" : "#2C2416", transition: "color 0.5s",
-            }}>Irzzen</span>
-            <span style={{
-              fontSize: 9, letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 300,
-              color: transparent ? "rgba(253,250,247,0.5)" : "rgba(44,36,22,0.35)", transition: "color 0.5s",
-            }}>Productions</span>
+          <Link href="/" className="flex items-baseline gap-2 no-underline">
+            <span
+              className={[
+                "font-[family-name:var(--font-playfair)] font-bold text-[17px] tracking-[0.15em] uppercase transition-colors duration-500",
+                solid ? "text-[#261E14]" : "text-[#261E14]",
+              ].join(" ")}
+            >
+              Irzzen
+            </span>
+            <span className="hidden sm:inline text-[9px] tracking-[0.45em] uppercase font-light text-[rgba(38,30,20,0.35)]">
+              Productions
+            </span>
           </Link>
 
           {/* Nav desktop */}
-          <nav className="hidden lg:flex" style={{ gap: 36, display: "flex" }}>
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} style={{
-                fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", fontWeight: 400,
-                textDecoration: "none",
-                color: transparent ? "rgba(253,250,247,0.75)" : "rgba(44,36,22,0.55)",
-                transition: "color 0.2s",
-              }}>
-                {link.label}
+          <nav className="hidden lg:flex items-center gap-8">
+            {links.map(l => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-[11px] tracking-[0.28em] uppercase font-normal text-[rgba(38,30,20,0.52)] hover:text-[#261E14] transition-colors no-underline"
+              >
+                {l.label}
               </Link>
             ))}
           </nav>
 
-          {/* CTA */}
-          <div className="hidden lg:flex" style={{ alignItems: "center", gap: 24 }}>
-            <Link href="/client/dashboard" style={{
-              fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", textDecoration: "none",
-              color: transparent ? "rgba(253,250,247,0.4)" : "rgba(44,36,22,0.35)", transition: "color 0.2s",
-            }}>
+          {/* Actions desktop */}
+          <div className="hidden lg:flex items-center gap-6">
+            <Link
+              href="/client/dashboard"
+              className="text-[11px] tracking-[0.28em] uppercase font-light text-[rgba(38,30,20,0.38)] hover:text-[#261E14] transition-colors no-underline"
+            >
               Espace client
             </Link>
-            <Link href="/contact" style={{
-              fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase", fontWeight: 500,
-              textDecoration: "none", padding: "9px 22px",
-              background: "linear-gradient(120deg, #EEB88A, #E8AEB8)",
-              color: "white",
-              transition: "opacity 0.2s",
-            }}>
+            <Link href="/contact" className="btn-fill text-[10px] py-[10px] px-5">
               Réserver
             </Link>
           </div>
 
           {/* Burger */}
-          <button className="lg:hidden" onClick={() => setOpen(!open)} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: transparent ? "#FDFAF7" : "#2C2416",
-          }}>
-            {open ? <X size={22} /> : <Menu size={22} />}
+          <button
+            className="lg:hidden text-[#261E14] bg-transparent border-0 cursor-pointer p-1"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Menu"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </header>
 
-      {/* Menu mobile */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 99,
-        background: "#FDFAF7",
-        display: "flex", flexDirection: "column",
-        padding: "100px 40px 60px",
-        transition: "opacity 0.4s, transform 0.4s",
-        opacity: open ? 1 : 0,
-        transform: open ? "translateY(0)" : "translateY(-8px)",
-        pointerEvents: open ? "auto" : "none",
-      }}>
-        {/* Barre déco */}
-        <div className="gradient-bar" style={{ height: 2, width: 60, marginBottom: 48 }} />
-        <nav style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-          {navLinks.map((link, i) => (
-            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
-              style={{ textDecoration: "none", display: "flex", alignItems: "baseline", gap: 20 }}>
-              <span style={{ fontSize: 10, color: "rgba(44,36,22,0.25)", letterSpacing: "0.3em", width: 24 }}>
+      {/* ── Menu mobile ── */}
+      <div
+        className={[
+          "fixed inset-0 z-40 bg-[#FDFAF7] flex flex-col pt-[100px] px-8 pb-12 transition-all duration-400",
+          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+        ].join(" ")}
+      >
+        <div className="g-bar h-[2px] w-12 mb-10 rounded-full" />
+        <nav className="flex flex-col gap-6 flex-1">
+          {links.map((l, i) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-baseline gap-4 no-underline group"
+            >
+              <span className="text-[10px] text-[rgba(38,30,20,0.25)] tracking-[0.3em] w-6">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="serif" style={{ fontSize: "clamp(28px, 6vw, 48px)", fontWeight: 700, color: "#2C2416", lineHeight: 1.1 }}>
-                {link.label}
+              <span className="font-[family-name:var(--font-playfair)] text-[clamp(26px,6vw,44px)] font-bold text-[#261E14] group-hover:g-text transition-colors leading-tight">
+                {l.label}
               </span>
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: "auto" }}>
-          <Link href="/contact" onClick={() => setOpen(false)} className="btn-primary">
-            Réserver
-          </Link>
-        </div>
+        <Link href="/contact" onClick={() => setMenuOpen(false)} className="btn-fill self-start mt-8">
+          Réserver
+        </Link>
       </div>
     </>
   );

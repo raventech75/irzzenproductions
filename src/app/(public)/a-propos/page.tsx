@@ -3,96 +3,86 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "À propos — Notre équipe",
-  description: "15 ans d'expérience, 12 professionnels passionnés. Découvrez l'histoire d'Irzzen Productions.",
+  description: "15 ans d'expérience, 12 professionnels passionnés.",
 };
 
 const valeurs = [
-  { titre: "Discrétion", texte: "Nous nous fondons dans votre journée pour capturer l'authenticité sans jamais la perturber." },
-  { titre: "Exigence", texte: "Chaque photo est retouchée, chaque image est choisie avec soin. Rien n'est laissé au hasard." },
-  { titre: "Émotion", texte: "Nous ne photographions pas des poses. Nous capturons des instants vrais, inoubliables." },
-  { titre: "Fiabilité", texte: "15 ans de mariages sans un seul incident. Contrat, acompte, livraison — toujours tenu." },
+  { titre: "Discrétion",  texte: "Nous nous fondons dans votre journée pour capturer l'authenticité sans jamais la perturber.", bar: "bg-[#E8A87C]" },
+  { titre: "Exigence",    texte: "Chaque photo est retouchée, chaque image est choisie avec soin. Rien n'est laissé au hasard.", bar: "bg-[#DFA0AE]" },
+  { titre: "Émotion",     texte: "Nous ne photographions pas des poses. Nous capturons des instants vrais, inoubliables.", bar: "bg-[#8FAF78]" },
+  { titre: "Fiabilité",   texte: "15 ans de mariages sans un seul incident. Contrat, acompte, livraison — toujours tenu.", bar: "bg-[#E8A87C]" },
+];
+
+const stats = [
+  { v: "15+",  l: "Ans d'expérience",  bar: "bg-[#E8A87C]" },
+  { v: "12",   l: "Professionnels",     bar: "bg-[#DFA0AE]" },
+  { v: "500+", l: "Mariages",           bar: "bg-[#8FAF78]" },
+  { v: "4.9",  l: "Note moyenne",       bar: "bg-[#DFA0AE]" },
 ];
 
 export default function AProposPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "#F9F6F2", paddingTop: 72 }}>
+    <div className="min-h-screen bg-[#FDFAF7]">
 
-      {/* Hero */}
-      <section style={{ padding: "80px 40px 0", maxWidth: 1380, margin: "0 auto" }}>
-        <p className="label" style={{ marginBottom: 20 }}>Notre histoire</p>
-        <h1
-          className="serif"
-          style={{
-            fontSize: "clamp(40px, 6vw, 88px)",
-            fontWeight: 700,
-            color: "#111010",
-            lineHeight: 0.95,
-            letterSpacing: "-0.025em",
-            marginBottom: 48,
-            maxWidth: 800,
-          }}
-        >
-          Une passion,<br />
-          <span style={{ color: "#9E8A94" }}>15 ans de maîtrise.</span>
+      {/* ── Hero ── */}
+      <div className="wrap pt-[120px] pb-20 border-b border-[rgba(38,30,20,0.06)]">
+        <p className="label-tag mb-4">Notre histoire</p>
+        <h1 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight leading-[0.94] mb-14"
+          style={{ fontSize: "clamp(38px,6vw,88px)" }}>
+          Une passion, <span className="g-text">15 ans de maîtrise.</span>
         </h1>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start", paddingBottom: 80, borderBottom: "1px solid rgba(17,16,16,0.08)" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           <div>
-            <p style={{ fontSize: 15, color: "rgba(17,16,16,0.5)", lineHeight: 1.8, fontWeight: 300, marginBottom: 20 }}>
+            <p className="text-[15px] text-[rgba(38,30,20,0.5)] font-light leading-[1.8] mb-5">
               Irzzen Productions est né d&apos;une conviction simple : chaque mariage mérite d&apos;être immortalisé avec l&apos;attention et l&apos;art qu&apos;il mérite.
             </p>
-            <p style={{ fontSize: 15, color: "rgba(17,16,16,0.5)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40 }}>
-              Depuis 15 ans, notre équipe de 12 professionnels capture des histoires d&apos;amour à travers toute la France et au-delà. Chaque couple repart avec des souvenirs qui traverseront le temps.
+            <p className="text-[15px] text-[rgba(38,30,20,0.5)] font-light leading-[1.8] mb-10">
+              Depuis 15 ans, notre équipe de 12 professionnels capture des histoires d&apos;amour à travers toute la France et au-delà.
             </p>
-            <Link href="/contact" className="btn-dark" style={{ textDecoration: "none" }}>
-              Travailler avec nous
-            </Link>
+            <Link href="/contact" className="btn-fill">Travailler avec nous</Link>
           </div>
-          <div style={{ aspectRatio: "4/5", background: "#E8E4DF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span className="label" style={{ color: "rgba(17,16,16,0.2)" }}>Photo équipe</span>
+          <div className="aspect-[4/5] g-bg border border-white/80 flex items-center justify-center rounded-sm">
+            <span className="label-tag opacity-40">Photo équipe</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Chiffres */}
-      <section style={{ background: "#111010", padding: "80px 40px" }}>
-        <div style={{ maxWidth: 1380, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
-          {[
-            { value: "15+", label: "Ans d'expérience" },
-            { value: "12", label: "Professionnels" },
-            { value: "500+", label: "Mariages" },
-            { value: "4.9", label: "Note moyenne" },
-          ].map((stat) => (
-            <div key={stat.label} style={{ padding: "40px 32px", borderTop: "1px solid rgba(249,246,242,0.07)", textAlign: "center" }}>
-              <div className="serif" style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 700, color: "#F9F6F2", marginBottom: 12, letterSpacing: "-0.02em" }}>
-                {stat.value}
+      {/* ── Stats ── */}
+      <div className="g-bg border-b border-[rgba(38,30,20,0.06)]">
+        <div className="wrap py-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[rgba(38,30,20,0.06)]">
+            {stats.map(s => (
+              <div key={s.l} className="bg-[#FDFAF7]/80 p-10 text-center">
+                <div className={`h-[2px] w-8 rounded-full mx-auto mb-5 ${s.bar}`} />
+                <p className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] text-[40px] leading-none mb-2">{s.v}</p>
+                <p className="label-tag">{s.l}</p>
               </div>
-              <div className="label" style={{ color: "rgba(249,246,242,0.2)" }}>{stat.label}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Valeurs */}
-      <section style={{ padding: "80px 40px", maxWidth: 1380, margin: "0 auto" }}>
-        <p className="label" style={{ marginBottom: 16 }}>Ce qui nous guide</p>
-        <h2 className="serif" style={{ fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "#111010", letterSpacing: "-0.02em", marginBottom: 56 }}>
+      {/* ── Valeurs ── */}
+      <div className="wrap py-24">
+        <p className="label-tag mb-4">Ce qui nous guide</p>
+        <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight mb-14"
+          style={{ fontSize: "clamp(26px,3.5vw,46px)" }}>
           Nos valeurs
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-          {valeurs.map((v) => (
-            <div key={v.titre} style={{ padding: "40px 0", borderTop: "1px solid rgba(17,16,16,0.08)", display: "flex", gap: 32, alignItems: "start" }}>
-              <span style={{ display: "block", width: 1, height: 48, background: "#9E8A94", flexShrink: 0, marginTop: 4 }} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[rgba(38,30,20,0.06)]">
+          {valeurs.map(v => (
+            <div key={v.titre} className="bg-[#FDFAF7] p-10 flex gap-6">
+              <span className={`w-[3px] h-12 rounded-full shrink-0 mt-1 ${v.bar}`} />
               <div>
-                <h3 className="serif" style={{ fontSize: 22, fontWeight: 700, color: "#111010", marginBottom: 12, letterSpacing: "-0.01em" }}>
-                  {v.titre}
-                </h3>
-                <p style={{ fontSize: 14, color: "rgba(17,16,16,0.45)", lineHeight: 1.75, fontWeight: 300 }}>{v.texte}</p>
+                <h3 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] text-[22px] mb-3">{v.titre}</h3>
+                <p className="text-[14px] text-[rgba(38,30,20,0.48)] leading-[1.75] font-light">{v.texte}</p>
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
     </div>
   );

@@ -4,75 +4,80 @@ import { ContactForm } from "./ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact & Réservation",
-  description: "Contactez Irzzen Productions pour votre mariage. Disponibilités et devis sous 24h.",
+  description: "Contactez Irzzen Productions. Disponibilités et devis sous 24h.",
 };
+
+const infos = [
+  { label: "Email",          value: "contact@irzzenproductions.fr", href: "mailto:contact@irzzenproductions.fr", bar: "bg-[#E8A87C]" },
+  { label: "Téléphone",      value: "+33 6 00 00 00 00",            href: "tel:+33600000000",                    bar: "bg-[#DFA0AE]" },
+  { label: "Disponibilités", value: "Réponse sous 24h",             href: null,                                  bar: "bg-[#8FAF78]" },
+];
+
+const engagements = [
+  "Réponse garantie sous 24h",
+  "Devis gratuit et sans engagement",
+  "Contrat signé électroniquement",
+  "Acompte de 15% à la réservation",
+  "Annulation remboursée sous 30 jours",
+];
+
+const dots = ["bg-[#E8A87C]", "bg-[#DFA0AE]", "bg-[#8FAF78]", "bg-[#E8A87C]", "bg-[#DFA0AE]"];
 
 export default function ContactPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "var(--fond)", paddingTop: 72 }}>
-      <section style={{ padding: "72px 40px 80px", maxWidth: 1380, margin: "0 auto" }}>
+    <div className="min-h-screen bg-[#FDFAF7]">
+      <div className="wrap pt-[120px] pb-24">
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
 
-          {/* Gauche */}
+          {/* ── Gauche ── */}
           <div>
-            <p className="label" style={{ marginBottom: 16 }}>Parlons de votre mariage</p>
-            <h1 className="serif" style={{
-              fontSize: "clamp(36px, 5vw, 72px)",
-              fontWeight: 700, color: "#2C2416",
-              lineHeight: 0.95, letterSpacing: "-0.025em", marginBottom: 24,
-            }}>
-              Réservons <span className="gradient-text">votre date</span>
+            <p className="label-tag mb-4">Parlons de votre mariage</p>
+            <h1 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight leading-[0.94] mb-6"
+              style={{ fontSize: "clamp(34px,5vw,68px)" }}>
+              Réservons <span className="g-text">votre date</span>
             </h1>
-            <p style={{ fontSize: 15, color: "rgba(44,36,22,0.45)", lineHeight: 1.75, marginBottom: 48, fontWeight: 300 }}>
+            <p className="text-[15px] text-[rgba(38,30,20,0.45)] font-light leading-[1.72] mb-12 max-w-sm">
               Décrivez-nous votre projet. Nous vous répondons sous 24h avec nos disponibilités et un devis détaillé.
             </p>
 
-            {/* Infos */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 48 }}>
-              {[
-                { label: "Email", value: "contact@irzzenproductions.fr", href: "mailto:contact@irzzenproductions.fr", accent: "var(--orange)" },
-                { label: "Téléphone", value: "+33 6 00 00 00 00", href: "tel:+33600000000", accent: "var(--rose)" },
-                { label: "Disponibilités", value: "Réponse sous 24h", href: null, accent: "var(--olive)" },
-              ].map((item) => (
-                <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                  <div style={{ width: 3, height: 36, background: item.accent, flexShrink: 0, borderRadius: 2 }} />
+            {/* Infos contact */}
+            <div className="flex flex-col gap-6 mb-12">
+              {infos.map(item => (
+                <div key={item.label} className="flex items-center gap-5">
+                  <span className={`w-[3px] h-9 rounded-full shrink-0 ${item.bar}`} />
                   <div>
-                    <div style={{ fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(44,36,22,0.35)", marginBottom: 3 }}>{item.label}</div>
-                    {item.href ? (
-                      <a href={item.href} style={{ fontSize: 14, color: "#2C2416", textDecoration: "none" }}>{item.value}</a>
-                    ) : (
-                      <span style={{ fontSize: 14, color: "#2C2416" }}>{item.value}</span>
-                    )}
+                    <p className="text-[10px] tracking-[0.32em] uppercase text-[rgba(38,30,20,0.32)] mb-0.5">{item.label}</p>
+                    {item.href
+                      ? <a href={item.href} className="text-[14px] text-[#261E14] no-underline hover:opacity-70 transition-opacity">{item.value}</a>
+                      : <span className="text-[14px] text-[#261E14]">{item.value}</span>
+                    }
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Engagements */}
-            <div className="gradient-bg" style={{ padding: "28px 32px", border: "1px solid rgba(255,255,255,0.8)" }}>
-              <p className="label" style={{ marginBottom: 16 }}>Nos engagements</p>
-              {[
-                "Réponse garantie sous 24h",
-                "Devis gratuit et sans engagement",
-                "Contrat signé électroniquement",
-                "Acompte de 15% à la réservation",
-                "Annulation remboursée sous 30 jours",
-              ].map((g, i) => (
-                <div key={g} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, fontSize: 13, color: "rgba(44,36,22,0.55)" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: ["var(--orange)", "var(--rose)", "var(--olive)", "var(--orange)", "var(--rose)"][i], flexShrink: 0 }} />
-                  {g}
-                </div>
-              ))}
+            <div className="g-bg border border-white/80 p-7 rounded-sm">
+              <p className="label-tag mb-4">Nos engagements</p>
+              <div className="flex flex-col gap-3">
+                {engagements.map((g, i) => (
+                  <div key={g} className="flex items-center gap-3 text-[13px] text-[rgba(38,30,20,0.55)]">
+                    <span className={`w-[5px] h-[5px] rounded-full shrink-0 ${dots[i]}`} />
+                    {g}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Droite : formulaire */}
-          <Suspense fallback={<div style={{ minHeight: 500, background: "rgba(255,255,255,0.5)" }} />}>
+          {/* ── Droite : formulaire ── */}
+          <Suspense fallback={<div className="min-h-[500px] g-bg rounded-sm animate-pulse" />}>
             <ContactForm />
           </Suspense>
+
         </div>
-      </section>
+      </div>
     </div>
   );
 }
