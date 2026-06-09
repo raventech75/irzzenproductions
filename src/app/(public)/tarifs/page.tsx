@@ -3,31 +3,25 @@ import { Configurateur } from "./Configurateur";
 
 export const metadata: Metadata = {
   title: "Tarifs & Formules",
-  description:
-    "Configurez votre prestation mariage sur-mesure. 5 formules de 890€ à 3890€, options à la carte. Réservez en ligne avec acompte de 15%.",
+  description: "Configurez votre prestation mariage sur-mesure. 5 formules de 890€ à 3890€, options à la carte.",
 };
 
 export default function TarifsPage() {
   return (
-    <div className="min-h-screen bg-[#F7F3EF] pt-24">
-      {/* Hero */}
-      <section className="py-20 px-6 text-center">
-        <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-          Tarifs & Formules
-        </p>
-        <h1
-          className="text-5xl md:text-7xl font-bold text-[#1A1520] leading-tight mb-6"
-          style={{ fontFamily: "var(--font-playfair)" }}
-        >
-          Configurez votre{" "}
-          <span className="text-gradient-gold italic">prestation</span>
+    <div style={{ minHeight: "100vh", background: "var(--fond)", paddingTop: 72 }}>
+      <section style={{ padding: "72px 40px 48px", maxWidth: 1380, margin: "0 auto" }}>
+        <p className="label" style={{ marginBottom: 16 }}>Tarifs & Formules</p>
+        <h1 className="serif" style={{
+          fontSize: "clamp(36px, 5vw, 72px)",
+          fontWeight: 700, color: "#2C2416",
+          lineHeight: 0.95, letterSpacing: "-0.025em", marginBottom: 20,
+        }}>
+          Configurez votre <span className="gradient-text">prestation</span>
         </h1>
-        <p className="text-[#1A1520]/50 text-lg max-w-2xl mx-auto font-light">
-          Choisissez la formule qui correspond à votre mariage, ajoutez les options
-          souhaitées et réservez en quelques clics.
+        <p style={{ fontSize: 15, color: "rgba(44,36,22,0.45)", maxWidth: 520, fontWeight: 300, lineHeight: 1.7 }}>
+          Choisissez la formule qui correspond à votre mariage et personnalisez-la avec vos options.
         </p>
       </section>
-
       <Configurateur />
     </div>
   );

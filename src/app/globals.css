@@ -1,17 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --encre: #111010;
-  --creme: #F9F6F2;
-  --mauve: #9E8A94;
-  --mauve-light: #C2B0BA;
-  --or: #B8A99A;
+  --fond: #FDFAF7;
+  --texte: #2C2416;
+  --orange: #EEB88A;
+  --rose: #E8AEB8;
+  --olive: #A8BE90;
+  --orange-light: #F9E8D6;
+  --rose-light: #F7E4E9;
+  --olive-light: #DFF0D4;
 }
 
 @theme inline {
-  --color-encre: var(--encre);
-  --color-creme: var(--creme);
-  --color-mauve: var(--mauve);
+  --color-fond: var(--fond);
+  --color-texte: var(--texte);
+  --color-orange: var(--orange);
+  --color-rose: var(--rose);
+  --color-olive: var(--olive);
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
 }
@@ -20,18 +25,18 @@
 html { scroll-behavior: smooth; }
 
 body {
-  background-color: var(--creme);
-  color: var(--encre);
+  background-color: var(--fond);
+  color: var(--texte);
   font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
   font-weight: 300;
 }
 
 ::-webkit-scrollbar { width: 2px; }
-::-webkit-scrollbar-track { background: var(--creme); }
-::-webkit-scrollbar-thumb { background: var(--encre); }
+::-webkit-scrollbar-track { background: var(--fond); }
+::-webkit-scrollbar-thumb { background: var(--rose); }
 
-::selection { background: var(--encre); color: var(--creme); }
+::selection { background: var(--rose-light); color: var(--texte); }
 
 .serif { font-family: var(--font-playfair); }
 
@@ -39,30 +44,80 @@ body {
   font-size: 10px;
   letter-spacing: 0.45em;
   text-transform: uppercase;
-  color: var(--mauve);
+  color: var(--rose);
 }
 
-.btn-dark {
+/* Dégradé signature */
+.gradient-text {
+  background: linear-gradient(120deg, var(--orange) 0%, var(--rose) 50%, var(--olive) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--orange-light) 0%, var(--rose-light) 50%, var(--olive-light) 100%);
+}
+
+.gradient-bar {
+  background: linear-gradient(90deg, var(--orange), var(--rose), var(--olive));
+}
+
+/* Legacy aliases pour les composants non encore migrés */
+.text-gradient-gold {
+  background: linear-gradient(120deg, var(--orange) 0%, var(--rose) 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(232,174,184,0.2);
+}
+
+.gold-glow {
+  box-shadow: 2px 2px 0 rgba(44,36,22,0.12);
+}
+
+.btn-primary {
   display: inline-block;
-  padding: 14px 36px;
-  background: var(--encre);
-  color: var(--creme);
+  padding: 13px 32px;
+  background: linear-gradient(120deg, var(--orange), var(--rose));
+  color: white;
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   font-weight: 500;
   transition: opacity 0.2s;
+  text-decoration: none;
 }
-.btn-dark:hover { opacity: 0.75; }
+.btn-primary:hover { opacity: 0.85; }
 
 .btn-outline {
   display: inline-block;
-  padding: 13px 35px;
-  border: 1px solid rgba(17,16,16,0.25);
-  color: var(--encre);
+  padding: 12px 31px;
+  border: 1px solid rgba(44,36,22,0.2);
+  color: var(--texte);
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  transition: border-color 0.2s, color 0.2s;
+  transition: border-color 0.2s;
+  text-decoration: none;
 }
-.btn-outline:hover { border-color: var(--encre); }
+.btn-outline:hover { border-color: var(--rose); }
+
+.btn-dark {
+  display: inline-block;
+  padding: 13px 32px;
+  background: var(--texte);
+  color: var(--fond);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+  transition: opacity 0.2s;
+  text-decoration: none;
+}
+.btn-dark:hover { opacity: 0.75; }

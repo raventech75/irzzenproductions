@@ -15,41 +15,33 @@ const nav = [
 
 export function Footer() {
   return (
-    <footer style={{ background: "#111010", padding: "80px 0 40px" }}>
+    <footer className="gradient-bg" style={{ borderTop: "1px solid rgba(232,174,184,0.2)", padding: "72px 0 36px" }}>
       <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 40px" }}>
 
-        {/* Top */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 60, paddingBottom: 60, borderBottom: "1px solid rgba(249,246,242,0.07)" }}>
+        {/* Barre déco */}
+        <div className="gradient-bar" style={{ height: 2, width: 60, marginBottom: 56 }} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 60, paddingBottom: 52, borderBottom: "1px solid rgba(44,36,22,0.08)" }}>
 
           {/* Marque */}
           <div>
-            <div className="serif" style={{ fontSize: 28, fontWeight: 700, color: "#F9F6F2", marginBottom: 16, letterSpacing: "-0.01em" }}>
+            <div className="serif" style={{ fontSize: 32, fontWeight: 700, color: "#2C2416", marginBottom: 16, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
               Irzzen<br />
-              <span style={{ color: "#9E8A94" }}>Productions</span>
+              <span className="gradient-text">Productions</span>
             </div>
-            <p style={{ fontSize: 13, color: "rgba(249,246,242,0.3)", lineHeight: 1.7, maxWidth: 260, fontWeight: 300 }}>
+            <p style={{ fontSize: 13, color: "rgba(44,36,22,0.45)", lineHeight: 1.7, maxWidth: 260, fontWeight: 300, marginBottom: 24 }}>
               Photographes & vidéastes spécialisés dans le mariage haut de gamme.
             </p>
+            <Link href="/contact" className="btn-primary">Réserver</Link>
           </div>
 
           {/* Nav */}
           <div>
-            <p className="label" style={{ marginBottom: 24, color: "rgba(249,246,242,0.25)" }}>Navigation</p>
+            <p className="label" style={{ marginBottom: 22 }}>Navigation</p>
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
               {nav.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    style={{
-                      fontSize: 13,
-                      color: "rgba(249,246,242,0.35)",
-                      textDecoration: "none",
-                      fontWeight: 300,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "#F9F6F2")}
-                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(249,246,242,0.35)")}
-                  >
+                  <Link href={link.href} style={{ fontSize: 13, color: "rgba(44,36,22,0.5)", textDecoration: "none", fontWeight: 300, transition: "color 0.2s" }}>
                     {link.label}
                   </Link>
                 </li>
@@ -59,41 +51,18 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <p className="label" style={{ marginBottom: 24, color: "rgba(249,246,242,0.25)" }}>Contact</p>
-            <a
-              href="mailto:contact@irzzenproductions.fr"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 13,
-                color: "rgba(249,246,242,0.4)",
-                textDecoration: "none",
-                marginBottom: 32,
-                fontWeight: 300,
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#F9F6F2")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(249,246,242,0.4)")}
-            >
-              <Mail size={13} style={{ color: "#9E8A94" }} />
+            <p className="label" style={{ marginBottom: 22 }}>Contact</p>
+            <a href="mailto:contact@irzzenproductions.fr" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "rgba(44,36,22,0.5)", textDecoration: "none", marginBottom: 24, fontWeight: 300 }}>
+              <Mail size={13} style={{ color: "var(--rose)" }} />
               contact@irzzenproductions.fr
             </a>
-            <div style={{ display: "flex", gap: 12 }}>
-              {/* Instagram */}
+            <div style={{ display: "flex", gap: 10 }}>
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
-                style={{ width: 36, height: 36, border: "1px solid rgba(249,246,242,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(249,246,242,0.3)", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(249,246,242,0.4)"; e.currentTarget.style.color = "#F9F6F2"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(249,246,242,0.1)"; e.currentTarget.style.color = "rgba(249,246,242,0.3)"; }}
-              >
+                style={{ width: 36, height: 36, border: "1px solid rgba(44,36,22,0.15)", background: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(44,36,22,0.45)" }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
-              {/* YouTube */}
               <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
-                style={{ width: 36, height: 36, border: "1px solid rgba(249,246,242,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(249,246,242,0.3)", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(249,246,242,0.4)"; e.currentTarget.style.color = "#F9F6F2"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(249,246,242,0.1)"; e.currentTarget.style.color = "rgba(249,246,242,0.3)"; }}
-              >
+                style={{ width: 36, height: 36, border: "1px solid rgba(44,36,22,0.15)", background: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(44,36,22,0.45)" }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
               </a>
             </div>
@@ -101,23 +70,14 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div style={{ paddingTop: 32, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <p style={{ fontSize: 11, color: "rgba(249,246,242,0.2)", letterSpacing: "0.1em" }}>
-            © 2025 Irzzen Productions
-          </p>
-          <div style={{ display: "flex", gap: 32 }}>
-            {[
-              { href: "/mentions-legales", label: "Mentions légales" },
-              { href: "/cgv", label: "CGV" },
-              { href: "/confidentialite", label: "Confidentialité" },
-            ].map((l) => (
-              <Link key={l.href} href={l.href} style={{ fontSize: 11, color: "rgba(249,246,242,0.2)", textDecoration: "none", letterSpacing: "0.1em" }}>
-                {l.label}
-              </Link>
+        <div style={{ paddingTop: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <p style={{ fontSize: 11, color: "rgba(44,36,22,0.3)", letterSpacing: "0.1em" }}>© 2025 Irzzen Productions</p>
+          <div style={{ display: "flex", gap: 28 }}>
+            {[{ href: "/mentions-legales", label: "Mentions légales" }, { href: "/cgv", label: "CGV" }, { href: "/confidentialite", label: "Confidentialité" }].map((l) => (
+              <Link key={l.href} href={l.href} style={{ fontSize: 11, color: "rgba(44,36,22,0.3)", textDecoration: "none" }}>{l.label}</Link>
             ))}
           </div>
         </div>
-
       </div>
     </footer>
   );
