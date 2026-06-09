@@ -45,7 +45,17 @@ export function ContactForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+
+    await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...values,
+        formule: formulePresel?.id,
+        total: totalParam,
+      }),
+    });
+
     setLoading(false);
     setSent(true);
   };
