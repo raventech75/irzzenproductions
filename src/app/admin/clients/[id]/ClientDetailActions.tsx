@@ -28,7 +28,8 @@ export function ClientDetailActions({
   const handleStatutChange = async (newStatut: string) => {
     setSaving(true);
     const supabase = createClient();
-    await supabase.from("clients").update({ statut: newStatut }).eq("id", clientId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("clients") as any).update({ statut: newStatut }).eq("id", clientId);
     setStatut(newStatut);
     setSaving(false);
     router.refresh();

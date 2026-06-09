@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ContactForm } from "./ContactForm";
 
 export const metadata: Metadata = {
@@ -91,7 +92,9 @@ export default function ContactPage() {
             </div>
 
             {/* Droite : formulaire */}
-            <ContactForm />
+            <Suspense fallback={<div className="glass p-8 min-h-[500px] animate-pulse" />}>
+              <ContactForm />
+            </Suspense>
           </div>
         </div>
       </section>
