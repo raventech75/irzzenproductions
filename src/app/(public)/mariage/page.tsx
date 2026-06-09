@@ -1,24 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { Check } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Photographie & Vidéographie de Mariage",
-  description:
-    "Reportage photo et film de mariage haut de gamme. Équipe de 12 professionnels, 15 ans d'expérience, drone, album luxe. Demandez votre devis gratuit.",
-  keywords: [
-    "photographe mariage",
-    "vidéaste mariage",
-    "film mariage cinématographique",
-    "reportage mariage",
-    "photographe mariage luxe",
-    "drone mariage",
-  ],
+  description: "Reportage photo et film de mariage haut de gamme.",
 };
 
 const photoInclus = [
   "Reportage de 4h à illimité selon formule",
-  "De 200 à photos illimitées retouchées",
+  "200 à photos illimitées retouchées",
   "Retouche couleur & lumière professionnelle",
   "Galerie privée en ligne sécurisée",
   "Téléchargement haute résolution",
@@ -34,217 +25,141 @@ const videoInclus = [
   "Livraison fichiers numériques HD",
 ];
 
+const steps = [
+  { num: "01", titre: "Contact",          texte: "Vous nous contactez, nous vérifions nos disponibilités et vous envoyons un devis sous 24h.", bar: "bg-[#E8A87C]" },
+  { num: "02", titre: "Contrat & Acompte",texte: "Vous signez le contrat électroniquement et versez l'acompte de 15% pour confirmer la date.", bar: "bg-[#DFA0AE]" },
+  { num: "03", titre: "Votre Mariage",    texte: "Notre équipe arrive en avance, discrète et professionnelle. Vous profitez, nous capturons.", bar: "bg-[#8FAF78]" },
+  { num: "04", titre: "Livraison",        texte: "Votre galerie privée est prête sous 4 à 6 semaines. Téléchargement illimité inclus.", bar: "bg-[#DFA0AE]" },
+];
+
 const faq = [
-  {
-    q: "Combien de temps à l'avance faut-il réserver ?",
-    a: "Nous recommandons de réserver au moins 6 à 12 mois avant votre mariage. Les dates du printemps et de l'été se remplissent très rapidement. Contactez-nous pour vérifier nos disponibilités.",
-  },
-  {
-    q: "Intervenez-vous partout en France ?",
-    a: "Oui, nous intervenons partout en France et à l'international. Les frais de déplacement sont inclus en Île-de-France, et calculés au-delà selon la destination.",
-  },
-  {
-    q: "Comment se passe la livraison des photos ?",
-    a: "Vous recevrez un lien vers votre galerie privée sécurisée. Vous pourrez y télécharger toutes vos photos en haute résolution, les partager avec vos proches et les conserver indéfiniment.",
-  },
-  {
-    q: "Puis-je ajouter des options après la réservation ?",
-    a: "Oui, vous pouvez ajouter des options jusqu'à 30 jours avant la date du mariage, sous réserve de disponibilité de notre équipe.",
-  },
-  {
-    q: "Que se passe-t-il en cas d'annulation ?",
-    a: "L'acompte de 15% est remboursable si l'annulation intervient plus de 30 jours avant le mariage. Un contrat détaillant toutes les conditions vous est envoyé à la réservation.",
-  },
+  { q: "Combien de temps à l'avance faut-il réserver ?",  a: "Nous recommandons de réserver 6 à 12 mois avant votre mariage. Les dates du printemps et de l'été se remplissent très rapidement." },
+  { q: "Intervenez-vous partout en France ?",              a: "Oui, partout en France et à l'international. Les frais de déplacement sont inclus en Île-de-France." },
+  { q: "Comment se passe la livraison des photos ?",       a: "Vous recevrez un lien vers votre galerie privée sécurisée pour télécharger toutes vos photos en haute résolution." },
+  { q: "Puis-je ajouter des options après la réservation ?", a: "Oui, jusqu'à 30 jours avant la date du mariage, sous réserve de disponibilité." },
+  { q: "Que se passe-t-il en cas d'annulation ?",          a: "L'acompte de 15% est remboursable si l'annulation intervient plus de 30 jours avant le mariage." },
 ];
 
 export default function MariagePage() {
   return (
-    <div className="min-h-screen bg-[#F7F3EF] pt-24">
-      {/* Hero */}
-      <section className="relative py-32 px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-[#C4A5B5]/3 blur-[200px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px]" />
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-            Notre spécialité
-          </p>
-          <h1
-            className="text-5xl md:text-7xl font-bold text-[#1A1520] leading-tight mb-8"
-            style={{ fontFamily: "var(--font-playfair)" }}
-          >
-            Photographe & Vidéaste
-            <br />
-            <span className="text-gradient-gold italic">Mariage Premium</span>
+    <div className="min-h-screen bg-[#FDFAF7]">
+
+      {/* ── Hero ── */}
+      <section className="g-bg pt-[140px] pb-24">
+        <div className="wrap text-center">
+          <p className="label-tag mb-4">Notre spécialité</p>
+          <h1 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight leading-[0.93] mb-7"
+            style={{ fontSize: "clamp(40px,6vw,88px)" }}>
+            Photographe &amp; Vidéaste<br />
+            <span className="g-text">Mariage Premium</span>
           </h1>
-          <p className="text-[#1A1520]/50 text-xl max-w-2xl mx-auto font-light mb-12">
-            Chaque mariage est une histoire unique. Nous la racontons avec
-            sensibilité, élégance et un regard artistique affûté par 15 ans de
-            passion.
+          <p className="text-[16px] text-[rgba(38,30,20,0.48)] max-w-xl mx-auto font-light leading-[1.75] mb-10">
+            Chaque mariage est une histoire unique. Nous la racontons avec sensibilité, élégance et un regard artistique affûté par 15 ans de passion.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/tarifs"
-              className="px-10 py-4 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors gold-glow"
-            >
-              Voir les formules
-            </Link>
-            <Link
-              href="/galerie"
-              className="px-10 py-4 border border-[#C4A5B5]/40 text-[#1A1520]/80 text-sm font-light tracking-[0.2em] uppercase hover:border-[#C4A5B5] hover:text-[#C4A5B5] transition-all"
-            >
-              Notre portfolio
-            </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/tarifs"  className="btn-fill">Voir les formules</Link>
+            <Link href="/galerie" className="btn-ghost">Notre portfolio</Link>
           </div>
         </div>
       </section>
 
-      {/* Photo & Vidéo */}
-      <section id="photo" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
-            {/* Placeholder photo */}
-            <div className="aspect-[4/5] bg-[#FAFAF8] border border-[#C4A5B5]/10 flex items-center justify-center text-[#C4A5B5]/20">
-              <span className="text-xs tracking-widest uppercase">Votre photo ici</span>
-            </div>
-            <div>
-              <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-                Photographie
-              </p>
-              <h2
-                className="text-4xl md:text-5xl font-bold text-[#1A1520] leading-tight mb-6"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                Des images qui{" "}
-                <span className="text-gradient-gold italic">parlent</span>
-              </h2>
-              <p className="text-[#1A1520]/50 text-lg leading-relaxed mb-8 font-light">
-                Notre approche photojournaliste capture l&apos;authenticité de
-                chaque instant — les larmes, les rires, les regards complices —
-                sans jamais interrompre la magie de votre journée.
-              </p>
-              <ul className="space-y-3 mb-10">
-                {photoInclus.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-[#1A1520]/60">
-                    <Check size={14} className="text-[#C4A5B5] flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/tarifs"
-                className="inline-flex items-center gap-2 text-sm text-[#C4A5B5] tracking-widest uppercase font-medium hover:gap-4 transition-all"
-              >
-                Voir les formules photo <ArrowRight size={14} />
-              </Link>
-            </div>
+      {/* ── Photo ── */}
+      <section id="photo" className="bg-[#FDFAF7] py-24">
+        <div className="wrap grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="aspect-[4/5] g-bg border border-white/80 rounded-sm flex items-center justify-center">
+            <span className="label-tag opacity-40">Votre photo ici</span>
           </div>
-
-          {/* Vidéo */}
-          <div id="video" className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1">
-              <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-                Vidéographie
-              </p>
-              <h2
-                className="text-4xl md:text-5xl font-bold text-[#1A1520] leading-tight mb-6"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                Un film{" "}
-                <span className="text-gradient-gold italic">cinématographique</span>
-              </h2>
-              <p className="text-[#1A1520]/50 text-lg leading-relaxed mb-8 font-light">
-                Votre film de mariage est bien plus qu&apos;un simple
-                enregistrement. C&apos;est une œuvre narrative, avec une
-                direction artistique soignée, une bande-son émouvante et des
-                images aériennes à couper le souffle.
-              </p>
-              <ul className="space-y-3 mb-10">
-                {videoInclus.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-[#1A1520]/60">
-                    <Check size={14} className="text-[#C4A5B5] flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/tarifs"
-                className="inline-flex items-center gap-2 text-sm text-[#C4A5B5] tracking-widest uppercase font-medium hover:gap-4 transition-all"
-              >
-                Voir les formules vidéo <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="order-1 lg:order-2 aspect-[4/5] bg-[#FAFAF8] border border-[#C4A5B5]/10 flex items-center justify-center text-[#C4A5B5]/20">
-              <span className="text-xs tracking-widest uppercase">Votre vidéo ici</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Processus */}
-      <section className="py-24 px-6 bg-[#FAF8F5]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">
-              Comment ça se passe
+          <div>
+            <p className="label-tag mb-3">Photographie</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight leading-tight mb-5"
+              style={{ fontSize: "clamp(28px,3.5vw,48px)" }}>
+              Des images qui <span className="g-text italic">parlent</span>
+            </h2>
+            <p className="text-[15px] text-[rgba(38,30,20,0.48)] leading-[1.75] mb-7 font-light">
+              Notre approche photojournaliste capture l&apos;authenticité de chaque instant — les larmes, les rires, les regards complices — sans jamais interrompre la magie de votre journée.
             </p>
-            <h2
-              className="text-4xl md:text-5xl font-bold text-[#1A1520]"
-              style={{ fontFamily: "var(--font-playfair)" }}
-            >
-              De la{" "}
-              <span className="text-gradient-gold italic">réservation</span>
-              {" "}à la livraison
+            <ul className="flex flex-col gap-2.5 mb-8">
+              {photoInclus.map(item => (
+                <li key={item} className="flex items-center gap-3 text-[13px] text-[rgba(38,30,20,0.55)]">
+                  <Check size={13} className="text-[#E8A87C] shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link href="/tarifs" className="btn-fill">Voir les formules photo</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Vidéo ── */}
+      <section id="video" className="g-bg py-24">
+        <div className="wrap grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="order-2 lg:order-1">
+            <p className="label-tag mb-3">Vidéographie</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight leading-tight mb-5"
+              style={{ fontSize: "clamp(28px,3.5vw,48px)" }}>
+              Un film <span className="g-text italic">cinématographique</span>
+            </h2>
+            <p className="text-[15px] text-[rgba(38,30,20,0.48)] leading-[1.75] mb-7 font-light">
+              Votre film de mariage est bien plus qu&apos;un enregistrement. C&apos;est une œuvre narrative, avec une direction artistique soignée et des images aériennes à couper le souffle.
+            </p>
+            <ul className="flex flex-col gap-2.5 mb-8">
+              {videoInclus.map(item => (
+                <li key={item} className="flex items-center gap-3 text-[13px] text-[rgba(38,30,20,0.55)]">
+                  <Check size={13} className="text-[#DFA0AE] shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link href="/tarifs" className="btn-fill">Voir les formules vidéo</Link>
+          </div>
+          <div className="order-1 lg:order-2 aspect-[4/5] bg-white/60 border border-white/80 rounded-sm flex items-center justify-center">
+            <span className="label-tag opacity-40">Votre vidéo ici</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Processus ── */}
+      <section className="bg-[#FDFAF7] py-24">
+        <div className="wrap">
+          <div className="text-center mb-16">
+            <p className="label-tag mb-3">Comment ça se passe</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight"
+              style={{ fontSize: "clamp(26px,3.5vw,48px)" }}>
+              De la <span className="g-text italic">réservation</span> à la livraison
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              { num: "01", titre: "Contact", texte: "Vous nous contactez, nous vérifions nos disponibilités et vous envoyons un devis sous 24h." },
-              { num: "02", titre: "Contrat & Acompte", texte: "Vous signez le contrat électroniquement et versez l'acompte de 15% pour confirmer la date." },
-              { num: "03", titre: "Votre Mariage", texte: "Notre équipe arrive en avance, discrète et professionnelle. Vous profitez, nous capturons." },
-              { num: "04", titre: "Livraison", texte: "Votre galerie privée est prête sous 4 à 6 semaines. Téléchargement illimité inclus." },
-            ].map((step) => (
-              <div key={step.num} className="relative">
-                <div
-                  className="text-7xl font-bold text-[#C4A5B5]/10 mb-4 leading-none"
-                  style={{ fontFamily: "var(--font-playfair)" }}
-                >
-                  {step.num}
-                </div>
-                <h3 className="text-lg font-semibold text-[#1A1520] mb-3">
-                  {step.titre}
-                </h3>
-                <p className="text-sm text-[#1A1520]/40 leading-relaxed">{step.texte}</p>
+            {steps.map(s => (
+              <div key={s.num}>
+                <span className={`inline-block w-[3px] h-8 rounded-full mb-5 ${s.bar}`} />
+                <div className="font-[family-name:var(--font-playfair)] font-bold text-[rgba(38,30,20,0.07)] text-[72px] leading-none mb-3 -mt-2">{s.num}</div>
+                <h3 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] text-[18px] mb-2">{s.titre}</h3>
+                <p className="text-[13px] text-[rgba(38,30,20,0.45)] leading-[1.7] font-light">{s.texte}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-24 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-xs tracking-[0.5em] uppercase text-[#C4A5B5] mb-4">FAQ</p>
-            <h2
-              className="text-4xl md:text-5xl font-bold text-[#1A1520]"
-              style={{ fontFamily: "var(--font-playfair)" }}
-            >
-              Questions{" "}
-              <span className="text-gradient-gold italic">fréquentes</span>
+      {/* ── FAQ ── */}
+      <section className="g-bg py-24">
+        <div className="wrap max-w-[760px]">
+          <div className="text-center mb-14">
+            <p className="label-tag mb-3">FAQ</p>
+            <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight"
+              style={{ fontSize: "clamp(26px,3.5vw,46px)" }}>
+              Questions <span className="g-text italic">fréquentes</span>
             </h2>
           </div>
-          <div className="space-y-4">
-            {faq.map((item) => (
-              <details
-                key={item.q}
-                className="group glass border border-[#C4A5B5]/15 open:border-[#C4A5B5]/40 transition-all"
-              >
-                <summary className="flex items-center justify-between px-6 py-5 cursor-pointer list-none text-[#1A1520] text-sm font-medium hover:text-[#C4A5B5] transition-colors">
+          <div className="flex flex-col gap-2">
+            {faq.map(item => (
+              <details key={item.q} className="group card rounded-sm border border-white/90">
+                <summary className="flex items-center justify-between px-6 py-5 cursor-pointer list-none text-[#261E14] text-[14px] font-medium hover:text-[#DFA0AE] transition-colors">
                   {item.q}
-                  <span className="text-[#C4A5B5]/60 group-open:rotate-45 transition-transform duration-300 text-xl leading-none flex-shrink-0 ml-4">
-                    +
-                  </span>
+                  <span className="text-[#DFA0AE] group-open:rotate-45 transition-transform duration-200 text-[22px] leading-none shrink-0 ml-4">+</span>
                 </summary>
-                <div className="px-6 pb-5 text-sm text-[#1A1520]/50 leading-relaxed border-t border-[#C4A5B5]/10 pt-4">
+                <div className="px-6 pb-5 text-[13px] text-[rgba(38,30,20,0.5)] leading-[1.75] border-t border-[rgba(38,30,20,0.06)] pt-4">
                   {item.a}
                 </div>
               </details>
@@ -253,29 +168,21 @@ export default function MariagePage() {
         </div>
       </section>
 
-      {/* CTA final */}
-      <section className="py-24 px-6">
-        <div className="max-w-3xl mx-auto text-center glass p-16 relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-[#C4A5B5] to-transparent" />
-          <h2
-            className="text-4xl font-bold text-[#1A1520] mb-4"
-            style={{ fontFamily: "var(--font-playfair)" }}
-          >
-            Votre mariage mérite{" "}
-            <span className="text-gradient-gold italic">le meilleur</span>
+      {/* ── CTA final ── */}
+      <section className="bg-[#FDFAF7] py-24">
+        <div className="wrap text-center">
+          <div className="g-bar h-[2px] w-12 rounded-full mx-auto mb-8" />
+          <h2 className="font-[family-name:var(--font-playfair)] font-bold text-[#261E14] tracking-tight mb-4"
+            style={{ fontSize: "clamp(30px,4vw,56px)" }}>
+            Votre mariage mérite <span className="g-text italic">le meilleur</span>
           </h2>
-          <p className="text-[#1A1520]/50 mb-10">
-            Vérifiez nos disponibilités pour votre date et recevez votre devis
-            personnalisé sous 24h.
+          <p className="text-[15px] text-[rgba(38,30,20,0.45)] font-light mb-10 max-w-md mx-auto leading-[1.72]">
+            Vérifiez nos disponibilités pour votre date et recevez votre devis personnalisé sous 24h.
           </p>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 px-10 py-4 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors gold-glow"
-          >
-            Vérifier nos disponibilités <ArrowRight size={14} />
-          </Link>
+          <Link href="/contact" className="btn-fill">Vérifier nos disponibilités</Link>
         </div>
       </section>
+
     </div>
   );
 }

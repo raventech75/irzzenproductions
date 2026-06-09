@@ -79,7 +79,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass p-8 space-y-6">
+    <form onSubmit={handleSubmit} className="card rounded-sm p-8 space-y-6">
       {/* Récap configurateur si arrivé depuis /tarifs */}
       {formulePresel && (
         <div className="p-4 border border-[#C4A5B5]/30 bg-[#C4A5B5]/5 space-y-2">

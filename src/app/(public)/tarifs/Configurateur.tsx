@@ -55,8 +55,8 @@ export function Configurateur() {
   });
 
   return (
-    <section className="px-6 pb-32">
-      <div className="max-w-7xl mx-auto">
+    <section className="pb-24">
+      <div className="wrap">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Colonne gauche : Formules + Options */}
           <div className="lg:col-span-2 space-y-8">
