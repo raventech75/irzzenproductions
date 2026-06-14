@@ -25,8 +25,8 @@ export default async function AdminMessagesPage() {
   return (
     <AdminShell>
       <div className="mb-8">
-        <p className="text-xs tracking-[0.4em] uppercase text-[#C4A5B5]/50 mb-1">Back-office</p>
-        <h1 className="text-2xl font-bold text-[#1A1520]" style={{ fontFamily: "var(--font-playfair)" }}>
+        <p className="text-xs tracking-[0.4em] uppercase text-[#E8A87C]/50 mb-1">Back-office</p>
+        <h1 className="text-2xl font-bold text-[#261E14]" style={{ fontFamily: "var(--font-playfair)" }}>
           Messages
         </h1>
       </div>
@@ -44,28 +44,28 @@ export default async function AdminMessagesPage() {
               <Link
                 key={c.id}
                 href={`/admin/clients/${c.id}`}
-                className="flex items-center justify-between glass border border-[#C4A5B5]/15 px-5 py-4 hover:border-[#C4A5B5]/40 transition-all group"
+                className="flex items-center justify-between glass border border-[#E8A87C]/15 px-5 py-4 hover:border-[#E8A87C]/40 transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-9 h-9 bg-[#C4A5B5]/10 border border-[#C4A5B5]/20 flex items-center justify-center text-[#C4A5B5]">
+                  <div className="w-9 h-9 bg-[#E8A87C]/10 border border-[#E8A87C]/20 flex items-center justify-center text-[#E8A87C]">
                     <MessageCircle size={15} />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[#1A1520]/80">
+                    <div className="text-sm font-medium text-[#261E14]/80">
                       {c.prenom_marie1} & {c.prenom_marie2}
                     </div>
-                    <div className="text-xs text-[#1A1520]/30 mt-0.5 truncate max-w-xs">
+                    <div className="text-xs text-[#261E14]/30 mt-0.5 truncate max-w-xs">
                       {dernierMsg.contenu}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   {nonLus > 0 && (
-                    <span className="w-5 h-5 bg-[#C4A5B5] text-[#13111A] text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className="w-5 h-5 bg-[#E8A87C] text-[#261E14] text-[10px] font-bold rounded-full flex items-center justify-center">
                       {nonLus}
                     </span>
                   )}
-                  <span className="text-xs text-[#1A1520]/20">
+                  <span className="text-xs text-[#261E14]/20">
                     {new Date(dernierMsg.created_at).toLocaleDateString("fr-FR")}
                   </span>
                 </div>
@@ -74,9 +74,9 @@ export default async function AdminMessagesPage() {
           })}
         </div>
       ) : (
-        <div className="glass border border-[#C4A5B5]/15 p-16 text-center">
-          <MessageCircle size={36} className="text-[#C4A5B5]/15 mx-auto mb-4" />
-          <p className="text-[#1A1520]/20 text-sm">Aucun message client pour l&apos;instant</p>
+        <div className="glass border border-[#E8A87C]/15 p-16 text-center">
+          <MessageCircle size={36} className="text-[#E8A87C]/15 mx-auto mb-4" />
+          <p className="text-[#261E14]/20 text-sm">Aucun message client pour l&apos;instant</p>
         </div>
       )}
     </AdminShell>

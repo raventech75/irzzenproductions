@@ -46,7 +46,10 @@ export function ChatBox({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `client_id=eq.${clientId}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const newMsg = payload.new as Message;
+          setMessages((prev) =>
+            prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
+          );
         }
       )
       .subscribe();
@@ -61,12 +64,23 @@ export function ChatBox({
   const handleSend = async () => {
     if (!texte.trim() || sending) return;
     setSending(true);
-    await fetch("/api/messages", {
+    const contenu = texte.trim();
+    setTexte("");
+
+    const res = await fetch("/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, contenu: texte.trim(), auteur }),
+      body: JSON.stringify({ client_id: clientId, contenu, auteur }),
     });
-    setTexte("");
+
+    if (res.ok) {
+      const { message } = await res.json();
+      // Ajout immédiat du message (sans attendre le realtime)
+      setMessages((prev) =>
+        prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+      );
+    }
+
     setSending(false);
   };
 

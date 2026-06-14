@@ -28,7 +28,7 @@ export function Footer() {
             <p className="text-[13px] text-[rgba(38,30,20,0.45)] leading-[1.7] font-light max-w-[240px] mb-6">
               Photographes &amp; vidéastes spécialisés dans le mariage haut de gamme.
             </p>
-            <Link href="/contact" className="btn-fill text-[10px] py-[10px] px-5">Réserver</Link>
+            <Link href="/tarifs" className="btn-fill text-[10px] py-[10px] px-5">Réserver</Link>
           </div>
 
           {/* Navigation */}
@@ -57,12 +57,12 @@ export function Footer() {
 
             <div className="flex gap-2">
               {/* Instagram */}
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.instagram.com/irzzenproductions" target="_blank" rel="noopener noreferrer"
                 className="w-9 h-9 bg-white/60 border border-[rgba(38,30,20,0.1)] flex items-center justify-center text-[rgba(38,30,20,0.4)] hover:text-[#DFA0AE] hover:border-[#DFA0AE] transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
               {/* YouTube */}
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.youtube.com/@irzzenproductions" target="_blank" rel="noopener noreferrer"
                 className="w-9 h-9 bg-white/60 border border-[rgba(38,30,20,0.1)] flex items-center justify-center text-[rgba(38,30,20,0.4)] hover:text-[#DFA0AE] hover:border-[#DFA0AE] transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
               </a>

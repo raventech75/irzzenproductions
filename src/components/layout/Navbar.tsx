@@ -77,7 +77,7 @@ export function Navbar() {
             >
               Espace client
             </Link>
-            <Link href="/contact" className="btn-fill text-[10px] py-[10px] px-5">
+            <Link href="/tarifs" className="btn-fill text-[10px] py-[10px] px-5">
               Réserver
             </Link>
           </div>
@@ -118,7 +118,7 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
-        <Link href="/contact" onClick={() => setMenuOpen(false)} className="btn-fill self-start mt-8">
+        <Link href="/tarifs" onClick={() => setMenuOpen(false)} className="btn-fill self-start mt-8">
           Réserver
         </Link>
       </div>

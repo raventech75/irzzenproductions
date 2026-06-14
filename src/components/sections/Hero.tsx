@@ -7,8 +7,8 @@ export function Hero() {
       {/* Photo — droite */}
       <div className="absolute right-0 top-0 bottom-0 w-[52%] overflow-hidden">
         <img
-          src="/photos/1L9A7763.JPG"
-          alt="Mariage Irzzen Productions"
+          src="/photos/Faiza & Feridun -  276.jpg"
+          alt="Mariage Faiza & Feridun — Irzzen Productions"
           className="w-full h-full object-cover object-center"
         />
         {/* Fondu gauche */}
@@ -36,7 +36,7 @@ export function Hero() {
 
           {/* Accroche */}
           <p className="text-[15px] text-[rgba(38,30,20,0.5)] font-light leading-[1.72] mb-10 max-w-[400px]">
-            15 ans d'expérience, 500 mariages capturés avec passion et précision artistique.
+            15 ans d'expérience, 1 500 mariages capturés avec passion et précision artistique.
           </p>
 
           {/* Boutons */}
@@ -48,7 +48,7 @@ export function Hero() {
           {/* Stats */}
           <div className="flex gap-10 pt-8 border-t border-[rgba(38,30,20,0.08)]">
             {[
-              { v: "500+",  l: "Mariages" },
+              { v: "1 500+",  l: "Mariages" },
               { v: "15 ans",l: "D'expérience" },
               { v: "12",    l: "Professionnels" },
             ].map(s => (

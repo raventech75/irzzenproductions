@@ -98,7 +98,7 @@ export const articles: Article[] = [
       {
         type: "quote",
         contenu:
-          "« Après 500 mariages, je peux vous dire qu'aucune journée ne se passe comme prévu. Ce qui fait la différence, c'est l'expérience accumulée pour trouver des solutions en quelques secondes. »",
+          "« Après 1 500 mariages, je peux vous dire qu'aucune journée ne se passe comme prévu. Ce qui fait la différence, c'est l'expérience accumulée pour trouver des solutions en quelques secondes. »",
       },
       {
         type: "p",
@@ -307,7 +307,7 @@ export const articles: Article[] = [
       {
         type: "intro",
         contenu:
-          "Un reportage photo exceptionnel ne se fait pas uniquement le jour J — il se prépare des semaines à l'avance. Voici notre guide complet, fruit de 15 ans d'expérience et de 500+ mariages, pour que chaque moment soit parfaitement capturé.",
+          "Un reportage photo exceptionnel ne se fait pas uniquement le jour J — il se prépare des semaines à l'avance. Voici notre guide complet, fruit de 15 ans d'expérience et de 1 500+ mariages, pour que chaque moment soit parfaitement capturé.",
       },
       {
         type: "h2",

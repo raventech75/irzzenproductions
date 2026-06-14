@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Download, X, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { Download, X, ChevronLeft, ChevronRight, ArrowLeft, ExternalLink, Images } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database";
 
-type Galerie = Database["public"]["Tables"]["galeries"]["Row"];
+type Galerie = Database["public"]["Tables"]["galeries"]["Row"] & { lien_synology?: string | null };
 type Fichier = Database["public"]["Tables"]["fichiers"]["Row"];
 
 export function GalerieViewer({
@@ -72,19 +72,56 @@ export function GalerieViewer({
             <span className="capitalize">{galerie.type}</span>
           </p>
         </div>
-        {fichiers.length > 0 && (
-          <button
-            onClick={downloadAll}
-            disabled={downloading}
-            className="flex items-center gap-2 px-6 py-3 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-widest uppercase hover:bg-[#DEC8D6] transition-colors disabled:opacity-60"
-          >
-            <Download size={14} />
-            {downloading ? "Téléchargement…" : "Tout télécharger"}
-          </button>
-        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {galerie.lien_synology && (
+            <a
+              href={galerie.lien_synology}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-6 py-3 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-widest uppercase hover:bg-[#DEC8D6] transition-colors"
+            >
+              <Images size={14} />
+              Voir mes photos
+            </a>
+          )}
+          {fichiers.length > 0 && (
+            <button
+              onClick={downloadAll}
+              disabled={downloading}
+              className="flex items-center gap-2 px-6 py-3 border border-[#C4A5B5]/40 text-[#C4A5B5] text-sm font-semibold tracking-widest uppercase hover:bg-[#C4A5B5]/10 transition-colors disabled:opacity-60"
+            >
+              <Download size={14} />
+              {downloading ? "Téléchargement…" : "Tout télécharger"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Grille photos */}
+      {/* Bloc Synology si aucun fichier local */}
+      {galerie.lien_synology && fichiers.length === 0 && (
+        <div className="glass border border-[#C4A5B5]/20 p-12 text-center mb-6">
+          <div className="w-16 h-16 bg-[#C4A5B5]/10 border border-[#C4A5B5]/20 flex items-center justify-center mx-auto mb-6">
+            <Images size={28} className="text-[#C4A5B5]" />
+          </div>
+          <h2 className="text-xl font-bold text-[#1A1520] mb-2" style={{ fontFamily: "var(--font-playfair)" }}>
+            Vos photos sont prêtes
+          </h2>
+          <p className="text-sm text-[#1A1520]/40 mb-8 max-w-xs mx-auto leading-relaxed">
+            Accédez à l'intégralité de vos photos en haute résolution via Synology Photos.
+          </p>
+          <a
+            href={galerie.lien_synology}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-widest uppercase hover:bg-[#DEC8D6] transition-colors"
+          >
+            <Images size={15} /> Ouvrir ma galerie
+          </a>
+          <p className="text-xs text-[#1A1520]/20 mt-4">S'ouvre dans un nouvel onglet</p>
+        </div>
+      )}
+
       {fichiers.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {fichiers.map((f, idx) => (

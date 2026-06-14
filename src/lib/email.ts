@@ -77,6 +77,24 @@ export async function sendGalerieDisponible({
   });
 }
 
+// ─── Email bienvenue espace client ───────────────────────────────────────────
+export async function sendBienvenueClient({
+  nomClient,
+  email,
+  motDePasse,
+}: {
+  nomClient: string;
+  email: string;
+  motDePasse: string;
+}) {
+  return getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: "Votre espace client est prêt — Irzzen Productions",
+    html: emailBienvenueClient({ nomClient, email, motDePasse }),
+  });
+}
+
 // ─── Email contrat à signer ───────────────────────────────────────────────────
 export async function sendContratASigner({
   nomClient,
@@ -208,5 +226,113 @@ function emailContratASigner({ nomClient, titreContrat }: {
     </div>
     <a href="https://irzzen-productions.vercel.app/client/contrat" class="btn">Signer mon contrat</a>
     <p style="font-size:13px;color:rgba(250,250,250,0.3);">Une fois signé, votre date est officiellement réservée. L'acompte de 15% vous sera demandé pour confirmer définitivement.</p>
+  `);
+}
+
+function emailBienvenueClient({ nomClient, email, motDePasse }: {
+  nomClient: string; email: string; motDePasse: string;
+}) {
+  return baseLayout(`
+    <h1>Bienvenue dans votre espace client, <span class="highlight">${nomClient}</span> !</h1>
+    <p>Votre acompte a bien été reçu et votre dossier mariage est maintenant créé. Retrouvez dans votre espace client vos photos, vidéos, contrats et communiquez directement avec notre équipe.</p>
+    <div class="box">
+      <div style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(196,165,181,0.6);margin-bottom:16px;">Vos identifiants de connexion</div>
+      <div class="box-row"><span class="box-label">Adresse email</span><span class="box-value">${email}</span></div>
+      <div class="box-row"><span class="box-label">Mot de passe</span><span class="box-value" style="color:#C4A5B5;font-size:26px;letter-spacing:0.2em;font-weight:bold;">${motDePasse}</span></div>
+    </div>
+    <div class="box" style="background:rgba(196,165,181,0.08);border-color:rgba(196,165,181,0.3);">
+      <div style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(196,165,181,0.6);margin-bottom:12px;">✍ Votre contrat est prêt</div>
+      <p style="margin:0;font-size:14px;color:rgba(250,250,250,0.7);line-height:1.6;">Votre contrat de prestation a été généré automatiquement. Connectez-vous à votre espace pour le consulter et le signer électroniquement afin de finaliser votre réservation.</p>
+    </div>
+    <a href="https://www.irzzenproductions.fr/client/login" class="btn">Accéder à mon espace client</a>
+    <p style="font-size:13px;color:rgba(250,250,250,0.3);">Vous pouvez modifier ce mot de passe à tout moment depuis votre espace. Pour toute question, répondez directement à cet email.</p>
+  `);
+}
+
+// ─── Devis ────────────────────────────────────────────────────────────────────
+
+export async function sendDevisClient(
+  devis: {
+    client_email: string;
+    client_nom: string;
+    numero: string;
+    objet: string;
+    total_ttc: number;
+    date_validite: string;
+  },
+  pdfBuffer?: Buffer | null,
+) {
+  return getResend().emails.send({
+    from: FROM,
+    to: devis.client_email,
+    bcc: ADMIN_EMAIL,
+    subject: `Votre devis ${devis.numero} — Irzzen Productions`,
+    html: emailDevisClient(devis),
+    ...(pdfBuffer ? {
+      attachments: [{
+        filename: `Devis_${devis.numero}.pdf`,
+        content: pdfBuffer,
+      }],
+    } : {}),
+  });
+}
+
+export async function sendDevisAdmin(devis: {
+  client_email: string;
+  client_nom: string;
+  client_societe?: string | null;
+  numero: string;
+  objet: string;
+  total_ttc: number;
+}) {
+  return getResend().emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `[Devis envoyé] ${devis.numero} — ${devis.client_nom}`,
+    html: emailDevisAdmin(devis),
+  });
+}
+
+function emailDevisClient(devis: {
+  client_nom: string;
+  numero: string;
+  objet: string;
+  total_ttc: number;
+  date_validite: string;
+}) {
+  const dateVal = new Date(devis.date_validite).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return baseLayout(`
+    <h1>Votre devis est prêt, <span class="highlight">${devis.client_nom}</span> !</h1>
+    <p>Nous avons préparé un devis personnalisé pour votre demande. Vous trouverez ci-dessous le récapitulatif de notre proposition.</p>
+    <div class="box">
+      <div style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(196,165,181,0.6);margin-bottom:16px;">Récapitulatif du devis</div>
+      <div class="box-row"><span class="box-label">Numéro</span><span class="box-value" style="font-family:monospace">${devis.numero}</span></div>
+      <div class="box-row"><span class="box-label">Objet</span><span class="box-value">${devis.objet}</span></div>
+      <div class="box-row"><span class="box-label">Total TTC</span><span class="box-value" style="color:#C4A5B5;font-size:20px">${Number(devis.total_ttc).toLocaleString("fr-FR")} €</span></div>
+      <div class="box-row"><span class="box-label">Valable jusqu'au</span><span class="box-value">${dateVal}</span></div>
+    </div>
+    <p>Pour accepter ce devis ou pour toute question, répondez directement à cet email. Nous sommes disponibles du lundi au vendredi de 9h à 19h.</p>
+    <a href="mailto:contact@irzzenproductions.fr" class="btn">Répondre à ce devis</a>
+    <p style="font-size:13px;color:rgba(250,250,250,0.3);">Le devis complet avec le détail des prestations vous a été joint à cet email.</p>
+  `);
+}
+
+function emailDevisAdmin(devis: {
+  client_nom: string;
+  client_email: string;
+  client_societe?: string | null;
+  numero: string;
+  objet: string;
+  total_ttc: number;
+}) {
+  return baseLayout(`
+    <h1>Devis <span class="highlight">${devis.numero}</span> envoyé</h1>
+    <p>Un devis vient d'être envoyé au client.</p>
+    <div class="box">
+      <div class="box-row"><span class="box-label">Client</span><span class="box-value">${devis.client_nom}${devis.client_societe ? ` (${devis.client_societe})` : ""}</span></div>
+      <div class="box-row"><span class="box-label">Email</span><span class="box-value">${devis.client_email}</span></div>
+      <div class="box-row"><span class="box-label">Objet</span><span class="box-value">${devis.objet}</span></div>
+      <div class="box-row"><span class="box-label">Total TTC</span><span class="box-value" style="color:#C4A5B5">${Number(devis.total_ttc).toLocaleString("fr-FR")} €</span></div>
+    </div>
   `);
 }

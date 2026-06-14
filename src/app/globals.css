@@ -5,7 +5,7 @@
   --c-bg:     #FDFAF7;
   --c-text:   #261E14;
   --c-orange: #E8A87C;
-  --c-rose:   #DFA0AE;
+  --c-rose:   #C4A882;
   --c-olive:  #8FAF78;
   --c-border: rgba(38,30,20,0.08);
   --c-muted:  rgba(38,30,20,0.42);
@@ -21,8 +21,7 @@
   --font-serif:   var(--font-playfair);
 }
 
-/* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── Base ── */
 html { scroll-behavior: smooth; }
 body {
   background: var(--c-bg);
@@ -47,7 +46,7 @@ body {
   background-clip: text;
 }
 .g-bg {
-  background: linear-gradient(135deg, #FDF0E6 0%, #FAE6EC 50%, #EBF2E4 100%);
+  background: linear-gradient(135deg, #FDF0E6 0%, #F5E8D5 50%, #EBF2E4 100%);
 }
 .g-bar {
   background: linear-gradient(90deg, var(--c-orange), var(--c-rose), var(--c-olive));
@@ -109,9 +108,10 @@ body {
 .wrap {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 0 48px;
+  padding-left: 48px;
+  padding-right: 48px;
 }
-@media (max-width: 768px) { .wrap { padding: 0 24px; } }
+@media (max-width: 768px) { .wrap { padding-left: 24px; padding-right: 24px; } }
 
 /* ── Legacy shims ── */
 .text-gradient-gold {

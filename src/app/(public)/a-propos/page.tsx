@@ -16,7 +16,7 @@ const valeurs = [
 const stats = [
   { v: "15+",  l: "Ans d'expérience",  bar: "bg-[#E8A87C]" },
   { v: "12",   l: "Professionnels",     bar: "bg-[#DFA0AE]" },
-  { v: "500+", l: "Mariages",           bar: "bg-[#8FAF78]" },
+  { v: "1 500+", l: "Mariages",           bar: "bg-[#8FAF78]" },
   { v: "4.9",  l: "Note moyenne",       bar: "bg-[#DFA0AE]" },
 ];
 

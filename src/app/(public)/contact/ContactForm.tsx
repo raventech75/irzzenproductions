@@ -63,14 +63,14 @@ export function ContactForm() {
   if (sent) {
     return (
       <div className="glass p-12 flex flex-col items-center justify-center text-center min-h-[500px]">
-        <CheckCircle size={48} className="text-[#C4A5B5] mb-6" />
+        <CheckCircle size={48} className="text-[var(--c-rose)] mb-6" />
         <h2
-          className="text-3xl font-bold text-[#1A1520] mb-4"
+          className="text-3xl font-bold text-[var(--c-text)] mb-4"
           style={{ fontFamily: "var(--font-playfair)" }}
         >
           Message envoyé !
         </h2>
-        <p className="text-[#1A1520]/50 text-sm leading-relaxed max-w-sm">
+        <p className="text-[var(--c-text)]/50 text-sm leading-relaxed max-w-sm">
           Nous avons bien reçu votre demande et vous répondrons dans les 24h
           avec nos disponibilités et votre devis personnalisé.
         </p>
@@ -82,24 +82,24 @@ export function ContactForm() {
     <form onSubmit={handleSubmit} className="card rounded-sm p-8 space-y-6">
       {/* Récap configurateur si arrivé depuis /tarifs */}
       {formulePresel && (
-        <div className="p-4 border border-[#C4A5B5]/30 bg-[#C4A5B5]/5 space-y-2">
-          <div className="text-xs tracking-[0.3em] uppercase text-[#C4A5B5] mb-3">
+        <div className="p-4 border border-[var(--c-rose)]/30 bg-[var(--c-rose)]/5 space-y-2">
+          <div className="text-xs tracking-[0.3em] uppercase text-[var(--c-rose)] mb-3">
             Votre sélection
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-[#1A1520]/70">Formule {formulePresel.nom}</span>
-            <span className="text-[#1A1520]/70">{formulePresel.prix.toLocaleString("fr-FR")} €</span>
+            <span className="text-[var(--c-text)]/70">Formule {formulePresel.nom}</span>
+            <span className="text-[var(--c-text)]/70">{formulePresel.prix.toLocaleString("fr-FR")} €</span>
           </div>
           {optionsPresel.map((o) => (
-            <div key={o.id} className="flex justify-between text-xs text-[#1A1520]/40">
+            <div key={o.id} className="flex justify-between text-xs text-[var(--c-text)]/40">
               <span>+ {o.nom}</span>
               <span>+{o.prix.toLocaleString("fr-FR")} €</span>
             </div>
           ))}
           {totalParam && (
-            <div className="flex justify-between text-sm font-medium border-t border-[#C4A5B5]/20 pt-2 mt-2">
-              <span className="text-[#C4A5B5]">Total estimé</span>
-              <span className="text-[#C4A5B5]">
+            <div className="flex justify-between text-sm font-medium border-t border-[var(--c-rose)]/20 pt-2 mt-2">
+              <span className="text-[var(--c-rose)]">Total estimé</span>
+              <span className="text-[var(--c-rose)]">
                 {parseInt(totalParam).toLocaleString("fr-FR")} €
               </span>
             </div>
@@ -111,9 +111,9 @@ export function ContactForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {champs.map((champ) => (
           <div key={champ.id} className={cn(champ.span ? "sm:col-span-2" : "")}>
-            <label className="block text-xs tracking-[0.2em] uppercase text-[#C4A5B5]/60 mb-2">
+            <label className="block text-xs tracking-[0.2em] uppercase text-[var(--c-rose)]/60 mb-2">
               {champ.label}
-              {champ.required && <span className="text-[#C4A5B5] ml-1">*</span>}
+              {champ.required && <span className="text-[var(--c-rose)] ml-1">*</span>}
             </label>
             {champ.type === "textarea" ? (
               <textarea
@@ -122,7 +122,7 @@ export function ContactForm() {
                 required={champ.required}
                 value={values[champ.id] ?? ""}
                 onChange={(e) => handleChange(champ.id, e.target.value)}
-                className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors resize-none"
+                className="w-full bg-[#FAFAF8] border border-[var(--c-rose)]/20 text-[var(--c-text)] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[var(--c-rose)]/60 transition-colors resize-none"
               />
             ) : (
               <input
@@ -131,7 +131,7 @@ export function ContactForm() {
                 required={champ.required}
                 value={values[champ.id] ?? ""}
                 onChange={(e) => handleChange(champ.id, e.target.value)}
-                className="w-full bg-[#FAFAF8] border border-[#C4A5B5]/20 text-[#1A1520] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[#C4A5B5]/60 transition-colors"
+                className="w-full bg-[#FAFAF8] border border-[var(--c-rose)]/20 text-[var(--c-text)] text-sm px-4 py-3 placeholder-[#F0EBE8]/20 focus:outline-none focus:border-[var(--c-rose)]/60 transition-colors"
               />
             )}
           </div>
@@ -141,11 +141,11 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-4 bg-[#C4A5B5] text-[#13111A] text-sm font-semibold tracking-[0.2em] uppercase hover:bg-[#DEC8D6] transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed gold-glow"
+        className="btn-fill w-full justify-center py-4 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {loading ? (
           <span className="flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-[#13111A]/30 border-t-[#13111A] rounded-full animate-spin" />
+            <span className="w-4 h-4 border-2 border-[var(--c-text)]/30 border-t-[var(--c-text)] rounded-full animate-spin" />
             Envoi en cours…
           </span>
         ) : (
@@ -156,9 +156,9 @@ export function ContactForm() {
         )}
       </button>
 
-      <p className="text-center text-[10px] text-[#1A1520]/20">
+      <p className="text-center text-[10px] text-[var(--c-text)]/20">
         En soumettant ce formulaire vous acceptez notre{" "}
-        <a href="/confidentialite" className="underline hover:text-[#C4A5B5]/40 transition-colors">
+        <a href="/confidentialite" className="underline hover:text-[var(--c-rose)]/40 transition-colors">
           politique de confidentialité
         </a>
       </p>

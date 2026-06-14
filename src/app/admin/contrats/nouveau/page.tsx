@@ -10,20 +10,19 @@ export default async function NouveauContratPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id, prenom_marie1, prenom_marie2")
+  const { data: clients } = await (supabase.from("clients") as any)
+    .select("id, prenom_marie1, prenom_marie2, formule, total_ttc, date_mariage, lieu")
     .order("created_at", { ascending: false });
 
   return (
     <AdminShell>
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/contrats" className="text-[#1A1520]/30 hover:text-[#C4A5B5] transition-colors">
+        <Link href="/admin/contrats" className="text-[#261E14]/30 hover:text-[#E8A87C] transition-colors">
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-xs tracking-[0.4em] uppercase text-[#C4A5B5]/50 mb-1">Contrats</p>
-          <h1 className="text-2xl font-bold text-[#1A1520]" style={{ fontFamily: "var(--font-playfair)" }}>
+          <p className="text-xs tracking-[0.4em] uppercase text-[#E8A87C]/50 mb-1">Contrats</p>
+          <h1 className="text-2xl font-bold text-[#261E14]" style={{ fontFamily: "var(--font-playfair)" }}>
             Nouveau contrat
           </h1>
         </div>

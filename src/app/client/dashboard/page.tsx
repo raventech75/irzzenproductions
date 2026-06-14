@@ -26,8 +26,9 @@ export default async function DashboardPage() {
     .select("*")
     .eq("client_id", client?.id ?? "");
 
+  const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const nomClient = client
-    ? `${client.prenom_marie1} & ${client.prenom_marie2}`
+    ? `${capitalize(client.prenom_marie1)} & ${capitalize(client.prenom_marie2)}`
     : user.email ?? "Client";
 
   const statutLabels: Record<string, { label: string; couleur: string }> = {

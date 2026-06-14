@@ -31,11 +31,11 @@ export default async function AdminDashboard() {
   }, {});
 
   const statutLabels: Record<string, { label: string; color: string }> = {
-    prospect:  { label: "Prospects",   color: "bg-yellow-500" },
+    prospect:  { label: "Prospects",   color: "bg-amber-500" },
     confirme:  { label: "Confirmés",   color: "bg-blue-500" },
     en_cours:  { label: "En cours",    color: "bg-purple-500" },
-    livre:     { label: "Livrés",      color: "bg-[#C4A5B5]" },
-    termine:   { label: "Terminés",    color: "bg-green-500" },
+    livre:     { label: "Livrés",      color: "bg-[#E8A87C]" },
+    termine:   { label: "Terminés",    color: "bg-green-600" },
   };
 
   const stats = [
@@ -48,8 +48,8 @@ export default async function AdminDashboard() {
   return (
     <AdminShell>
       <div className="mb-8">
-        <p className="text-xs tracking-[0.4em] uppercase text-[#C4A5B5]/50 mb-1">Back-office</p>
-        <h1 className="text-2xl font-bold text-[#1A1520]" style={{ fontFamily: "var(--font-playfair)" }}>
+        <p className="text-xs tracking-[0.4em] uppercase text-[#E8A87C]/50 mb-1">Back-office</p>
+        <h1 className="text-2xl font-bold text-[#261E14]" style={{ fontFamily: "var(--font-playfair)" }}>
           Tableau de bord
         </h1>
       </div>
@@ -57,15 +57,15 @@ export default async function AdminDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((s) => (
-          <Link key={s.label} href={s.href} className="glass p-5 hover:border-[#C4A5B5]/40 transition-all border border-[#C4A5B5]/15 group relative">
+          <Link key={s.label} href={s.href} className="glass p-5 hover:border-[#E8A87C]/40 transition-all border border-[#E8A87C]/15 group relative">
             {s.alert && (
               <span className="absolute top-3 right-3 w-2 h-2 bg-red-400 rounded-full animate-pulse" />
             )}
             <div className="flex items-center gap-2 mb-3">
-              <s.icon size={14} className="text-[#C4A5B5]/60" />
-              <span className="text-[10px] tracking-widest uppercase text-[#1A1520]/30">{s.label}</span>
+              <s.icon size={14} className="text-[#E8A87C]/60" />
+              <span className="text-[10px] tracking-widest uppercase text-[#261E14]/30">{s.label}</span>
             </div>
-            <div className="text-3xl font-bold text-[#1A1520]" style={{ fontFamily: "var(--font-playfair)" }}>
+            <div className="text-3xl font-bold text-[#261E14]" style={{ fontFamily: "var(--font-playfair)" }}>
               {s.value}
             </div>
           </Link>
@@ -74,41 +74,41 @@ export default async function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Clients récents */}
-        <div className="glass border border-[#C4A5B5]/15 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#C4A5B5]/10">
-            <h2 className="text-xs tracking-[0.3em] uppercase text-[#C4A5B5]/60 font-medium">
+        <div className="glass border border-[#E8A87C]/15 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8A87C]/10">
+            <h2 className="text-xs tracking-[0.3em] uppercase text-[#E8A87C]/60 font-medium">
               Derniers clients
             </h2>
-            <Link href="/admin/clients" className="text-xs text-[#C4A5B5]/40 hover:text-[#C4A5B5] transition-colors">
+            <Link href="/admin/clients" className="text-xs text-[#E8A87C]/40 hover:text-[#E8A87C] transition-colors">
               Voir tout →
             </Link>
           </div>
-          <div className="divide-y divide-[#C4A5B5]/10">
+          <div className="divide-y divide-[#E8A87C]/10">
             {clientsRecents && clientsRecents.length > 0 ? clientsRecents.map((c) => (
               <Link
                 key={c.id}
                 href={`/admin/clients/${c.id}`}
-                className="flex items-center justify-between px-5 py-3.5 hover:bg-[#C4A5B5]/5 transition-colors group"
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-[#E8A87C]/5 transition-colors group"
               >
                 <div>
-                  <div className="text-sm text-[#1A1520]/80 group-hover:text-[#1A1520] transition-colors">
+                  <div className="text-sm text-[#261E14]/80 group-hover:text-[#261E14] transition-colors">
                     {c.prenom_marie1} & {c.prenom_marie2}
                   </div>
-                  <div className="text-xs text-[#1A1520]/30 mt-0.5">
+                  <div className="text-xs text-[#261E14]/30 mt-0.5">
                     {new Date(c.date_mariage).toLocaleDateString("fr-FR")} · {c.formule}
                   </div>
                 </div>
                 <div className={`text-[10px] px-2 py-1 uppercase tracking-widest font-medium ${
-                  c.statut === "confirme" ? "text-blue-400 bg-blue-400/10" :
-                  c.statut === "livre" ? "text-[#C4A5B5] bg-[#C4A5B5]/10" :
-                  c.statut === "termine" ? "text-green-400 bg-green-400/10" :
-                  "text-yellow-400 bg-yellow-400/10"
+                  c.statut === "confirme" ? "text-blue-600 bg-blue-50" :
+                  c.statut === "livre" ? "text-[#E8A87C] bg-[#E8A87C]/10" :
+                  c.statut === "termine" ? "text-green-700 bg-green-50" :
+                  "text-amber-700 bg-amber-50"
                 }`}>
                   {c.statut}
                 </div>
               </Link>
             )) : (
-              <div className="px-5 py-8 text-center text-[#1A1520]/20 text-sm">
+              <div className="px-5 py-8 text-center text-[#261E14]/20 text-sm">
                 Aucun client pour l&apos;instant
               </div>
             )}
@@ -116,9 +116,9 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Répartition par statut */}
-        <div className="glass border border-[#C4A5B5]/15">
-          <div className="px-5 py-4 border-b border-[#C4A5B5]/10">
-            <h2 className="text-xs tracking-[0.3em] uppercase text-[#C4A5B5]/60 font-medium">
+        <div className="glass border border-[#E8A87C]/15">
+          <div className="px-5 py-4 border-b border-[#E8A87C]/10">
+            <h2 className="text-xs tracking-[0.3em] uppercase text-[#E8A87C]/60 font-medium">
               Répartition dossiers
             </h2>
           </div>
@@ -130,8 +130,8 @@ export default async function AdminDashboard() {
               return (
                 <div key={key}>
                   <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-[#1A1520]/50">{label}</span>
-                    <span className="text-[#1A1520]/30">{count}</span>
+                    <span className="text-[#261E14]/50">{label}</span>
+                    <span className="text-[#261E14]/30">{count}</span>
                   </div>
                   <div className="h-1 bg-[#F0EBE8]/5 rounded-full overflow-hidden">
                     <div

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const infos = [
   { label: "Email",          value: "contact@irzzenproductions.fr", href: "mailto:contact@irzzenproductions.fr", bar: "bg-[#E8A87C]" },
-  { label: "Téléphone",      value: "+33 6 00 00 00 00",            href: "tel:+33600000000",                    bar: "bg-[#DFA0AE]" },
+  { label: "Téléphone",      value: "01 85 09 45 42",               href: "tel:+33185094542",                    bar: "bg-[#DFA0AE]" },
   { label: "Disponibilités", value: "Réponse sous 24h",             href: null,                                  bar: "bg-[#8FAF78]" },
 ];
 
@@ -17,8 +17,8 @@ const engagements = [
   "Réponse garantie sous 24h",
   "Devis gratuit et sans engagement",
   "Contrat signé électroniquement",
-  "Acompte de 15% à la réservation",
-  "Annulation remboursée sous 30 jours",
+  "Acompte de 20% à la réservation",
+  "Acompte non remboursable en cas d'annulation",
 ];
 
 const dots = ["bg-[#E8A87C]", "bg-[#DFA0AE]", "bg-[#8FAF78]", "bg-[#E8A87C]", "bg-[#DFA0AE]"];

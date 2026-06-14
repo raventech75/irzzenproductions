@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Check } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ const videoInclus = [
 
 const steps = [
   { num: "01", titre: "Contact",          texte: "Vous nous contactez, nous vérifions nos disponibilités et vous envoyons un devis sous 24h.", bar: "bg-[#E8A87C]" },
-  { num: "02", titre: "Contrat & Acompte",texte: "Vous signez le contrat électroniquement et versez l'acompte de 15% pour confirmer la date.", bar: "bg-[#DFA0AE]" },
+  { num: "02", titre: "Contrat & Acompte",texte: "Vous signez le contrat électroniquement et versez l'acompte de 20% pour confirmer la date.", bar: "bg-[#DFA0AE]" },
   { num: "03", titre: "Votre Mariage",    texte: "Notre équipe arrive en avance, discrète et professionnelle. Vous profitez, nous capturons.", bar: "bg-[#8FAF78]" },
   { num: "04", titre: "Livraison",        texte: "Votre galerie privée est prête sous 4 à 6 semaines. Téléchargement illimité inclus.", bar: "bg-[#DFA0AE]" },
 ];
@@ -37,7 +38,7 @@ const faq = [
   { q: "Intervenez-vous partout en France ?",              a: "Oui, partout en France et à l'international. Les frais de déplacement sont inclus en Île-de-France." },
   { q: "Comment se passe la livraison des photos ?",       a: "Vous recevrez un lien vers votre galerie privée sécurisée pour télécharger toutes vos photos en haute résolution." },
   { q: "Puis-je ajouter des options après la réservation ?", a: "Oui, jusqu'à 30 jours avant la date du mariage, sous réserve de disponibilité." },
-  { q: "Que se passe-t-il en cas d'annulation ?",          a: "L'acompte de 15% est remboursable si l'annulation intervient plus de 30 jours avant le mariage." },
+  { q: "Que se passe-t-il en cas d'annulation ?",          a: "En cas d'annulation, quelle qu'en soit la raison, l'acompte versé reste définitivement acquis à Irzzen Productions et ne pourra faire l'objet d'aucun remboursement." },
 ];
 
 export default function MariagePage() {
@@ -66,8 +67,14 @@ export default function MariagePage() {
       {/* ── Photo ── */}
       <section id="photo" className="bg-[#FDFAF7] py-24">
         <div className="wrap grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
-          <div className="aspect-[4/5] g-bg border border-white/80 rounded-sm flex items-center justify-center">
-            <span className="label-tag opacity-40">Votre photo ici</span>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-sm">
+            <Image
+              src="/photos/Zineb & Fares - 00471.jpg"
+              alt="Reportage photo mariage — Zineb & Farès"
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
           </div>
           <div>
             <p className="label-tag mb-3">Photographie</p>
@@ -113,8 +120,14 @@ export default function MariagePage() {
             </ul>
             <Link href="/tarifs" className="btn-fill">Voir les formules vidéo</Link>
           </div>
-          <div className="order-1 lg:order-2 aspect-[4/5] bg-white/60 border border-white/80 rounded-sm flex items-center justify-center">
-            <span className="label-tag opacity-40">Votre vidéo ici</span>
+          <div className="order-1 lg:order-2 aspect-video w-full overflow-hidden rounded-sm">
+            <iframe
+              src="https://www.youtube.com/embed/hFUL4K45LPo?autoplay=1&mute=1&loop=1&playlist=hFUL4K45LPo&controls=1&rel=0&modestbranding=1"
+              title="Film mariage cinématographique — Hasret & Simoney · Irzzen Productions"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
           </div>
         </div>
       </section>
